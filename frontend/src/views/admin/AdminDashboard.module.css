@@ -1,0 +1,376 @@
+.container {
+  padding: 1rem;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 1.5rem;
+  }
+}
+
+.header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+@media (min-width: 768px) {
+  .header {
+    margin-bottom: 2rem;
+  }
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-family: var(--font-family-display);
+  color: var(--color-secondary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.lastUpdate {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  background: var(--color-surface);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .kpiGrid {
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .kpiGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+}
+
+.kpiCard {
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: transform 0.2s;
+}
+
+.kpiCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.kpiHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.kpiIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.blue { background: #E0F2FE; color: #0369A1; }
+.green { background: #DCFCE7; color: #15803D; }
+.purple { background: #F3E8FF; color: #7E22CE; }
+.orange { background: #FFEDD5; color: #C2410C; }
+
+.kpiTrend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #10B981;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.kpiTrend.down {
+  color: #EF4444;
+}
+
+.kpiValue {
+  font-size: 2.25rem;
+  font-weight: 600;
+  font-family: var(--font-family-display);
+  color: var(--color-secondary);
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.kpiLabel {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.miniChart {
+  height: 40px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.bar {
+  flex: 1;
+  background-color: #3B82F6;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+.sparkline {
+  width: 100%;
+  height: 40px;
+}
+
+.uptimeFull {
+  width: 100%;
+  height: 8px;
+  background: #E2E8F0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.uptimeFill {
+  height: 100%;
+  background: #F97316;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 1200px) {
+  .mainGrid {
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+}
+
+.chartSection, .activitySection {
+  background: white;
+  border-radius: 24px;
+  border: 1px solid #E2E8F0;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.cardTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.periodSelect {
+  padding: 0.5rem 1rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.mainChartContainer {
+  display: flex;
+  height: 300px;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+.yAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #94A3B8;
+  font-size: 0.75rem;
+  text-align: right;
+  width: 30px;
+}
+
+.chartContent {
+  flex: 1;
+  position: relative;
+}
+
+.gridLines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.gridLine {
+  height: 1px;
+  background: #F1F5F9;
+  width: 100%;
+}
+
+.mainBars {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+}
+
+.mainBarWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40px;
+}
+
+.mainBar {
+  width: 100%;
+  background: linear-gradient(to top, #3B82F6, #60A5FA);
+  border-radius: 8px 8px 0 0;
+  position: relative;
+  transition: opacity 0.2s;
+}
+
+.mainBar:hover {
+  opacity: 0.9;
+}
+
+.barTooltip {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1E293B;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.mainBar:hover .barTooltip {
+  opacity: 1;
+}
+
+.xAxisLabel {
+  font-size: 0.75rem;
+  color: #94A3B8;
+  margin-top: 0.5rem;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.activityItem {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.activityIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activityInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.activityUser {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-right: 0.5rem;
+}
+
+.activityDetail {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.activityTime {
+  font-size: 0.75rem;
+  color: #94A3B8;
+  margin-top: 0.25rem;
+}
+
+.viewAllBtn {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #3B82F6;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* title scale */
+@media (min-width: 768px) {
+  .title {
+    font-size: 2rem;
+  }
+}
+
+/* kpiCard hover — disable on touch */
+@media (hover: none) {
+  .kpiCard:hover {
+    transform: none;
+  }
+}

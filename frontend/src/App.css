@@ -1,0 +1,7 @@
+/* Using index.css for global styles. Component specific styles go in their respective CSS modules or here if global. */
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+}

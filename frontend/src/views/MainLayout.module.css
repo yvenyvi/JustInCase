@@ -1,0 +1,64 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Mobile backdrop that appears behind the drawer */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 190;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+@media (min-width: 1024px) {
+  .overlay {
+    display: none;
+  }
+}
+
+.contentWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--color-background);
+  min-width: 0;
+}
+
+.mainContent {
+  flex: 1;
+  padding: 1rem;
+  padding-bottom: var(--spacing-md);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 640px) {
+  .mainContent {
+    padding: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mainContent {
+    padding: 1.5rem;
+  }
+}
+
+.mainContent.fullBleed {
+  padding: 0;
+  overflow: hidden;
+}
+
+.mainContent > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}

@@ -1,0 +1,24 @@
+# Expo & React Native
+.expo/
+dist/
+web-build/
+
+# Node
+node_modules/
+
+# Native builds
+android/.gradle
+android/app/build
+android/build
+ios/Pods
+ios/build
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db

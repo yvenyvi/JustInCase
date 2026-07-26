@@ -1,0 +1,333 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing-md) var(--spacing-md);
+}
+
+@media (min-width: 480px) {
+  .container {
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: var(--spacing-md) var(--spacing-xl);
+  }
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-family: var(--font-family-display);
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.header {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.headerContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .headerContent {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+  }
+}
+
+.avatarWrapper {
+  width: 80px;
+  height: 80px;
+  background-color: #d1fae5; /* equivalent to emerald-100 */
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #059669; /* equivalent to emerald-600 */
+  flex-shrink: 0;
+}
+
+.profileInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .profileInfo {
+    align-items: flex-start;
+  }
+}
+
+.nameRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+@media (min-width: 640px) {
+  .nameRow {
+    flex-direction: row;
+  }
+}
+
+.name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.memberSince {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  margin-bottom: var(--spacing-sm);
+}
+
+.contactInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .contactInfo {
+    justify-content: flex-start;
+  }
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-lg);
+}
+
+/* Mobile: Push settings to bottom using CSS order */
+.settingsColumn {
+  order: 3;
+}
+
+.mainColumn {
+  order: 1;
+}
+
+.interestsColumn {
+  order: 2;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Reset order on tablet — settings spans full bottom row */
+  .mainColumn {
+    order: 1;
+  }
+
+  .interestsColumn {
+    order: 2;
+  }
+
+  .settingsColumn {
+    order: 3;
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1200px) {
+  .grid {
+    grid-template-columns: 350px 1fr 350px;
+  }
+
+  /* Desktop: restore original column positions */
+  .settingsColumn {
+    order: 1;
+    grid-column: auto;
+    display: flex;
+    grid-template-columns: none;
+  }
+
+  .mainColumn {
+    order: 2;
+  }
+
+  .interestsColumn {
+    order: 3;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.settingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background-color: var(--color-background);
+  border-radius: var(--radius-md);
+}
+
+.settingContent {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.iconBox {
+  padding: var(--spacing-sm);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.settingLabel {
+  font-weight: 500;
+  color: var(--color-secondary);
+}
+
+.settingValue {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.activeRequest {
+  padding: var(--spacing-md);
+  background-color: #eff6ff; /* blue-50 */
+  border: 1px solid #dbeafe; /* blue-100 */
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.activeRequestTitle {
+  font-weight: 500;
+  color: #1e3a8a; /* blue-900 */
+  margin-bottom: var(--spacing-xs);
+}
+
+.activeRequestValue {
+  font-size: 0.875rem;
+  color: #1d4ed8; /* blue-700 */
+}
+
+.documentList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.documentsHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.viewAllButton {
+  align-self: center;
+}
+
+.documentItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  transition: background-color var(--transition-fast);
+}
+
+.documentItem:hover {
+  background-color: var(--color-background);
+}
+
+.documentIcon {
+  color: var(--color-text-muted);
+}
+
+.documentInfo {
+  flex: 1;
+}
+
+.documentName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-main);
+}
+
+.documentDate {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.documentPreview {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
+.documentActions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.logOutButton {
+  width: 100%;
+  color: var(--color-danger);
+  border-color: #fecaca; /* red-200 */
+}
+
+.logOutButton:hover {
+  background-color: var(--color-danger-bg);
+  border-color: #fca5a5; /* red-300 */
+}

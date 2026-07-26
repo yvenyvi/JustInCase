@@ -1,0 +1,10 @@
+{
+    "chat.mcp.serverSampling": {
+        "justiceLink/.vscode/mcp.json: supabase": {
+            "allowedModels": [
+                "copilot/auto",
+                "copilotcli/claude-haiku-4.5"
+            ]
+        }
+    }
+}

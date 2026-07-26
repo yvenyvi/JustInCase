@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# Node & Package Managers
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build & System Artifacts
+dist/
+build/
+.expo/
+.dev_pids
+.claude/
+
+# Environment Files (Crucial for public repos)
+.env
+.env.*
+!.env.example
+
+# Logs & Temporary Files
+*.log
+logs/
+*.tmp
+*.temp
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Sensitive Files & Tokens
+.mcp.json
+.vscode/mcp.json
+*.local.json
+*.pem
+*.key
+*.p12
+*.pfark
+
+

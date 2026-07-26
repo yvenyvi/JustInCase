@@ -1,0 +1,19 @@
+{
+  "name": "justicelink",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --names \"BACKEND,FRONTEND\" --prefix-colors \"cyan,magenta\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:mobile": "start cmd /k \"npm run dev:backend\" && cd mobile && npx expo start -c",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && .\\.venv\\Scripts\\python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "test:backend": "cd backend && python -m pytest -v",
+    "test:e2e": "cd frontend && npx playwright test",
+    "test:e2e:ui": "cd frontend && npx playwright test --ui"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.100.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

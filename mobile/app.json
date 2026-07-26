@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "JusticeLink",
+    "slug": "justicelink-mobile",
+    "scheme": "justicelink",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "plugins": ["expo-secure-store"]
+  }
+}
