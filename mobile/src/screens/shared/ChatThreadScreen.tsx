@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, KeyboardAvoidingView, ActivityIndicator, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import Toast from 'react-native-toast-message';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ChatThreadRouteProp = RouteProp<RootStackParamList, 'ChatThread'>;
 
@@ -20,12 +21,14 @@ export default function ChatThreadScreen() {
   const navigation = useNavigation();
   const route = useRoute<ChatThreadRouteProp>();
   const { threadId, threadName } = route.params;
+  const insets = useSafeAreaInsets();
 
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
+  const [resolvedThreadId, setResolvedThreadId] = useState<string>(threadId);
 
   useEffect(() => {
     fetchMessages();
@@ -66,10 +69,47 @@ export default function ChatThreadScreen() {
       if (!user) return;
       setUserId(user.id);
 
+      // threadId from navigation may be a case_id — find or create the real message_thread
+      let resolvedThreadId = threadId;
+
+      // Check if threadId is a direct message_thread id
+      const { data: directThread } = await mobileSupabase
+        .from('message_threads')
+        .select('id')
+        .eq('id', threadId)
+        .maybeSingle();
+
+      if (!directThread) {
+        // threadId is a case_id — look up or create the message thread
+        const { data: existingThread } = await mobileSupabase
+          .from('message_threads')
+          .select('id')
+          .eq('case_id', threadId)
+          .maybeSingle();
+
+        if (existingThread) {
+          resolvedThreadId = existingThread.id;
+        } else {
+          // Create new thread for this case
+          const { data: newThread, error: threadErr } = await mobileSupabase
+            .from('message_threads')
+            .insert({ case_id: threadId })
+            .select('id')
+            .single();
+          if (threadErr) throw threadErr;
+          resolvedThreadId = newThread.id;
+        }
+      }
+
+      // Ensure current user is a thread participant (upsert)
+      await mobileSupabase
+        .from('thread_participants')
+        .upsert({ thread_id: resolvedThreadId, user_id: user.id }, { onConflict: 'thread_id,user_id', ignoreDuplicates: true });
+
       const { data, error } = await mobileSupabase
         .from('messages')
         .select('*')
-        .eq('thread_id', threadId)
+        .eq('thread_id', resolvedThreadId)
         .order('created_at', { ascending: true });
 
       if (!error && data) {
@@ -82,6 +122,10 @@ export default function ChatThreadScreen() {
         }));
         setMessages(mapped);
       }
+
+      // Store resolved thread id so handleSend uses the right one
+      setResolvedThreadId(resolvedThreadId);
+
     } catch (err) {
       console.error('Error fetching messages:', err);
     } finally {
@@ -95,9 +139,9 @@ export default function ChatThreadScreen() {
       const msgText = message.trim();
       setMessage('');
       try {
-        // User message
+        // User message — use resolvedThreadId (the real message_thread id)
         const { error: sendError } = await mobileSupabase.from('messages').insert({
-          thread_id: threadId,
+          thread_id: resolvedThreadId,
           sender_id: userId,
           content: msgText
         });
@@ -135,8 +179,9 @@ export default function ChatThreadScreen() {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 25}
     >
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -178,7 +223,7 @@ export default function ChatThreadScreen() {
         </ScrollView>
       )}
 
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <Pressable style={styles.attachBtn}>
           <Ionicons name="attach" size={24} color="#64748B" />
         </Pressable>

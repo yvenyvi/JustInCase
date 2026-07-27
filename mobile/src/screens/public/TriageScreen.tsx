@@ -479,7 +479,7 @@ export default function TriageScreen() {
                           style={[styles.lawyerCard, styles.topLawyerCard, selectedLawyerId === topLawyer.id && styles.lawyerCardSelected]}
                           onPress={() => setSelectedLawyerId(topLawyer.id)}
                         >
-                          <View style={{ flexDirection: 'row' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <View style={[styles.lawyerAvatar, { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }]}>
                               {topLawyer.selfie_url || topLawyer.id_picture_url ? (
                                 <Image source={{ uri: topLawyer.selfie_url || topLawyer.id_picture_url }} style={{ width: '100%', height: '100%' }} />
@@ -679,10 +679,10 @@ const styles = StyleSheet.create({
   lawyerInfo: { flex: 1, marginLeft: 20 },
   lawyerName: { color: '#0F172A', fontSize: 17, fontWeight: '900', marginBottom: 4, letterSpacing: -0.5 },
   lawyerSpecialty: { color: '#0D9488', fontSize: 14, fontWeight: '700', marginBottom: 12 },
-  lawyerMeta: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  lawyerMeta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaText: { color: '#475569', fontSize: 14, fontWeight: '700' },
-  topLawyerCard: { borderColor: '#0D9488', borderWidth: 2, backgroundColor: '#F0FDFA' },
+  topLawyerCard: { flexDirection: 'column', alignItems: 'stretch', borderColor: '#0D9488', borderWidth: 2, backgroundColor: '#F0FDFA' },
   aiReasonContainer: { flexDirection: 'row', marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#CCFBF1', gap: 8 },
   aiReasonText: { flex: 1, color: '#115E59', fontSize: 14, lineHeight: 20, fontWeight: '600' },
   selectRadio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center', marginLeft: 16 },

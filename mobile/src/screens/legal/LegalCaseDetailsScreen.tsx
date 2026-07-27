@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import Toast from 'react-native-toast-message';
 
 type LegalCaseDetailsRouteProp = RouteProp<RootStackParamList, 'LegalCaseDetails'>;
 
@@ -37,6 +38,7 @@ export default function LegalCaseDetailsScreen() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAiCollapsed, setIsAiCollapsed] = useState(true);
   
   // Modal State
   const [isLogModalVisible, setIsLogModalVisible] = useState(false);
@@ -72,14 +74,14 @@ export default function LegalCaseDetailsScreen() {
       // Fetch audit logs
       const { data: logsData } = await mobileSupabase
         .from('audit_logs')
-        .select('id, action, details, created_at')
-        .like('details', `%${caseId}%`)
+        .select('id, action_type, detail, created_at')
+        .like('detail', `%${caseId}%`)
         .order('created_at', { ascending: false });
 
       let parsedLogs = (logsData || []).map((log: any) => ({
         id: log.id,
         date: new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-        text: `${log.action} - ${log.details}`
+        text: `${log.action_type} - ${log.detail}`
       }));
       
       if (parsedLogs.length === 0) {
@@ -141,11 +143,11 @@ export default function LegalCaseDetailsScreen() {
   const handleLogSubmit = async () => {
     const hoursNum = parseFloat(logHours);
     if (isNaN(hoursNum) || hoursNum <= 0) {
-      Alert.alert('Invalid Input', 'Please enter a valid number of hours.');
+      Toast.show({ type: 'error', text1: 'Invalid Input', text2: 'Please enter a valid number of hours.' });
       return;
     }
     if (!logDesc.trim()) {
-      Alert.alert('Required Field', 'Please provide a description.');
+      Toast.show({ type: 'error', text1: 'Required Field', text2: 'Please provide a description.' });
       return;
     }
     if (!c || !currentUser) return;
@@ -176,13 +178,19 @@ export default function LegalCaseDetailsScreen() {
           });
       }
 
+      await mobileSupabase.from('audit_logs').insert({
+        user_id: currentUser.id,
+        action_type: 'Hours Logged',
+        detail: `Attorney logged ${hoursNum} hours for case ${c.id}.`
+      });
+
       setLogHours('');
       setLogDesc('');
       setIsLogModalVisible(false);
-      Alert.alert('Success', 'Hours logged successfully. Client has been notified for verification.');
+      Toast.show({ type: 'success', text1: 'Success', text2: 'Hours logged successfully. Client has been notified for verification.' });
       fetchTimeLogs();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Could not log hours.');
+      Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Could not log hours.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -211,21 +219,27 @@ export default function LegalCaseDetailsScreen() {
           });
       }
 
-      Alert.alert('Success', 'You have accepted this case.');
+      await mobileSupabase.from('audit_logs').insert({
+        user_id: currentUser.id,
+        action_type: 'Case Accepted',
+        detail: `Attorney accepted case ${c.id}.`
+      });
+
+      Toast.show({ type: 'success', text1: 'Success', text2: 'You have accepted this case.' });
       fetchCaseDetails();
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to accept case.');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to accept case.' });
     }
   };
 
   const handleWithdrawCase = async () => {
     if (!withdrawGround) {
-      Alert.alert('Validation Error', 'Please select a valid ground for withdrawal.');
+      Toast.show({ type: 'error', text1: 'Validation Error', text2: 'Please select a valid ground for withdrawal.' });
       return;
     }
     if (!withdrawExplanation) {
-      Alert.alert('Validation Error', 'Please provide a detailed explanation.');
+      Toast.show({ type: 'error', text1: 'Validation Error', text2: 'Please provide a detailed explanation.' });
       return;
     }
     try {
@@ -252,11 +266,17 @@ export default function LegalCaseDetailsScreen() {
           });
       }
 
+      await mobileSupabase.from('audit_logs').insert({
+        user_id: currentUser.id,
+        action_type: 'Case Withdrawn/Rejected',
+        detail: `Attorney withdrew from case ${c.id}. Ground: ${withdrawGround}`
+      });
+
       setIsWithdrawModalVisible(false);
-      Alert.alert('Success', 'You have successfully withdrawn from this case.');
+      Toast.show({ type: 'success', text1: 'Success', text2: 'You have successfully withdrawn from this case.' });
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to withdraw from case.');
+      Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Failed to withdraw from case.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -354,25 +374,33 @@ export default function LegalCaseDetailsScreen() {
 
         {/* AI Case Brief Widget */}
         <View style={styles.aiCard}>
-          <View style={styles.aiHeader}>
-            <Ionicons name="sparkles" size={18} color="#8B5CF6" />
-            <Text style={styles.aiTitle}>AI Insights</Text>
-          </View>
+          <Pressable 
+            style={[styles.aiHeader, { marginBottom: isAiCollapsed ? 0 : 6 }]} 
+            onPress={() => setIsAiCollapsed(!isAiCollapsed)}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="sparkles" size={18} color="#8B5CF6" />
+              <Text style={styles.aiTitle}>AI Insights</Text>
+            </View>
+            <Ionicons name={isAiCollapsed ? "chevron-down" : "chevron-up"} size={20} color="#8B5CF6" />
+          </Pressable>
           
-          <View style={styles.aiContent}>
-            <View style={styles.aiRow}>
-              <Text style={styles.aiLabel}>Primary Issue</Text>
-              <Text style={styles.aiValue}>{aiData?.primary_issue || parsedDesc.concern || 'Not specified'}</Text>
+          {!isAiCollapsed && (
+            <View style={styles.aiContent}>
+              <View style={styles.aiRow}>
+                <Text style={styles.aiLabel}>Primary Issue</Text>
+                <Text style={styles.aiValue}>{aiData?.primary_issue || parsedDesc.concern || 'Not specified'}</Text>
+              </View>
+              <View style={styles.aiRow}>
+                <Text style={styles.aiLabel}>AI Assessment</Text>
+                <Text style={styles.aiValue}>{aiData?.ai_assessment || 'No assessment available.'}</Text>
+              </View>
+              <View style={styles.aiRow}>
+                <Text style={styles.aiLabel}>Missing Details</Text>
+                <Text style={[styles.aiValue, { color: '#B45309' }]}>{aiData?.missing_details || 'None identified'}</Text>
+              </View>
             </View>
-            <View style={styles.aiRow}>
-              <Text style={styles.aiLabel}>AI Assessment</Text>
-              <Text style={styles.aiValue}>{aiData?.ai_assessment || 'No assessment available.'}</Text>
-            </View>
-            <View style={styles.aiRow}>
-              <Text style={styles.aiLabel}>Missing Details</Text>
-              <Text style={[styles.aiValue, { color: '#B45309' }]}>{aiData?.missing_details || 'None identified'}</Text>
-            </View>
-          </View>
+          )}
         </View>
 
         <View style={styles.card}>
@@ -409,40 +437,52 @@ export default function LegalCaseDetailsScreen() {
 
         {/* Attorney Actions */}
         <View style={styles.actionGrid}>
-          {isAvailable && (
-            <Pressable 
-              style={[styles.actionBtn, styles.actionBtnPrimary, { flex: 1, width: '100%' }]} 
-              onPress={handleAcceptCase}
-            >
-              <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.actionBtnTextPrimary}>Accept Case</Text>
-            </Pressable>
-          )}
-
-          {isAssigned && (
+          {(isAvailable || (isAssigned && c.status === 'Pending Triage')) && (
             <>
               <Pressable 
-                style={[styles.actionBtn, styles.actionBtnPrimary]} 
+                style={[styles.actionBtn, styles.actionBtnPrimary, { width: '100%' }]} 
+                onPress={handleAcceptCase}
+              >
+                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.actionBtnTextPrimary}>Accept Case</Text>
+              </Pressable>
+
+              {isAssigned && c.status === 'Pending Triage' && (
+                <Pressable 
+                  style={[styles.actionBtn, { backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FECACA', width: '100%' }]} 
+                  onPress={() => setIsWithdrawModalVisible(true)}
+                >
+                  <Ionicons name="close-circle" size={20} color="#DC2626" style={{ marginRight: 8 }} />
+                  <Text style={[styles.actionBtnTextPrimary, { color: '#DC2626' }]}>Reject Request</Text>
+                </Pressable>
+              )}
+            </>
+          )}
+
+          {isAssigned && c.status !== 'Pending Triage' && !c.status.includes('Closed') && c.status !== 'Withdrawn' && c.status !== 'Dropped' && (
+            <>
+              <Pressable 
+                style={[styles.actionBtn, styles.actionBtnPrimary, { width: '100%' }]} 
                 onPress={() => navigation.navigate('ChatThread', { threadId: c.id, threadName: c.clientName || 'Client' })}
               >
                 <Ionicons name="chatbubbles" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
                 <Text style={styles.actionBtnTextPrimary}>Message Client</Text>
               </Pressable>
               
-              <Pressable 
-                style={[styles.actionBtn, { backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FECACA' }]} 
-                onPress={() => setIsWithdrawModalVisible(true)}
-              >
-                <Ionicons name="close-circle" size={20} color="#DC2626" style={{ marginRight: 8 }} />
-                <Text style={[styles.actionBtnTextPrimary, { color: '#DC2626' }]}>
-                  {c.status === 'Pending Triage' ? 'Reject Request' : 'Withdraw from Case'}
-                </Text>
-              </Pressable>
-              
-              <Pressable style={styles.actionBtn} onPress={() => setIsLogModalVisible(true)}>
-                <Ionicons name="time" size={20} color="#0D9488" style={{ marginRight: 8 }} />
-                <Text style={styles.actionBtnText}>Log Hours</Text>
-              </Pressable>
+              <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+                <Pressable 
+                  style={[styles.actionBtn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1' }]} 
+                  onPress={() => setIsWithdrawModalVisible(true)}
+                >
+                  <Ionicons name="close-circle" size={20} color="#64748B" style={{ marginRight: 8 }} />
+                  <Text style={[styles.actionBtnTextPrimary, { color: '#64748B' }]}>Withdraw</Text>
+                </Pressable>
+                
+                <Pressable style={[styles.actionBtn, { backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#CCFBF1' }]} onPress={() => setIsLogModalVisible(true)}>
+                  <Ionicons name="time" size={20} color="#0D9488" style={{ marginRight: 8 }} />
+                  <Text style={styles.actionBtnText}>Log Hours</Text>
+                </Pressable>
+              </View>
             </>
           )}
         </View>
@@ -618,7 +658,7 @@ const styles = StyleSheet.create({
   dateLabel: { color: '#64748B', fontSize: 13, fontWeight: '600' },
   
   aiCard: { backgroundColor: '#F5F3FF', borderRadius: 20, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#DDD6FE', shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
-  aiHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  aiHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   aiTitle: { color: '#7C3AED', fontSize: 16, fontWeight: '800', marginLeft: 8 },
   aiDescription: { color: '#8B5CF6', fontSize: 13, marginBottom: 16 },
   aiContent: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#EDE9FE' },
@@ -632,7 +672,7 @@ const styles = StyleSheet.create({
   infoLabel: { color: '#64748B', fontSize: 14 },
   infoValue: { color: '#1E293B', fontSize: 14, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
   
-  actionGrid: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
   actionBtn: { flex: 1, backgroundColor: '#F0FDFA', borderRadius: 16, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#CCFBF1' },
   actionBtnPrimary: { backgroundColor: '#0D9488', borderColor: '#0D9488' },
   actionBtnText: { color: '#0D9488', fontSize: 14, fontWeight: '700' },

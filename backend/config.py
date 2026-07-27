@@ -1,7 +1,6 @@
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Tuple
 
 _dotenv_path = Path(__file__).with_name('.env')
 _dotenv_values: dict[str, str] = {}
@@ -62,7 +61,7 @@ class Config:
     supabase_url: str
     supabase_service_role_key: str
     legal_verification_bucket: str
-    groq_api_keys: Tuple[str, ...]
+    groq_api_keys: tuple[str, ...]
     groq_model: str
     didit_api_key: str
     didit_webhook_secret: str

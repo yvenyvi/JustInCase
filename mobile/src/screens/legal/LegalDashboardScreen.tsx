@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
@@ -13,110 +13,122 @@ export default function LegalDashboardScreen() {
   const [firstName, setFirstName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [activeCasesCount, setActiveCasesCount] = useState(0);
+  const [activeCases, setActiveCases] = useState<any[]>([]);
   const [proBonoHours, setProBonoHours] = useState(0);
   const [privateHours, setPrivateHours] = useState(0);
   const [directRequests, setDirectRequests] = useState<any[]>([]);
   const [unassignedCases, setUnassignedCases] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data: { user } } = await mobileSupabase.auth.getUser();
-        if (!user) return;
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          const { data: { user } } = await mobileSupabase.auth.getUser();
+          if (!user) return;
 
-        // Fetch user name
-        const { data: userData } = await mobileSupabase
-          .from('users')
-          .select('first_name')
-          .eq('id', user.id)
-          .single();
-        
-        setFirstName(userData?.first_name || 'Attorney');
+          // Fetch user name
+          const { data: userData } = await mobileSupabase
+            .from('users')
+            .select('first_name')
+            .eq('id', user.id)
+            .single();
+          
+          setFirstName(userData?.first_name || 'Attorney');
 
-        // Fetch active cases for this attorney
-        const { count } = await mobileSupabase
-          .from('cases')
-          .select('*', { count: 'exact', head: true })
-          .eq('attorney_id', user.id)
-          .in('status', ['In Progress', 'in_progress', 'Accepted']);
-        
-        setActiveCasesCount(count || 0);
+          // Fetch active cases for this attorney
+          const { data: activeData, count, error: activeError } = await mobileSupabase
+            .from('cases')
+            .select(`
+              id, 
+              title, 
+              status, 
+              lawyer_preference,
+              updated_at,
+              created_at,
+              description
+            `, { count: 'exact' })
+            .eq('attorney_id', user.id)
+            .eq('status', 'In Progress')
+            .order('updated_at', { ascending: false });
+          
+          if (activeError) {
+            console.error('Error fetching active cases:', activeError);
+            setActiveCases([]);
+            setActiveCasesCount(0);
+          } else {
+            setActiveCasesCount(count || 0);
+            setActiveCases(activeData || []);
+          }
 
-        // Fetch Direct Requests
-        const { data: directData } = await mobileSupabase
-          .from('cases')
-          .select(`
-            id, 
-            title, 
-            status, 
-            lawyer_preference,
-            updated_at,
-            created_at,
-            description
-          `)
-          .eq('attorney_id', user.id)
-          .eq('status', 'Pending Triage')
-          .order('created_at', { ascending: false })
-          .limit(3);
-        
-        if (directData) {
-          setDirectRequests(directData);
-        }
+          // Fetch Direct Requests (cases assigned to attorney but still pending)
+          const { data: directData, error: directError } = await mobileSupabase
+            .from('cases')
+            .select(`
+              id, 
+              title, 
+              status, 
+              lawyer_preference,
+              updated_at,
+              created_at,
+              description
+            `)
+            .eq('attorney_id', user.id)
+            .eq('status', 'Pending Triage')
+            .order('created_at', { ascending: false })
+            .limit(3);
+          
+          if (directError) console.error('Error fetching direct requests:', directError);
+          setDirectRequests(directData || []);
 
-        // Fetch Unassigned Cases (Open Pool)
-        const { data: unassignedData } = await mobileSupabase
-          .from('cases')
-          .select(`
-            id, 
-            title, 
-            status, 
-            lawyer_preference,
-            updated_at,
-            created_at,
-            description
-          `)
-          .is('attorney_id', null)
-          .eq('status', 'Pending Triage')
-          .order('created_at', { ascending: false })
-          .limit(3);
-        
-        if (unassignedData) {
-          setUnassignedCases(unassignedData);
-        }
+          // Fetch Unassigned Cases (Open Pool)
+          const { data: unassignedData, error: unassignedError } = await mobileSupabase
+            .from('cases')
+            .select(`
+              id, 
+              title, 
+              status, 
+              lawyer_preference,
+              updated_at,
+              created_at,
+              description
+            `)
+            .is('attorney_id', null)
+            .eq('status', 'Pending Triage')
+            .order('created_at', { ascending: false })
+            .limit(3);
+          
+          if (unassignedError) console.error('Error fetching unassigned cases:', unassignedError);
+          setUnassignedCases(unassignedData || []);
 
-        // Fetch time logs for hours
-        const { data: logsData } = await mobileSupabase
-          .from('pro_bono_logs')
-          .select(`
-            hours, 
-            cases (lawyer_preference)
-          `)
-          .eq('attorney_id', user.id);
-        
-        let pBono = 0;
-        let pPrivate = 0;
-        
-        if (logsData) {
-          logsData.forEach((log: any) => {
-            const pref = log.cases?.lawyer_preference;
-            if (pref === 'Private') {
-              pPrivate += (log.hours || 0);
-            } else {
-              pBono += (log.hours || 0);
+          // Fetch time logs for hours
+          try {
+            const { data: logsData } = await mobileSupabase
+              .from('pro_bono_logs')
+              .select('hours, case_id')
+              .eq('attorney_id', user.id);
+            
+            let pBono = 0;
+            let pPrivate = 0;
+            
+            if (logsData) {
+              pBono = logsData.reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
             }
-          });
-        }
-        setProBonoHours(pBono);
-        setPrivateHours(pPrivate);
+            setProBonoHours(pBono);
+            setPrivateHours(pPrivate);
+          } catch (logErr) {
+            console.error('Error fetching pro bono logs:', logErr);
+          }
 
-      } catch (err) {
-        console.error('Error fetching legal dashboard data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+        } catch (err) {
+          console.error('Error fetching legal dashboard data:', err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchData();
+    }, [])
+  );
 
   return (
     <View style={styles.container}>
@@ -174,8 +186,66 @@ export default function LegalDashboardScreen() {
           </View>
         </View>
 
+        {/* My Active Cases Section */}
+        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+          <Text style={styles.sectionTitle}>MY ACTIVE CASES</Text>
+          <Pressable onPress={() => navigation.navigate('Cases' as any)}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </Pressable>
+        </View>
+
+        {activeCases.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.casesScroll}>
+            {activeCases.map((c) => {
+              let parsedDesc = null;
+              try {
+                parsedDesc = JSON.parse(c.description || '{}');
+              } catch (e) {}
+
+              return (
+                <View key={c.id} style={styles.caseCard}>
+                  <View style={styles.caseHeader}>
+                    <View style={[styles.statusBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                      <View style={[styles.statusDot, { backgroundColor: '#16A34A' }]} />
+                      <Text style={[styles.statusText, { color: '#16A34A' }]}>Active</Text>
+                    </View>
+                    <View style={[styles.typeBadge, c.lawyer_preference === 'Private' ? styles.privateBadge : styles.proBonoBadge]}>
+                      <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : "#0D9488"} />
+                      <Text style={[styles.typeText, c.lawyer_preference === 'Private' ? styles.privateText : styles.proBonoText]}>
+                        {c.lawyer_preference}
+                      </Text>
+                    </View>
+                    <Text style={styles.dateText}>{new Date(c.updated_at || c.created_at).toLocaleDateString()}</Text>
+                  </View>
+                  <Text style={styles.caseTitle} numberOfLines={1}>{c.title}</Text>
+                  <Text style={styles.casePreview} numberOfLines={2}>
+                    {parsedDesc && parsedDesc.isJsonFormat ? parsedDesc.rawInput.description : c.description || 'No description provided'}
+                  </Text>
+                  <View style={styles.caseFooter}>
+                    <View style={styles.locationContainer}>
+                      <Ionicons name="location-outline" size={14} color="#64748B" />
+                      <Text style={styles.locationText}>{parsedDesc?.rawInput?.province || 'Location Unspecified'}</Text>
+                    </View>
+                  </View>
+                  <Pressable 
+                    style={[styles.reviewBtn, { backgroundColor: '#F0FDFA', borderColor: '#CCFBF1' }]}
+                    onPress={() => navigation.navigate('LegalCaseDetails', { caseId: c.id })}
+                  >
+                    <Text style={[styles.reviewBtnText, { color: '#0D9488' }]}>Manage Case</Text>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <Ionicons name="briefcase-outline" size={48} color="#CBD5E1" />
+            <Text style={styles.emptyText}>No active cases</Text>
+          </View>
+        )}
+
         {/* Action Needed */}
-        <View style={styles.sectionHeader}>
+        <View style={[styles.sectionHeader, { marginTop: 32 }]}>
           <Text style={styles.sectionTitle}>DIRECT REQUESTS FOR YOU</Text>
         </View>
 
