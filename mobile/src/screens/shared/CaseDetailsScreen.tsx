@@ -85,11 +85,13 @@ export default function CaseDetailsScreen() {
         }];
       }
 
+      const attorneyObj = Array.isArray(caseData.attorney) ? caseData.attorney[0] : caseData.attorney;
+
       setC({
         id: caseData.id,
         title: caseData.title,
         status: caseData.status,
-        assignedTo: caseData.attorney ? `Atty. ${caseData.attorney.first_name} ${caseData.attorney.last_name}`.trim() : null,
+        assignedTo: attorneyObj ? `Atty. ${attorneyObj.first_name} ${attorneyObj.last_name}`.trim() : null,
         attorneyId: caseData.attorney_id,
         clientId: caseData.client_id,
         createdAt: new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),

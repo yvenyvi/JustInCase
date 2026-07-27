@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Pressable, Platform, TextInput, ActivityIndicator, Image, Keyboard } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Platform, TextInput, ActivityIndicator, Image, Keyboard, ScrollView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
 import CustomPicker from '../../components/CustomPicker';
@@ -36,12 +36,6 @@ export default function TriageScreen() {
   const [topLawyerId, setTopLawyerId] = useState<string | null>(null);
   const [topLawyerReason, setTopLawyerReason] = useState<string>('');
 
-  // Groq API Integration
-  const GROQ_API_KEYS = [
-    process.env.EXPO_PUBLIC_GROQ_API_KEY,
-    process.env.EXPO_PUBLIC_GROQ_API_KEY_2,
-    process.env.EXPO_PUBLIC_GROQ_API_KEY_3
-  ].filter(Boolean);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
 
   // Perform AI Analysis on Step 5
@@ -58,75 +52,44 @@ export default function TriageScreen() {
           const availableLawyers = lawyersData || [];
           setRealLawyers(availableLawyers);
 
-          // Format lawyers for AI prompt
-          const lawyersString = availableLawyers.map(l => 
-            `ID: ${l.id}, Name: ${l.first_name} ${l.last_name}, Firm: ${l.firm_name || 'None'}, Location: ${l.city_municipality || 'Unknown'}`
-          ).join('\n');
+          // 2. Call Backend Triage Analysis Endpoint
+          const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-          // 2. Call Groq API
-          const deadlineStr = hasDeadline && deadlineDate ? `Deadline: ${deadlineDate}` : 'None';
-          const prompt = `Analyze this legal case intake in the Philippines.
-Concern: ${description}
-Opposing Party: ${opposingPartyType}
-Urgency: ${urgency}
-Location: ${province}
-Income: ${income}
-Deadline: ${deadlineStr}
-Evidence: ${evidence}
-Desired Outcome: ${outcome}
+          const response = await fetch(`${apiBaseUrl}/api/triage/analyze`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal,
+            body: JSON.stringify({
+              description,
+              opposingPartyType,
+              urgency,
+              province,
+              income,
+              deadlineDate,
+              hasDeadline,
+              evidence,
+              outcome,
+              availableLawyers: availableLawyers.map(l => ({
+                id: l.id,
+                first_name: l.first_name,
+                last_name: l.last_name,
+                firm_name: l.firm_name,
+                city_municipality: l.city_municipality
+              }))
+            })
+          });
 
-Available Lawyers:
-${lawyersString}
+          clearTimeout(timeoutId);
 
-Provide a qualitative assessment for an attorney. Return ONLY a valid JSON object with the following keys, and nothing else (no markdown blocks, just the JSON string):
-{
-  "category_of_law": "The most appropriate legal category (e.g., Labor Law, Family Law, Criminal Defense, Civil Law, Property Law)",
-  "primary_issue": "A concise 1-2 sentence summary of the legal issue",
-  "ai_assessment": "The AI's qualitative thoughts on the case's legal viability, strength, and strategy",
-  "missing_details": "What crucial information the client failed to provide that the attorney should ask for",
-  "recommended_lawyer_id": "The EXACT ID string of the most suitable lawyer from the Available Lawyers list (e.g. '123e4567-e89b-12d3-a456-426614174000'). If no good match, return null.",
-  "recommendation_reason": "A 1-sentence explanation to the client why this lawyer is the best fit (e.g. 'Atty. Santos is located near you and has a firm that can handle this.'). If no match, leave empty."
-}`;
-
-          let response = null;
-          let lastError = null;
-
-          for (const key of GROQ_API_KEYS) {
-            try {
-              response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${key}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  model: 'llama-3.1-8b-instant',
-                  messages: [{ role: 'user', content: prompt }],
-                  temperature: 0.2
-                })
-              });
-
-              if (response.ok) {
-                break; // Exit the loop if successful
-              } else {
-                lastError = new Error(`Groq API error: ${response.status}`);
-                console.warn(`Groq API failed with key, trying next... Status: ${response.status}`);
-              }
-            } catch (err) {
-              lastError = err;
-              console.warn(`Groq API network error, trying next...`);
-            }
+          if (!response.ok) {
+            throw new Error(`Backend triage API error: ${response.status}`);
           }
 
-          if (!response || !response.ok) {
-            throw lastError || new Error('All Groq API keys failed');
-          }
-
-          const data = await response.json();
-          let content = data.choices[0].message.content;
-          content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-          
-          const parsed = JSON.parse(content);
+          const parsed = await response.json();
           setAiAnalysisResult(parsed);
           setCategory(parsed.category_of_law || 'General Practice');
           setTopLawyerId(parsed.recommended_lawyer_id || null);

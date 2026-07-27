@@ -6,7 +6,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 
 export default function DocumentFormScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute();
   const { session } = useMobileAuth();
   
@@ -83,12 +83,12 @@ export default function DocumentFormScreen() {
 
       if (!response.ok) throw new Error('Server error');
       const result = await response.json();
-      navigation.navigate('PublicDocumentResult' as never, { result } as never);
+      navigation.navigate('PublicDocumentResult', { result });
     } catch (err: any) {
       // If backend is unreachable (network error / timeout), use local fallback
       if (err.name === 'AbortError' || err.message === 'Network request failed' || err.message === 'Server error') {
         const localResult = generateLocalDraft();
-        navigation.navigate('PublicDocumentResult' as never, { result: localResult } as never);
+        navigation.navigate('PublicDocumentResult', { result: localResult });
       } else {
         Toast.show({
           type: 'error',

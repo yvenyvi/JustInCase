@@ -24,11 +24,11 @@ export interface DocumentTemplate {
   description: string;
   category: string;
   estimated_minutes: number;
-  law_basis: string;
+  law_basis?: string;
 }
 
 export default function DocumentGeneratorScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -162,7 +162,7 @@ export default function DocumentGeneratorScreen() {
                 <Pressable 
                   key={tpl.slug} 
                   style={styles.card}
-                  onPress={() => navigation.navigate('PublicDocumentForm' as never, { template: tpl } as never)}
+                  onPress={() => navigation.navigate('PublicDocumentForm', { template: tpl })}
                 >
                   <View style={styles.cardIcon}>
                     <Ionicons name={getIconForCategory(tpl.category) as any} size={28} color="#0D9488" />
@@ -188,7 +188,7 @@ export default function DocumentGeneratorScreen() {
             </View>
             <Pressable
               style={styles.customCard}
-              onPress={() => navigation.navigate('PublicDocumentForm' as never, { template: CUSTOM_TEMPLATE } as never)}
+              onPress={() => navigation.navigate('PublicDocumentForm', { template: CUSTOM_TEMPLATE })}
             >
               <View style={styles.customCardIcon}>
                 <Ionicons name="sparkles" size={28} color="#7C3AED" />

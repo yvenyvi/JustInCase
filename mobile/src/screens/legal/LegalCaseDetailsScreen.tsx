@@ -90,14 +90,17 @@ export default function LegalCaseDetailsScreen() {
         }];
       }
 
+      const attorneyObj = Array.isArray(caseData.attorney) ? caseData.attorney[0] : caseData.attorney;
+      const clientObj = Array.isArray(caseData.client) ? caseData.client[0] : caseData.client;
+
       setC({
         id: caseData.id,
         title: caseData.title,
         status: caseData.status,
-        assignedTo: caseData.attorney ? `Atty. ${caseData.attorney.first_name} ${caseData.attorney.last_name}`.trim() : null,
+        assignedTo: attorneyObj ? `Atty. ${attorneyObj.first_name} ${attorneyObj.last_name}`.trim() : null,
         attorneyId: caseData.attorney_id,
         clientId: caseData.client_id,
-        clientName: caseData.client ? `${caseData.client.first_name} ${caseData.client.last_name}`.trim() : 'Unknown Client',
+        clientName: clientObj ? `${clientObj.first_name} ${clientObj.last_name}`.trim() : 'Unknown Client',
         createdAt: new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         description: caseData.description || '',
         updates: parsedLogs
@@ -655,6 +658,7 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'center', padding: 24 },
   modalContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  modalBody: { maxHeight: 350 },
   modalTitle: { color: '#1E293B', fontSize: 20, fontWeight: '800' },
   modalCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
   inputLabel: { color: '#475569', fontSize: 13, fontWeight: '600', marginBottom: 8 },

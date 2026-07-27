@@ -16,6 +16,7 @@ from didit_service import (
 from document_generator_service import generate_document_draft, list_document_templates
 from kampi_service import generate_kampi_reply
 from legal_registration_service import upload_legal_verification_asset
+from triage_service import analyze_triage_case
 
 app = FastAPI(title="JusticeLink Backend", version="1.0.0")
 
@@ -112,6 +113,27 @@ class DocumentGenerateBody(BaseModel):
     templateId: Optional[str] = None
     templateSlug: Optional[str] = None
     values: dict[str, str] = Field(default_factory=dict)
+
+
+class LawyerInfo(BaseModel):
+    id: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    firm_name: Optional[str] = None
+    city_municipality: Optional[str] = None
+
+
+class TriageAnalyzeBody(BaseModel):
+    description: str
+    opposingPartyType: Optional[str] = ""
+    urgency: Optional[str] = ""
+    province: Optional[str] = ""
+    income: Optional[str] = ""
+    deadlineDate: Optional[str] = ""
+    hasDeadline: Optional[bool] = False
+    evidence: Optional[str] = ""
+    outcome: Optional[str] = ""
+    availableLawyers: Optional[list[LawyerInfo]] = Field(default_factory=list)
 
 
 @app.get("/health")
@@ -304,3 +326,29 @@ def document_generate(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to generate document draft right now.") from exc
+
+
+@app.post("/api/triage/analyze")
+def triage_analyze(body: TriageAnalyzeBody) -> dict[str, Any]:
+    deadline_str = f"Deadline: {body.deadlineDate}" if (body.hasDeadline and body.deadlineDate) else "None"
+    lawyers_data = [l.model_dump() for l in (body.availableLawyers or [])]
+
+    try:
+        result = analyze_triage_case(
+            description=body.description,
+            opposing_party_type=body.opposingPartyType or "",
+            urgency=body.urgency or "",
+            province=body.province or "",
+            income=body.income or "",
+            deadline_str=deadline_str,
+            evidence=body.evidence or "",
+            outcome=body.outcome or "",
+            available_lawyers=lawyers_data,
+        )
+        return result
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to perform AI triage analysis right now.") from exc

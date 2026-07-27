@@ -42,7 +42,7 @@ export default function ChatThreadScreen() {
                 return [...prev, {
                   id: newMsg.id,
                   text: newMsg.content,
-                  sender: newMsg.sender_id === user.id ? 'me' : 'other',
+                  sender: (newMsg.sender_id === user.id ? 'me' : 'other') as 'me' | 'other',
                   time: new Date(newMsg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
                   created_at: newMsg.created_at
                 }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -76,7 +76,7 @@ export default function ChatThreadScreen() {
         const mapped = data.map((msg: any) => ({
           id: msg.id,
           text: msg.content,
-          sender: msg.sender_id === user.id ? 'me' : 'other',
+          sender: (msg.sender_id === user.id ? 'me' : 'other') as 'me' | 'other',
           time: new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           created_at: msg.created_at
         }));
