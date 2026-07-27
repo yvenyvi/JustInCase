@@ -6,10 +6,9 @@ from typing import Any
 import httpx
 
 from config import config
+from groq_client import call_groq
 
 DocumentTemplate = dict[str, Any]
-
-GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 AI_DRAFT_SYSTEM_PROMPT = (
     "You are a legal drafting assistant for JusticeLink Philippines. "
@@ -473,7 +472,7 @@ def _supabase_headers() -> dict[str, str]:
 
 
 def _is_ai_ready() -> bool:
-    return bool(config.groq_api_key)
+    return bool(config.groq_api_keys)
 
 
 def _normalize_template(row: dict[str, Any]) -> DocumentTemplate:
@@ -661,42 +660,16 @@ def _generate_ai_draft(
         "5) Output plain text only."
     )
 
-    payload = {
-        "model": config.groq_model,
-        "messages": [
-            {"role": "system", "content": AI_DRAFT_SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.25,
-        "max_tokens": 900,
-    }
-
-    headers = {
-        "Authorization": f"Bearer {config.groq_api_key}",
-        "Content-Type": "application/json",
-    }
-
     try:
-        response = httpx.post(
-            GROQ_CHAT_COMPLETIONS_URL,
-            json=payload,
-            headers=headers,
-            timeout=45,
+        return call_groq(
+            messages=[
+                {"role": "system", "content": AI_DRAFT_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.25,
+            max_tokens=900,
+            timeout=45.0,
         )
-
-        if response.status_code >= 400:
-            return None
-
-        data = response.json()
-        choices = data.get("choices") or []
-        if not choices:
-            return None
-
-        content = (((choices[0] or {}).get("message") or {}).get("content") or "").strip()
-        if not content:
-            return None
-
-        return content
     except Exception:
         return None
 

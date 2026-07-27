@@ -1,10 +1,8 @@
+import logging
 from typing import Any
 
-import httpx
-
 from config import config
-
-GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
+from groq_client import call_groq
 
 SYSTEM_PROMPT = (
     "You are Kampi, a legal aid AI assistant for JusticeLink PH. "
@@ -74,8 +72,8 @@ def generate_kampi_reply(
     if not user_message:
         raise ValueError("Message cannot be empty.")
 
-    if not config.groq_api_key:
-        raise RuntimeError("GROQ_API_KEY is not configured in backend environment.")
+    if not config.groq_api_keys:
+        raise RuntimeError("No Groq API keys are configured in backend environment.")
 
     history_messages = _normalize_history(history or [])
     rights_context_text = _build_rights_context_prompt(rights_context or [])
@@ -88,35 +86,9 @@ def generate_kampi_reply(
     messages.extend(history_messages)
     messages.append({"role": "user", "content": user_message})
 
-    payload = {
-        "model": config.groq_model,
-        "messages": messages,
-        "temperature": 0.4,
-        "max_tokens": 700,
-    }
-
-    headers = {
-        "Authorization": f"Bearer {config.groq_api_key}",
-        "Content-Type": "application/json",
-    }
-
-    response = httpx.post(
-        GROQ_CHAT_COMPLETIONS_URL,
-        json=payload,
-        headers=headers,
-        timeout=45,
+    return call_groq(
+        messages=messages,
+        temperature=0.4,
+        max_tokens=700,
+        timeout=45.0,
     )
-
-    if response.status_code >= 400:
-        raise RuntimeError(f"Groq API request failed ({response.status_code}): {response.text}")
-
-    data = response.json()
-    choices = data.get("choices") or []
-    if not choices:
-        raise RuntimeError("Groq API returned no choices.")
-
-    content = (((choices[0] or {}).get("message") or {}).get("content") or "").strip()
-    if not content:
-        raise RuntimeError("Groq API returned an empty response.")
-
-    return content

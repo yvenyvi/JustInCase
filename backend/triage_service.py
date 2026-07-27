@@ -1,13 +1,11 @@
 import json
 import logging
 from typing import Any
-import httpx
 
 from config import config
+from groq_client import call_groq
 
 logger = logging.getLogger(__name__)
-
-GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 def analyze_triage_case(
@@ -21,8 +19,8 @@ def analyze_triage_case(
     outcome: str = "",
     available_lawyers: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    if not config.groq_api_key:
-        raise RuntimeError("GROQ_API_KEY is not configured in backend environment.")
+    if not config.groq_api_keys:
+        raise RuntimeError("No Groq API keys are configured in backend environment.")
 
     lawyers_list = available_lawyers or []
     lawyers_formatted = []
@@ -59,30 +57,12 @@ Provide a qualitative assessment for an attorney. Return ONLY a valid JSON objec
   "recommendation_reason": "A 1-sentence explanation to the client why this lawyer is the best fit (e.g. 'Atty. Santos is located near you and has a firm that can handle this.'). If no match, leave empty."
 }}"""
 
-    payload = {
-        "model": "llama-3.1-8b-instant",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
-    }
-
-    headers = {
-        "Authorization": f"Bearer {config.groq_api_key}",
-        "Content-Type": "application/json",
-    }
-
-    response = httpx.post(
-        GROQ_CHAT_COMPLETIONS_URL,
-        json=payload,
-        headers=headers,
-        timeout=45,
+    raw_content = call_groq(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.1-8b-instant",
+        temperature=0.2,
+        timeout=45.0,
     )
-
-    if response.status_code >= 400:
-        logger.error("Groq API error in triage service (%s): %s", response.status_code, response.text)
-        raise RuntimeError(f"Groq API error: {response.status_code}")
-
-    res_json = response.json()
-    raw_content = res_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
 
     # Clean markdown backticks if present
     if raw_content.startswith("```"):

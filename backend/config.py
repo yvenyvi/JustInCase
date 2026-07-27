@@ -1,6 +1,7 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Tuple
 
 _dotenv_path = Path(__file__).with_name('.env')
 _dotenv_values: dict[str, str] = {}
@@ -61,7 +62,7 @@ class Config:
     supabase_url: str
     supabase_service_role_key: str
     legal_verification_bucket: str
-    groq_api_key: str
+    groq_api_keys: Tuple[str, ...]
     groq_model: str
     didit_api_key: str
     didit_webhook_secret: str
@@ -78,7 +79,11 @@ config = Config(
     supabase_url=_get_env("SUPABASE_URL", _get_env("VITE_SUPABASE_URL", "")).rstrip("/"),
     supabase_service_role_key=_get_env("SUPABASE_SERVICE_ROLE_KEY", "").strip(),
     legal_verification_bucket=_get_env("LEGAL_VERIFICATION_BUCKET", "verification-documents").strip() or "verification-documents",
-    groq_api_key=_get_env("GROQ_API_KEY", "").strip(),
+    groq_api_keys=tuple(filter(None, [
+        _get_env("GROQ_API_KEY_1", "").strip(),
+        _get_env("GROQ_API_KEY_2", "").strip(),
+        _get_env("GROQ_API_KEY_3", "").strip(),
+    ])),
     groq_model=_get_env("GROQ_MODEL", "llama-3.3-70b-versatile").strip(),
     didit_api_key=_get_env("DIDIT_API_KEY", ""),
     didit_webhook_secret=_get_env("DIDIT_WEBHOOK_SECRET", ""),
