@@ -72,8 +72,8 @@ export default function RegisterScreen({ navigation, route }: Props) {
     }
   }, [route.params?.resumeState]);
 
-  // Backend URL — your LAN IP for physical devices + emulators
-  const apiBaseUrl = 'http://192.168.100.144:8000';
+  // Backend URL — uses .env or current LAN IP for physical devices + emulators
+  const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.1.21:8000';
 
   // ── Deep-link listener: app re-opened from external browser ───────────────
   useEffect(() => {

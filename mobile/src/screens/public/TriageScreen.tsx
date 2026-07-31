@@ -53,7 +53,7 @@ export default function TriageScreen() {
           setRealLawyers(availableLawyers);
 
           // 2. Call Backend Triage Analysis Endpoint
-          const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+          const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.1.21:8000';
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 12000);
 

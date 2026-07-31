@@ -11,10 +11,11 @@ from groq_client import call_groq
 DocumentTemplate = dict[str, Any]
 
 AI_DRAFT_SYSTEM_PROMPT = (
-    "You are a legal drafting assistant for JusticeLink Philippines. "
-    "Draft professional, clear, and respectful letters in plain language for self-advocacy. "
-    "Use only user-provided facts. Never invent names, dates, addresses, or amounts. "
-    "Keep tone formal and practical. Do not claim the letter is legal advice."
+    "You are an expert legal drafting assistant for JusticeLink Philippines. "
+    "Draft professional, clear, and comprehensive letters in plain language for self-advocacy. "
+    "Deeply analyze the user-provided facts and intelligently expand on the situation to create a cohesive, fully fleshed-out narrative. "
+    "However, NEVER invent fake names, dates, addresses, or monetary amounts. "
+    "Keep tone formal, practical, and respectful. Do not claim the letter is legal advice."
 )
 
 _templates_synced = False
@@ -123,7 +124,7 @@ FALLBACK_TEMPLATES: list[DocumentTemplate] = [
         "law_basis": "Katarungang Pambarangay Law and local barangay conciliation rules",
         "required_fields": [
             {"key": "sender_name", "label": "Iyong Buong Pangalan", "type": "text", "required": True},
-            {"key": "recipient_name", "label": "Pangalan ng Inirereklamo", "type": "text", "required": True},
+            {"key": "respondent_name", "label": "Pangalan ng Inirereklamo", "type": "text", "required": True},
             {"key": "incident_date", "label": "Petsa ng Pangyayari", "type": "date", "required": True},
             {"key": "issue_summary", "label": "Buod ng Reklamo", "type": "textarea", "required": True},
         ],
@@ -132,9 +133,9 @@ FALLBACK_TEMPLATES: list[DocumentTemplate] = [
         ],
         "body_template": (
             "Date: {{incident_date}}\n\n"
-            "To: Barangay Office / Lupon Tagapamayapa\n\n"
+            "To: The Honorable Punong Barangay / Lupon Tagapamayapa\n\n"
             "Complainant: {{sender_name}}\n"
-            "Respondent: {{recipient_name}}\n\n"
+            "Respondent: {{respondent_name}}\n\n"
             "Subject: Barangay Complaint\n\n"
             "I respectfully submit this complaint for mediation and settlement with the following facts:\n{{issue_summary}}\n\n"
             "Relief requested:\n{{relief_requested}}\n\n"
@@ -652,12 +653,13 @@ def _generate_ai_draft(
         f"{_format_values_for_prompt(clean_values)}\n\n"
         "Structured fallback draft:\n"
         f"{rendered_template}\n\n"
-        "Rewrite this as a professional Philippine legal letter draft with these rules:\n"
-        "1) Keep all facts consistent with user values and fallback draft only.\n"
-        "2) Include: heading/date, addressee, subject line, statement of facts, requested relief, and closing.\n"
-        "3) Keep it practical, respectful, and clear for self-advocacy.\n"
-        "4) Mention relevant legal basis naturally without giving definitive legal advice.\n"
-        "5) Output plain text only."
+        "Rewrite this into a fully comprehensive, professional Philippine legal letter draft using these rules:\n"
+        "1) Logically expand on the user's situation to craft a persuasive, complete narrative. Do not just mechanically repeat what they said.\n"
+        "2) NEVER invent fake names, dates, or amounts. Use only the provided entities.\n"
+        "3) Include: heading/date, addressee, subject line, detailed statement of facts, clear requested relief, and closing.\n"
+        "4) Keep it practical, respectful, and clear for self-advocacy.\n"
+        "5) Naturally weave the relevant legal basis into the narrative without giving definitive legal advice.\n"
+        "6) Output plain text only."
     )
 
     try:
@@ -810,3 +812,50 @@ def generate_document_draft(
         "generationMode": generation_mode,
         "aiAssisted": bool(ai_content),
     }
+
+INTERACTIVE_DRAFT_PROMPT = (
+    "You are an expert legal document drafter for JusticeLink Philippines.\n"
+    "Your goal is to help the user draft a formal, professional legal document based on their situation.\n"
+    "Step 1: Understand the user's situation and determine what document they need (e.g. Demand Letter, Barangay Complaint, Affidavit, etc.).\n"
+    "Step 2: Check if you have all the necessary specific facts to draft a legally useful document. This includes names of the parties, dates, specific amounts or items, address/locations, and the exact relief or action wanted.\n"
+    "Step 3: If you are MISSING important information, you MUST ask the user for it. Prefix your response strictly with 'QUESTION: '.\n"
+    "Step 4: If you have ALL the necessary information, draft the complete document in formal language (English or Tagalog as appropriate). Prefix your response strictly with 'DOCUMENT: ' followed immediately by the markdown document.\n\n"
+    "User Profile Context (use this if relevant so you don't have to ask them their name/address again):\n"
+    "Name: {user_name}\n"
+    "Address: {user_address}\n"
+    "Email: {user_email}\n"
+)
+
+def _normalize_chat_history(history: list[dict[str, Any]]) -> list[dict[str, str]]:
+    normalized: list[dict[str, str]] = []
+    for item in history[-15:]:
+        role = (item.get("role") or "").strip().lower()
+        content = (item.get("content") or "").strip()
+        if role in {"user", "assistant"} and content:
+            normalized.append({"role": role, "content": content})
+    return normalized
+
+def generate_interactive_draft(
+    history: list[dict[str, Any]],
+    user_profile: dict[str, str] | None = None,
+) -> str:
+    if not config.groq_api_keys:
+        raise RuntimeError("No Groq API keys are configured.")
+
+    up = user_profile or {}
+    sys_prompt = INTERACTIVE_DRAFT_PROMPT.format(
+        user_name=up.get("full_name") or "Not provided",
+        user_address=up.get("address") or "Not provided",
+        user_email=up.get("email") or "Not provided",
+    )
+
+    messages: list[dict[str, str]] = [{"role": "system", "content": sys_prompt}]
+    messages.extend(_normalize_chat_history(history))
+
+    return call_groq(
+        messages=messages,
+        temperature=0.3,
+        max_tokens=2000,
+        timeout=60.0,
+    )
+

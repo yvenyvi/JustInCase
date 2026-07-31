@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -67,15 +68,19 @@ export default function DocumentFormScreen() {
     setIsGenerating(true);
     
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.1.21:8000';
       const userId = session?.user?.id || 'anonymous';
+      const token = session?.access_token || '';
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       const response = await fetch(`${baseUrl}/api/documents/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ templateId: template.id, templateSlug: template.slug, userId, values: formValues }),
         signal: controller.signal,
       });
@@ -132,7 +137,13 @@ export default function DocumentFormScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false} 
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraScrollHeight={Platform.OS === 'ios' ? 40 : 20}
+      >
         <View style={styles.templateInfo}>
           <Text style={styles.templateCategory}>{template.category}</Text>
           <Text style={styles.templateTitle}>{template.title}</Text>
@@ -150,7 +161,7 @@ export default function DocumentFormScreen() {
             </>
           )}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <View style={styles.footer}>
         <Pressable 

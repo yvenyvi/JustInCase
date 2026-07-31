@@ -13,7 +13,7 @@ from didit_service import (
     process_didit_webhook,
     start_public_didit_registration,
 )
-from document_generator_service import generate_document_draft, list_document_templates
+from document_generator_service import generate_document_draft, list_document_templates, generate_interactive_draft
 from kampi_service import generate_kampi_reply
 from legal_registration_service import upload_legal_verification_asset
 from triage_service import analyze_triage_case
@@ -113,6 +113,13 @@ class DocumentGenerateBody(BaseModel):
     templateId: Optional[str] = None
     templateSlug: Optional[str] = None
     values: dict[str, str] = Field(default_factory=dict)
+
+class InteractiveDraftHistoryMessage(BaseModel):
+    role: str
+    content: str
+
+class InteractiveDraftBody(BaseModel):
+    history: list[InteractiveDraftHistoryMessage] = Field(default_factory=list)
 
 
 class LawyerInfo(BaseModel):
@@ -302,6 +309,38 @@ def document_templates() -> dict[str, Any]:
         return {"templates": templates}
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to load document templates.") from exc
+
+@app.post("/api/documents/interactive-draft")
+def document_interactive_draft(
+    body: InteractiveDraftBody,
+    req: Request,
+) -> dict[str, str]:
+    try:
+        # Check for Authorization header but don't strictly require it
+        user_profile = {}
+        auth_header = req.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            try:
+                user = _get_supabase_user(token)
+                # Attempt to extract metadata
+                meta = user.get("user_metadata", {})
+                user_profile["full_name"] = f"{meta.get('firstName', '')} {meta.get('lastName', '')}".strip()
+                user_profile["email"] = user.get("email", "")
+                
+                # Fetch address from db profile if needed (simplifying here)
+                if meta.get("firstName"):
+                    pass
+            except Exception:
+                pass # ignore auth errors for guest users
+
+        # Convert Pydantic models to dicts
+        history_dicts = [{"role": msg.role, "content": msg.content} for msg in body.history]
+        
+        reply = generate_interactive_draft(history=history_dicts, user_profile=user_profile)
+        return {"response": reply}
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
 
 
 @app.post("/api/documents/generate")

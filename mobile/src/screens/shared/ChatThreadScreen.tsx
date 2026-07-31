@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, KeyboardAvoidingView, ActivityIndicator, Keyboard } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
@@ -29,6 +29,8 @@ export default function ChatThreadScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
   const [resolvedThreadId, setResolvedThreadId] = useState<string>(threadId);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const keyboardHeightRef = useRef(300);
 
   useEffect(() => {
     fetchMessages();
@@ -61,6 +63,21 @@ export default function ChatThreadScreen() {
       mobileSupabase.removeChannel(channel);
     };
   }, [threadId]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      const h = e.endCoordinates.height;
+      keyboardHeightRef.current = h;
+      setKeyboardHeight(h);
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+    const willHideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardHeight(0));
+    const didHideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    
+    return () => { showSub.remove(); willHideSub.remove(); didHideSub.remove(); };
+  }, []);
+
+  const handleInputFocus = () => setKeyboardHeight(keyboardHeightRef.current);
 
   const fetchMessages = async () => {
     setIsLoading(true);
@@ -148,23 +165,6 @@ export default function ChatThreadScreen() {
 
         if (sendError) throw sendError;
 
-        // Simulate attorney typing and replying (Auto-Responder for Demo)
-        setTimeout(async () => {
-          const autoReplies = [
-            "Salamat sa iyong mensahe. Binabasa ko na ito ngayon.",
-            "Naiintindihan ko ang iyong sitwasyon. Hayaan mong pag-aralan ko ang mga dokumento.",
-            "Makakaasa ka, babalikan kita mamaya pagkatapos ng aking hearing.",
-            "Noted ito. May mga karagdagang dokumento ka pa bang maipapadala?",
-            "Salamat sa detalye. Mag-set tayo ng maikling tawag bukas kung maaari."
-          ];
-          const randomReply = autoReplies[Math.floor(Math.random() * autoReplies.length)];
-          
-          await mobileSupabase.from('messages').insert({
-            thread_id: threadId,
-            sender_id: '00000000-0000-0000-0000-000000000000', // Mock system/attorney ID
-            content: randomReply
-          });
-        }, 2000);
 
       } catch (err: any) {
         console.error('Error sending message:', err);
@@ -178,11 +178,7 @@ export default function ChatThreadScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 25}
-    >
+    <View style={[styles.container, { paddingBottom: keyboardHeight > 0 ? keyboardHeight + insets.bottom : 0 }]}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#64748B" />
@@ -201,7 +197,12 @@ export default function ChatThreadScreen() {
           <ActivityIndicator size="large" color="#0D9488" />
         </View>
       ) : (
-        <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.dateSeparator}>Today</Text>
           
           {messages.map((msg) => {
@@ -233,13 +234,14 @@ export default function ChatThreadScreen() {
           placeholderTextColor="#94A3B8"
           value={message}
           onChangeText={setMessage}
+          onFocus={handleInputFocus}
           multiline
         />
         <Pressable style={[styles.sendBtn, message.trim() ? styles.sendBtnActive : {}]} onPress={handleSend}>
           <Ionicons name="send" size={20} color={message.trim() ? '#FFFFFF' : '#94A3B8'} />
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

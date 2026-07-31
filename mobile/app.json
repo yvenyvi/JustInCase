@@ -9,6 +9,9 @@
     "ios": {
       "supportsTablet": true
     },
+    "android": {
+      "softwareKeyboardLayoutMode": "resize"
+    },
     "plugins": ["expo-secure-store"]
   }
 }

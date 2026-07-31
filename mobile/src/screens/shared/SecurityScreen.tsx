@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -16,7 +17,13 @@ export default function SecurityScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Current Password</Text>
           <TextInput style={styles.input} secureTextEntry placeholder="••••••" placeholderTextColor="#94A3B8" />
@@ -37,7 +44,7 @@ export default function SecurityScreen() {
         </Pressable>
 
 
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }

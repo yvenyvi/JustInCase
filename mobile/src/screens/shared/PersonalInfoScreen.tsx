@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -19,7 +20,13 @@ export default function PersonalInfoScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Full Name</Text>
           <TextInput style={styles.input} value={name} onChangeText={setName} />
@@ -38,7 +45,7 @@ export default function PersonalInfoScreen() {
         <Pressable style={styles.saveBtn}>
           <Text style={styles.saveBtnText}>Save Changes</Text>
         </Pressable>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }
