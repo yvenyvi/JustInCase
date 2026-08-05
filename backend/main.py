@@ -323,14 +323,30 @@ def document_interactive_draft(
             token = auth_header.split(" ")[1]
             try:
                 user = _get_supabase_user(token)
-                # Attempt to extract metadata
-                meta = user.get("user_metadata", {})
-                user_profile["full_name"] = f"{meta.get('firstName', '')} {meta.get('lastName', '')}".strip()
-                user_profile["email"] = user.get("email", "")
+                user_id = user.get("id")
                 
-                # Fetch address from db profile if needed (simplifying here)
-                if meta.get("firstName"):
-                    pass
+                # Fetch full profile from the database
+                resp = httpx.get(
+                    f"{config.supabase_url}/rest/v1/users?id=eq.{user_id}",
+                    headers={
+                        "apikey": config.supabase_service_role_key,
+                        "Authorization": f"Bearer {config.supabase_service_role_key}",
+                    },
+                    timeout=5,
+                )
+                if resp.status_code == 200 and len(resp.json()) > 0:
+                    db_user = resp.json()[0]
+                    name_parts = filter(None, [db_user.get("first_name"), db_user.get("middle_name"), db_user.get("last_name")])
+                    user_profile["full_name"] = " ".join(name_parts)
+                    user_profile["email"] = db_user.get("email") or user.get("email", "")
+                    user_profile["phone_number"] = db_user.get("phone_number") or ""
+                    
+                    addr_parts = filter(None, [db_user.get("street_address"), db_user.get("barangay"), db_user.get("city_municipality"), db_user.get("province")])
+                    user_profile["address"] = ", ".join(addr_parts)
+                else:
+                    meta = user.get("user_metadata", {})
+                    user_profile["full_name"] = f"{meta.get('firstName', '')} {meta.get('lastName', '')}".strip()
+                    user_profile["email"] = user.get("email", "")
             except Exception:
                 pass # ignore auth errors for guest users
 
@@ -341,6 +357,95 @@ def document_interactive_draft(
         return {"response": reply}
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+class DocumentSaveBody(BaseModel):
+    title: str
+    content: str
+    templateSlug: Optional[str] = None
+
+@app.post("/api/documents/save")
+def document_save(
+    body: DocumentSaveBody,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    user_id = current_user["id"]
+    try:
+        resp = httpx.post(
+            f"{config.supabase_url}/rest/v1/user_documents",
+            headers={
+                "apikey": config.supabase_service_role_key,
+                "Authorization": f"Bearer {config.supabase_service_role_key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            },
+            json={
+                "user_id": user_id,
+                "title": body.title,
+                "content": body.content,
+                "template_slug": body.templateSlug
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return {"ok": True, "document": resp.json()[0]}
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to save document right now.") from exc
+
+@app.get("/api/documents")
+def list_user_documents(
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    user_id = current_user["id"]
+    try:
+        resp = httpx.get(
+            f"{config.supabase_url}/rest/v1/user_documents?user_id=eq.{user_id}&order=created_at.desc",
+            headers={
+                "apikey": config.supabase_service_role_key,
+                "Authorization": f"Bearer {config.supabase_service_role_key}",
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return {"documents": resp.json()}
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to fetch documents right now.") from exc
+
+
+class DocumentExportBody(BaseModel):
+    content: str
+    title: str = "Document"
+
+from fastapi.responses import StreamingResponse
+import io
+
+@app.post("/api/documents/export/pdf")
+def document_export_pdf(body: DocumentExportBody) -> StreamingResponse:
+    try:
+        from document_export_service import convert_markdown_to_pdf
+        pdf_buffer = convert_markdown_to_pdf(body.content)
+        headers = {
+            'Content-Disposition': f'attachment; filename="{body.title.replace(" ", "_")}.pdf"'
+        }
+        return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
+    except Exception as exc:
+        import traceback
+        error_msg = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to generate PDF: {error_msg}")
+
+@app.post("/api/documents/export/docx")
+def document_export_docx(body: DocumentExportBody) -> StreamingResponse:
+    try:
+        from document_export_service import convert_markdown_to_docx
+        docx_buffer = convert_markdown_to_docx(body.content)
+        headers = {
+            'Content-Disposition': f'attachment; filename="{body.title.replace(" ", "_")}.docx"'
+        }
+        return StreamingResponse(docx_buffer, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers=headers)
+    except Exception as exc:
+        import traceback
+        error_msg = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to generate DOCX: {error_msg}")
 
 
 @app.post("/api/documents/generate")

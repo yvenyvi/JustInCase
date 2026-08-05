@@ -216,9 +216,18 @@ export default function PublicProfileScreen() {
           {/* Settings */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>ACCOUNT</Text>
-            <Pressable style={styles.menuItem} onPress={() => navigation.navigate('Settings' as any)}>
+            
+            <Pressable style={styles.menuItem} onPress={() => navigation.navigate('PublicMyDocuments' as any)}>
               <View style={[styles.menuIconContainer, { backgroundColor: '#F0FDFA' }]}>
-                <Ionicons name="settings-outline" size={20} color="#0D9488" />
+                <Ionicons name="document-text-outline" size={20} color="#0D9488" />
+              </View>
+              <Text style={styles.menuText}>My Documents</Text>
+              <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+            </Pressable>
+            
+            <Pressable style={styles.menuItem} onPress={() => navigation.navigate('Settings' as any)}>
+              <View style={[styles.menuIconContainer, { backgroundColor: '#F1F5F9' }]}>
+                <Ionicons name="settings-outline" size={20} color="#64748B" />
               </View>
               <Text style={styles.menuText}>Settings</Text>
               <Ionicons name="chevron-forward" size={20} color="#94A3B8" />

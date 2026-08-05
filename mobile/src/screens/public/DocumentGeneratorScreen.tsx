@@ -36,7 +36,7 @@ export default function DocumentGeneratorScreen() {
     setIsLoading(true);
 
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.1.21:8000';
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.15.5.96:8000';
       const token = session?.access_token || '';
 
       const headers: Record<string, string> = {
@@ -57,7 +57,20 @@ export default function DocumentGeneratorScreen() {
 
       if (reply.startsWith('DOCUMENT:')) {
         const documentMarkdown = reply.replace(/^DOCUMENT:\s*/i, '');
-        navigation.navigate('PublicDocumentResult', { result: { content: documentMarkdown, templateSlug: 'interactive-draft' } });
+        setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+        
+        let extractedTitle = 'AI Drafted Document';
+        const subjectMatch = documentMarkdown.match(/(?:Subject|Re|Paksa):\s*([^\n]+)/i);
+        if (subjectMatch && subjectMatch[1]) {
+          extractedTitle = subjectMatch[1].trim();
+        } else {
+          const headerMatch = documentMarkdown.match(/^#\s+([^\n]+)/m);
+          if (headerMatch && headerMatch[1]) {
+            extractedTitle = headerMatch[1].trim();
+          }
+        }
+        
+        navigation.navigate('PublicDocumentResult', { result: { content: documentMarkdown, templateTitle: extractedTitle, templateSlug: 'interactive-draft' } });
       } else {
         const questionText = reply.replace(/^QUESTION:\s*/i, '');
         setMessages(prev => [...prev, { role: 'assistant', content: questionText }]);

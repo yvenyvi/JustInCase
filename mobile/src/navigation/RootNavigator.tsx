@@ -47,6 +47,7 @@ export function RootNavigator() {
               <Stack.Screen name="PublicDocumentGenerator" component={DocumentGeneratorScreen} />
               <Stack.Screen name="PublicDocumentForm" component={DocumentFormScreen} />
               <Stack.Screen name="PublicDocumentResult" component={DocumentResultScreen} />
+              <Stack.Screen name="PublicMyDocuments" component={require('../screens/public/MyDocumentsScreen').default} />
               <Stack.Screen name="PublicRightsLibrary" component={RightsLibraryScreen} />
               <Stack.Screen name="PublicNotifications" component={NotificationsScreen} />
             </Stack.Group>

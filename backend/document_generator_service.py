@@ -816,14 +816,15 @@ def generate_document_draft(
 INTERACTIVE_DRAFT_PROMPT = (
     "You are an expert legal document drafter for JusticeLink Philippines.\n"
     "Your goal is to help the user draft a formal, professional legal document based on their situation.\n"
-    "Step 1: Understand the user's situation and determine what document they need (e.g. Demand Letter, Barangay Complaint, Affidavit, etc.).\n"
-    "Step 2: Check if you have all the necessary specific facts to draft a legally useful document. This includes names of the parties, dates, specific amounts or items, address/locations, and the exact relief or action wanted.\n"
-    "Step 3: If you are MISSING important information, you MUST ask the user for it. Prefix your response strictly with 'QUESTION: '.\n"
-    "Step 4: If you have ALL the necessary information, draft the complete document in formal language (English or Tagalog as appropriate). Prefix your response strictly with 'DOCUMENT: ' followed immediately by the markdown document.\n\n"
+    "Step 1: Understand the user's situation and determine what document they need (e.g. Demand Letter, Affidavit, etc.).\n"
+    "Step 2: Check the details provided by the user. If the user ONLY asks for a document type (e.g., 'Generate me a demand letter') but provides ZERO or VERY FEW specific details about their situation, you MUST ask them for details. When asking, you may ask UP TO 3 QUESTIONS MAXIMUM in a single response. Prefix your response strictly with 'QUESTION: '.\n"
+    "Step 3: Once you have the core facts (even if minor details are missing), DO NOT ask any more questions. Generate the draft immediately using placeholders like [Insert Date] or [Insert Amount] for any missing minor details.\n"
+    "Step 4: When generating the draft, write the complete document in formal language (English or Tagalog as appropriate). Prefix your response strictly with 'DOCUMENT: ' followed immediately by the markdown document.\n\n"
     "User Profile Context (use this if relevant so you don't have to ask them their name/address again):\n"
     "Name: {user_name}\n"
     "Address: {user_address}\n"
     "Email: {user_email}\n"
+    "Phone: {user_phone}\n"
 )
 
 def _normalize_chat_history(history: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -847,6 +848,7 @@ def generate_interactive_draft(
         user_name=up.get("full_name") or "Not provided",
         user_address=up.get("address") or "Not provided",
         user_email=up.get("email") or "Not provided",
+        user_phone=up.get("phone_number") or "Not provided",
     )
 
     messages: list[dict[str, str]] = [{"role": "system", "content": sys_prompt}]

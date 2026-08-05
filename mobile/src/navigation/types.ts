@@ -5,6 +5,7 @@ export type RootStackParamList = {
   PublicDocumentGenerator: undefined;
   PublicDocumentForm: { template: any };
   PublicDocumentResult: { result: any };
+  PublicMyDocuments: undefined;
   PublicRightsLibrary: undefined;
   PublicNotifications: undefined;
   ChatThread: { threadId: string; threadName: string };

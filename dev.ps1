@@ -52,7 +52,12 @@ function Do-Start {
     Do-Stop -Silent
 
     Write-Host "  Starting Backend (port 8000)..." -ForegroundColor Green
-    $backend = Start-Process "python" `
+    $pythonExe = Join-Path $PWD ".venv\Scripts\python.exe"
+    if (-not (Test-Path $pythonExe)) {
+        $pythonExe = "python" # fallback
+    }
+    
+    $backend = Start-Process $pythonExe `
         -ArgumentList "-m uvicorn main:app --host 0.0.0.0 --port 8000 --reload" `
         -WorkingDirectory $BACKEND `
         -PassThru -WindowStyle Normal
