@@ -494,5 +494,45 @@ def triage_analyze(body: TriageAnalyzeBody) -> dict[str, Any]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+
+@app.post("/api/triage/interactive")
+async def triage_interactive(
+    history: str = Form(...),
+    files: list[UploadFile] = File(None)
+):
+    import json
+    try:
+        history_dicts = json.loads(history)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid history format")
+        
+    extracted_text = ""
+    if files:
+        import PyPDF2
+        for file in files:
+            try:
+                if file.filename.lower().endswith('.pdf'):
+                    pdf_reader = PyPDF2.PdfReader(file.file)
+                    text = []
+                    for page in pdf_reader.pages:
+                        page_text = page.extract_text()
+                        if page_text:
+                            text.append(page_text)
+                    extracted_text += f"\n\n[Content of attached file {file.filename}]:\n" + "\n".join(text)
+                else:
+                    # Very basic fallback for other files: just acknowledge them
+                    extracted_text += f"\n\n[User attached a file: {file.filename}, but text extraction is not supported for this type.]"
+            except Exception as e:
+                print(f"Error reading file {file.filename}: {e}")
+                
+    if extracted_text and history_dicts and len(history_dicts) > 0 and history_dicts[-1]['role'] == 'user':
+        history_dicts[-1]['content'] += extracted_text
+
+    try:
+        from triage_service import generate_interactive_triage
+        reply = generate_interactive_triage(history=history_dicts)
+        return {"response": reply}
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to perform AI triage analysis right now.") from exc

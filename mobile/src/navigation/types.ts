@@ -1,9 +1,13 @@
 export type RootStackParamList = {
   Auth: undefined;
   PublicHome: undefined;
+  PublicCases: undefined;
+  PublicMessages: undefined;
+  PublicProfile: undefined;
   PublicTriage: undefined;
+  PublicTriageResult: { result: any };
   PublicDocumentGenerator: undefined;
-  PublicDocumentForm: { template: any };
+  PublicDocumentForm: { templateSlug: string; templateTitle: string };
   PublicDocumentResult: { result: any };
   PublicMyDocuments: undefined;
   PublicRightsLibrary: undefined;

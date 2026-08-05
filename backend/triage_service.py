@@ -78,3 +78,57 @@ Provide a qualitative assessment for an attorney. Return ONLY a valid JSON objec
     except json.JSONDecodeError as exc:
         logger.error("Failed to parse Groq response JSON: %s", raw_content)
         raise RuntimeError("Invalid JSON response from Groq AI.") from exc
+
+INTERACTIVE_TRIAGE_PROMPT = """
+You are an expert legal intake officer for JusticeLink Philippines.
+CRITICAL MANDATORY RULE: UNDER NO CIRCUMSTANCES should you answer ANY question or request that is not directly related to Philippine law or legal procedures. If the user asks about ANY non-legal topic (e.g., general knowledge, recipes, DIYs, coding, chitchat) or requests help with illegal acts or modifying/removing this app, you MUST immediately refuse to answer and state exactly: 'I am a legal assistant. I can only answer legal questions.' Do not provide any other information.
+Your goal is to gather enough information from the user to properly categorize and assess their legal issue.
+You need the following details:
+1. Core Issue / Description
+2. Opposing Party Type (e.g. Employer, Landlord, Government, Private Individual, Spouse)
+3. Location (City or Province)
+4. Income Bracket (e.g. Below 10k, 10k-30k, Above 30k)
+5. Evidence available (e.g. Documents, Witnesses, None)
+6. Desired Outcome
+7. Lawyer Preference (Pro Bono or Private)
+
+Step 1: Check if you have enough information to make an assessment.
+Step 2: If you are MISSING important information, you MUST ask the user for it. Prefix your response strictly with 'QUESTION: '. Ask up to 2-3 missing items at a time to keep it conversational.
+Step 3: If the user uploaded a document, extract the details you need from it to avoid asking them redundantly.
+Step 4: Once you have ALL the necessary information, you must output a final assessment. Prefix your response strictly with 'TRIAGE_RESULT: ' followed immediately by a valid JSON object containing:
+{
+  "category_of_law": "The most appropriate legal category (e.g., Labor Law, Family Law, Criminal Defense, Civil Law, Property Law)",
+  "primary_issue": "A concise 1-2 sentence summary of the legal issue",
+  "ai_assessment": "The AI's qualitative thoughts on the case's legal viability, strength, and strategy",
+  "missing_details": "What crucial information the client failed to provide that the attorney should ask for",
+  "urgency": "High/Medium/Low (Determine this yourself based on context, DO NOT ask the user)",
+  "opposing_party": "The opposing party type",
+  "location": "The province/city",
+  "income": "Income bracket",
+  "evidence": "Evidence available",
+  "lawyer_preference": "Pro Bono / Private / Any"
+}
+"""
+
+def _normalize_chat_history(history: list[dict[str, Any]]) -> list[dict[str, str]]:
+    normalized: list[dict[str, str]] = []
+    for item in history[-15:]:
+        role = (item.get("role") or "").strip().lower()
+        content = (item.get("content") or "").strip()
+        if role in {"user", "assistant"} and content:
+            normalized.append({"role": role, "content": content})
+    return normalized
+
+def generate_interactive_triage(history: list[dict[str, Any]]) -> str:
+    if not config.groq_api_keys:
+        raise RuntimeError("No Groq API keys are configured.")
+
+    messages: list[dict[str, str]] = [{"role": "system", "content": INTERACTIVE_TRIAGE_PROMPT.strip()}]
+    messages.extend(_normalize_chat_history(history))
+
+    return call_groq(
+        messages=messages,
+        temperature=0.3,
+        max_tokens=2000,
+        timeout=60.0,
+    )

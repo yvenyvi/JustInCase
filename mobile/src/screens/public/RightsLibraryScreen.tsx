@@ -95,15 +95,20 @@ export default function RightsLibraryScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
-        <TextInput 
-          placeholder="Maghanap ng paksa..."
-          placeholderTextColor="#94A3B8"
-          style={styles.searchInput}
-          value={searchTerm}
-          onChangeText={setSearchTerm}
-        />
+      <View style={styles.searchContainerWrapper}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
+          <TextInput 
+            placeholder="Search by topic, keyword, or specific content..."
+            placeholderTextColor="#94A3B8"
+            style={styles.searchInput}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+          />
+        </View>
+        <Text style={styles.searchHintText}>
+          Tip: You can search for specific keywords (e.g. "labor", "child", "cybersecurity") to find relevant details within the content itself.
+        </Text>
       </View>
 
       {isLoading ? (
@@ -204,10 +209,12 @@ const styles = StyleSheet.create({
   ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
   header: { paddingHorizontal: 24, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
   backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
-  searchContainer: { paddingHorizontal: 24, paddingVertical: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', position: 'relative' },
-  searchIcon: { position: 'absolute', left: 40, top: 32, zIndex: 1 },
+  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  searchContainerWrapper: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 16, paddingHorizontal: 16, height: 50 },
+  searchIcon: { marginRight: 8 },
   searchInput: { backgroundColor: '#F8FAFC', borderRadius: 12, paddingVertical: 12, paddingLeft: 44, paddingRight: 16, color: '#1E293B', fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0' },
+  searchHintText: { color: '#64748B', fontSize: 12, marginTop: 8, lineHeight: 16 },
   chipsWrapper: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
   chipsContainer: { paddingHorizontal: 24, paddingVertical: 12, gap: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },

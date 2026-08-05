@@ -7,6 +7,7 @@ import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
 
 import TriageScreen from '../screens/public/TriageScreen';
+import TriageResultScreen from '../screens/public/TriageResultScreen';
 import DocumentGeneratorScreen from '../screens/public/DocumentGeneratorScreen';
 import DocumentFormScreen from '../screens/public/DocumentFormScreen';
 import DocumentResultScreen from '../screens/public/DocumentResultScreen';
@@ -44,6 +45,7 @@ export function RootNavigator() {
           {role === 'public' && (
             <Stack.Group>
               <Stack.Screen name="PublicTriage" component={TriageScreen} />
+              <Stack.Screen name="PublicTriageResult" component={TriageResultScreen} />
               <Stack.Screen name="PublicDocumentGenerator" component={DocumentGeneratorScreen} />
               <Stack.Screen name="PublicDocumentForm" component={DocumentFormScreen} />
               <Stack.Screen name="PublicDocumentResult" component={DocumentResultScreen} />
