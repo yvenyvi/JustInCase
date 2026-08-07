@@ -39,6 +39,7 @@
     "react-native-worklets-core": "^1.6.3"
   },
   "devDependencies": {
+    "@types/node": "^26.1.2",
     "@types/react": "~19.1.10",
     "@types/react-native": "^0.73.0",
     "babel-preset-expo": "^54.0.12",

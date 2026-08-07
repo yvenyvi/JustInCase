@@ -496,7 +496,7 @@ def triage_analyze(body: TriageAnalyzeBody) -> dict[str, Any]:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
 @app.post("/api/triage/interactive")
-async def triage_interactive(
+def triage_interactive(
     history: str = Form(...),
     files: list[UploadFile] = File(None)
 ):

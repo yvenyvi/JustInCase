@@ -11,6 +11,7 @@ import * as Linking from 'expo-linking';
 import Toast from 'react-native-toast-message';
 import { mobileSupabase } from '../../shared/supabase';
 import AddressPicker from '../../components/AddressPicker';
+import { theme } from '../../shared/theme';
 
 type Props = NativeStackScreenProps<any>;
 
@@ -368,14 +369,14 @@ export default function RegisterScreen({ navigation, route }: Props) {
                   style={[styles.typeBtn, accountType === 'citizen' && styles.typeBtnActive]}
                   onPress={() => setAccountType('citizen')}
                 >
-                  <Ionicons name="person" size={18} color={accountType === 'citizen' ? '#fff' : '#64748B'} />
+                  <Ionicons name="person" size={18} color={accountType === 'citizen' ? '#fff' : theme.colors.textSecondary} />
                   <Text style={[styles.typeBtnText, accountType === 'citizen' && styles.typeBtnTextActive]}>Citizen</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.typeBtn, accountType === 'lawyer' && styles.typeBtnActive]}
                   onPress={() => setAccountType('lawyer')}
                 >
-                  <Ionicons name="briefcase" size={18} color={accountType === 'lawyer' ? '#fff' : '#64748B'} />
+                  <Ionicons name="briefcase" size={18} color={accountType === 'lawyer' ? '#fff' : theme.colors.textSecondary} />
                   <Text style={[styles.typeBtnText, accountType === 'lawyer' && styles.typeBtnTextActive]}>Legal Professional</Text>
                 </Pressable>
               </View>
@@ -434,7 +435,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
               <View style={styles.instructionCard}>
                 <View style={styles.instructionRow}>
                   <View style={styles.instructionIconBox}>
-                    <Ionicons name="id-card-outline" size={28} color="#0D9488" />
+                    <Ionicons name="id-card-outline" size={28} color={theme.colors.primary} />
                   </View>
                   <View style={styles.instructionTextBox}>
                     <Text style={styles.instructionTitle}>Government-issued ID</Text>
@@ -444,7 +445,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
                 <View style={styles.instructionDivider} />
                 <View style={styles.instructionRow}>
                   <View style={styles.instructionIconBox}>
-                    <Ionicons name="camera-outline" size={28} color="#0D9488" />
+                    <Ionicons name="camera-outline" size={28} color={theme.colors.primary} />
                   </View>
                   <View style={styles.instructionTextBox}>
                     <Text style={styles.instructionTitle}>Selfie / Face Scan</Text>
@@ -454,7 +455,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
                 <View style={styles.instructionDivider} />
                 <View style={styles.instructionRow}>
                   <View style={styles.instructionIconBox}>
-                    <Ionicons name="arrow-back-outline" size={28} color="#0D9488" />
+                    <Ionicons name="arrow-back-outline" size={28} color={theme.colors.primary} />
                   </View>
                   <View style={styles.instructionTextBox}>
                     <Text style={styles.instructionTitle}>Return to App</Text>
@@ -487,7 +488,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
                 ) : diditStatus === 'failed' ? (
                   <Ionicons name="close-circle" size={80} color="#EF4444" />
                 ) : (
-                  <Ionicons name="scan-circle" size={80} color="#0D9488" />
+                  <Ionicons name="scan-circle" size={80} color={theme.colors.primary} />
                 )}
               </View>
 
@@ -504,12 +505,12 @@ export default function RegisterScreen({ navigation, route }: Props) {
 
               {diditStatus === 'pending' && (
                 <>
-                  <ActivityIndicator size="large" color="#0D9488" style={{ marginTop: 24 }} />
+                  <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 24 }} />
                   <Pressable
                     style={[styles.secondaryButton, { marginTop: 24 }]}
                     onPress={() => attemptId && pollDiditStatus(attemptId, 0)}
                   >
-                    <Ionicons name="refresh" size={16} color="#0D9488" />
+                    <Ionicons name="refresh" size={16} color={theme.colors.primary} />
                     <Text style={styles.secondaryButtonText}>Check Status Now</Text>
                   </Pressable>
                 </>
@@ -532,7 +533,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
               {/* Personal Information */}
               <View style={styles.sectionCard}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="person-circle-outline" size={22} color="#0D9488" />
+                  <Ionicons name="person-circle-outline" size={22} color={theme.colors.primary} />
                   <Text style={styles.sectionTitle}>Personal Information</Text>
                 </View>
                 <View style={styles.inputContainer}>
@@ -566,7 +567,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
               {/* Address */}
               <View style={styles.sectionCard}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="location-outline" size={22} color="#0D9488" />
+                  <Ionicons name="location-outline" size={22} color={theme.colors.primary} />
                   <Text style={styles.sectionTitle}>Address</Text>
                 </View>
                 <AddressPicker
@@ -584,7 +585,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
               {/* ID Details */}
               <View style={styles.sectionCard}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="card-outline" size={22} color="#0D9488" />
+                  <Ionicons name="card-outline" size={22} color={theme.colors.primary} />
                   <Text style={styles.sectionTitle}>ID Details</Text>
                 </View>
 
@@ -637,7 +638,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
           {step === 5 && (
             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
               <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-                <Ionicons name="checkmark-circle" size={40} color="#0D9488" />
+                <Ionicons name="checkmark-circle" size={40} color={theme.colors.primary} />
               </View>
               <Text style={[styles.formTitle, { textAlign: 'center' }]}>Registration Complete!</Text>
               <Text style={[styles.formSubtitle, { textAlign: 'center', marginTop: 8 }]}>
@@ -659,91 +660,91 @@ export default function RegisterScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF9' },
-  ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(13,148,136,0.10)', transform: [{ scaleX: 1.5 }] },
-  ambientGlow2: { position: 'absolute', top: 300, right: -150, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(99,102,241,0.06)' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: theme.borderRadius.xl0, backgroundColor: theme.colors.primaryLight, transform: [{ scaleX: 1.5 }] },
+  ambientGlow2: { position: 'absolute', top: 300, right: -150, width: 400, height: 400, borderRadius: theme.borderRadius.xl0, backgroundColor: theme.colors.primaryLight, opacity: 0.5 },
   scrollContent: { flexGrow: 1 },
 
   // ── Header ─────────────────────────────────────────────────────────────────
   topSection: { alignItems: 'center', paddingTop: 60, paddingBottom: 32 },
-  logoOuter: { width: 100, height: 100, borderRadius: 32, backgroundColor: 'rgba(13,148,136,0.10)', alignItems: 'center', justifyContent: 'center', marginBottom: 16, shadowColor: '#0D9488', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
-  logoInner: { width: 72, height: 72, borderRadius: 22, backgroundColor: '#0D9488', alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-10deg' }] },
-  brandTitle: { color: '#0F172A', fontSize: 24, fontWeight: '900', letterSpacing: 2 },
+  logoOuter: { width: 100, height: 100, borderRadius: 32, backgroundColor: theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 16, ...theme.shadows.soft },
+  logoInner: { width: 72, height: 72, borderRadius: 22, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-10deg' }] },
+  brandTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 24, letterSpacing: 2 },
 
   // ── Content card ───────────────────────────────────────────────────────────
-  bottomSection: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 40, borderTopRightRadius: 40, paddingTop: 36, paddingHorizontal: 28, paddingBottom: 48, shadowColor: '#94A3B8', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.05, shadowRadius: 20, elevation: 20, flex: 1 },
+  bottomSection: { backgroundColor: theme.colors.surface, borderTopLeftRadius: 40, borderTopRightRadius: 40, paddingTop: 36, paddingHorizontal: 28, paddingBottom: 48, ...theme.shadows.soft, flex: 1 },
 
   // ── Step progress ──────────────────────────────────────────────────────────
   stepIndicatorRow: { marginBottom: 12, alignItems: 'center' },
-  stepLabel: { color: '#64748B', fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
+  stepLabel: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
 
   // ── Step dots ──────────────────────────────────────────────────────────────
   stepDotsContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 28 },
-  stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center', zIndex: 1 },
-  stepDotActive: { backgroundColor: '#0D9488' },
-  stepDotNum: { fontSize: 12, fontWeight: '700', color: '#94A3B8' },
+  stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.border, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
+  stepDotActive: { backgroundColor: theme.colors.primary },
+  stepDotNum: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary },
   stepDotNumActive: { color: '#fff' },
-  stepLine: { flex: 1, height: 3, backgroundColor: '#E2E8F0' },
-  stepLineActive: { backgroundColor: '#0D9488' },
+  stepLine: { flex: 1, height: 3, backgroundColor: theme.colors.border },
+  stepLineActive: { backgroundColor: theme.colors.primary },
 
   // ── Step dot row (legacy, keep for safety) ─────────────────────────────────
   stepDotRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 28 },
-  stepDotLabel: { fontSize: 11, fontWeight: '700', color: '#94A3B8' },
+  stepDotLabel: { fontSize: 11, fontWeight: '700', color: theme.colors.textSecondary },
   stepDotLabelActive: { color: '#fff' },
 
   // ── Typography ─────────────────────────────────────────────────────────────
-  formTitle: { color: '#0F172A', fontSize: 28, fontWeight: '900', marginBottom: 6, letterSpacing: -0.5 },
-  formSubtitle: { color: '#64748B', fontSize: 14, marginBottom: 16, lineHeight: 20 },
+  formTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 28, marginBottom: 6, letterSpacing: -0.5 },
+  formSubtitle: { ...theme.typography.body, color: theme.colors.textSecondary, marginBottom: 16 },
 
   // ── Inputs ─────────────────────────────────────────────────────────────────
   inputContainer: { marginBottom: 20 },
-  inputLabel: { color: '#64748B', fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 },
-  input: { backgroundColor: '#FAFAFA', color: '#0F172A', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 16, paddingVertical: 16, fontSize: 15 },
+  inputLabel: { color: theme.colors.textSecondary, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 },
+  input: { backgroundColor: theme.colors.secondary, color: theme.colors.textPrimary, borderRadius: theme.borderRadius.md, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 16, paddingVertical: 16, fontSize: 15 },
   row: { flexDirection: 'row' },
 
   // ── Buttons ────────────────────────────────────────────────────────────────
-  primaryButton: { backgroundColor: '#0D9488', borderRadius: 18, paddingVertical: 18, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginBottom: 16, shadowColor: '#0D9488', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8 },
+  primaryButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.xl, paddingVertical: 18, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginBottom: 16, ...theme.shadows.medium },
   primaryButtonPressed: { transform: [{ scale: 0.98 }], opacity: 0.9 },
-  primaryButtonDisabled: { backgroundColor: '#94A3B8', shadowOpacity: 0 },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
-  secondaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, borderRadius: 14, backgroundColor: 'rgba(13,148,136,0.1)' },
-  secondaryButtonText: { color: '#0F766E', fontSize: 15, fontWeight: '800' },
+  primaryButtonDisabled: { backgroundColor: theme.colors.textSecondary, shadowOpacity: 0 },
+  primaryButtonText: { color: theme.colors.surface, fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
+  secondaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, borderRadius: theme.borderRadius.md, backgroundColor: theme.colors.primaryLight },
+  secondaryButtonText: { color: theme.colors.primary, fontSize: 15, fontWeight: '800' },
   backButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12 },
-  backButtonText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
+  backButtonText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '600' },
 
   // ── Account type ───────────────────────────────────────────────────────────
-  typeSelector: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 18, padding: 5, marginBottom: 28 },
-  typeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 13, borderRadius: 14, gap: 6 },
-  typeBtnActive: { backgroundColor: '#0D9488', shadowColor: '#0D9488', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
-  typeBtnText: { color: '#64748B', fontSize: 13, fontWeight: '700' },
-  typeBtnTextActive: { color: '#FFFFFF' },
+  typeSelector: { flexDirection: 'row', backgroundColor: theme.colors.secondary, borderRadius: theme.borderRadius.xl, padding: 5, marginBottom: 28 },
+  typeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 13, borderRadius: theme.borderRadius.lg, gap: 6 },
+  typeBtnActive: { backgroundColor: theme.colors.primary, ...theme.shadows.soft },
+  typeBtnText: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '700' },
+  typeBtnTextActive: { color: theme.colors.surface },
 
   // ── Login link ─────────────────────────────────────────────────────────────
   loginContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8 },
-  loginText: { color: '#64748B', fontSize: 14 },
-  loginLink: { color: '#0D9488', fontSize: 14, fontWeight: '800', textDecorationLine: 'underline' },
+  loginText: { color: theme.colors.textSecondary, fontSize: 14 },
+  loginLink: { color: theme.colors.primary, fontSize: 14, fontWeight: '800', textDecorationLine: 'underline' },
 
   // ── Instructions (Step 2) ──────────────────────────────────────────────────
   instructionsContainer: {},
-  instructionCard: { backgroundColor: '#F8FAFC', borderRadius: 20, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#E2E8F0' },
+  instructionCard: { backgroundColor: theme.colors.background, borderRadius: theme.borderRadius.xl, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: theme.colors.border },
   instructionRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  instructionIconBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(13,148,136,0.10)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  instructionIconBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   instructionTextBox: { flex: 1 },
-  instructionTitle: { color: '#0F172A', fontSize: 14, fontWeight: '700', marginBottom: 2 },
-  instructionBody: { color: '#64748B', fontSize: 12, lineHeight: 18 },
-  instructionDivider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 12 },
+  instructionTitle: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 2 },
+  instructionBody: { color: theme.colors.textSecondary, fontSize: 12, lineHeight: 18 },
+  instructionDivider: { height: 1, backgroundColor: theme.colors.border, marginVertical: 12 },
 
   // ── Didit waiting (Step 3) ─────────────────────────────────────────────────
   diditContainer: { alignItems: 'center', paddingVertical: 20 },
   diditIconBox: { marginBottom: 20 },
 
   // ── Section cards (Step 4) ─────────────────────────────────────────────────
-  sectionCard: { backgroundColor: '#F8FAFC', padding: 20, borderRadius: 24, marginBottom: 20, borderWidth: 1, borderColor: '#E2E8F0' },
+  sectionCard: { backgroundColor: theme.colors.background, padding: 20, borderRadius: theme.borderRadius.xl, marginBottom: 20, borderWidth: 1, borderColor: theme.colors.border },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 },
-  sectionTitle: { color: '#0F172A', fontSize: 16, fontWeight: '800' },
+  sectionTitle: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '800' },
 
   // ── ID photos (Step 4) ─────────────────────────────────────────────────────
   imageRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   imageBox: { flex: 1 },
-  previewImage: { width: '100%', aspectRatio: 1.6, borderRadius: 12, backgroundColor: '#E2E8F0' },
+  previewImage: { width: '100%', aspectRatio: 1.6, borderRadius: theme.borderRadius.md, backgroundColor: theme.colors.border },
 });

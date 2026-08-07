@@ -6,6 +6,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { theme } from '../../shared/theme';
 
 type ChatThreadRouteProp = RouteProp<RootStackParamList, 'ChatThread'>;
 
@@ -188,13 +189,13 @@ export default function ChatThreadScreen() {
           <Text style={styles.headerSubtitle}>Active Case</Text>
         </View>
         <Pressable style={styles.infoBtn}>
-          <Ionicons name="information-circle-outline" size={24} color="#0D9488" />
+          <Ionicons name="information-circle-outline" size={24} color={theme.colors.primary} />
         </Pressable>
       </View>
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#0D9488" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : (
         <ScrollView
@@ -211,7 +212,7 @@ export default function ChatThreadScreen() {
               <View key={msg.id} style={[styles.messageWrapper, isMe ? styles.messageWrapperMe : styles.messageWrapperOther]}>
                 {!isMe && (
                   <View style={styles.avatarSmall}>
-                    <Ionicons name="person" size={12} color="#0D9488" />
+                    <Ionicons name="person" size={12} color={theme.colors.primary} />
                   </View>
                 )}
                 <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleOther]}>
@@ -238,7 +239,7 @@ export default function ChatThreadScreen() {
           multiline
         />
         <Pressable style={[styles.sendBtn, message.trim() ? styles.sendBtnActive : {}]} onPress={handleSend}>
-          <Ionicons name="send" size={20} color={message.trim() ? '#FFFFFF' : '#94A3B8'} />
+          <Ionicons name="send" size={20} color={message.trim() ? theme.colors.surface : theme.colors.textSecondary} />
         </Pressable>
       </View>
     </View>
@@ -246,32 +247,32 @@ export default function ChatThreadScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
   infoBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center' },
   headerTitleContainer: { flex: 1, alignItems: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
-  headerSubtitle: { color: '#0D9488', fontSize: 12, fontWeight: '600', marginTop: 2 },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  headerSubtitle: { color: theme.colors.primary, fontSize: 12, fontWeight: '600', marginTop: 2 },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 24, paddingBottom: 24 },
-  dateSeparator: { color: '#94A3B8', fontSize: 12, fontWeight: '600', textAlign: 'center', textTransform: 'uppercase', marginBottom: 24 },
+  dateSeparator: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600', textAlign: 'center', textTransform: 'uppercase', marginBottom: 24 },
   messageWrapper: { flexDirection: 'row', marginBottom: 16, alignItems: 'flex-end' },
   messageWrapperMe: { justifyContent: 'flex-end' },
   messageWrapperOther: { justifyContent: 'flex-start' },
-  avatarSmall: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#CCFBF1', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  messageBubble: { maxWidth: '75%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20 },
-  messageBubbleMe: { backgroundColor: '#0D9488', borderBottomRightRadius: 4, shadowColor: '#0F766E', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 },
-  messageBubbleOther: { backgroundColor: '#FFFFFF', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 1 },
+  avatarSmall: { width: 24, height: 24, borderRadius: theme.borderRadius.md, backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#CCFBF1', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  messageBubble: { maxWidth: '75%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: theme.borderRadius.xl },
+  messageBubbleMe: { backgroundColor: theme.colors.primary, borderBottomRightRadius: 4, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 },
+  messageBubbleOther: { backgroundColor: theme.colors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 1 },
   messageText: { fontSize: 15, lineHeight: 22 },
-  messageTextMe: { color: '#FFFFFF' },
-  messageTextOther: { color: '#1E293B' },
+  messageTextMe: { color: theme.colors.surface },
+  messageTextOther: { color: theme.colors.textPrimary },
   messageTime: { fontSize: 10, marginTop: 4, alignSelf: 'flex-end' },
   messageTimeMe: { color: 'rgba(255, 255, 255, 0.7)' },
-  messageTimeOther: { color: '#94A3B8' },
-  inputContainer: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0' },
+  messageTimeOther: { color: theme.colors.textSecondary },
+  inputContainer: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderTopColor: theme.colors.border },
   attachBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  textInput: { flex: 1, backgroundColor: '#F8FAFC', color: '#1E293B', borderRadius: 20, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, maxHeight: 120, fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0' },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', marginLeft: 12, borderWidth: 1, borderColor: '#E2E8F0' },
-  sendBtnActive: { backgroundColor: '#0D9488', borderColor: '#0D9488' },
+  textInput: { flex: 1, backgroundColor: theme.colors.background, color: theme.colors.textPrimary, borderRadius: theme.borderRadius.xl, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, maxHeight: 120, fontSize: 16, borderWidth: 1, borderColor: theme.colors.border },
+  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center', marginLeft: 12, borderWidth: 1, borderColor: theme.colors.border },
+  sendBtnActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
 });

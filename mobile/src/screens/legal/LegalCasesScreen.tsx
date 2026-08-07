@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -79,9 +80,9 @@ export default function LegalCasesScreen() {
         return { bg: '#FFF7ED', border: '#FED7AA', dot: '#EA580C', text: '#EA580C', label: 'Pending' };
       case 'closed':
       case 'resolved':
-        return { bg: '#F1F5F9', border: '#CBD5E1', dot: '#64748B', text: '#64748B', label: 'Closed' };
+        return { bg: theme.colors.secondary, border: '#CBD5E1', dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: 'Closed' };
       default:
-        return { bg: '#F8FAFC', border: '#E2E8F0', dot: '#94A3B8', text: '#64748B', label: status || 'Unknown' };
+        return { bg: theme.colors.background, border: theme.colors.border, dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: status || 'Unknown' };
     }
   };
 
@@ -113,13 +114,13 @@ export default function LegalCasesScreen() {
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#0D9488" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : (
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={['#0D9488']} tintColor="#0D9488" />}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} tintColor={theme.colors.primary} />}
         >
           
           {activeTab === 'my_cases' && (
@@ -226,37 +227,37 @@ export default function LegalCasesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { backgroundColor: '#FFFFFF', paddingTop: Platform.OS === 'ios' ? 60 : 40, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { backgroundColor: theme.colors.surface, paddingTop: Platform.OS === 'ios' ? 60 : 40, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   headerTop: { paddingHorizontal: 24, paddingBottom: 16 },
-  headerTitle: { color: '#1E293B', fontSize: 24, fontWeight: '800' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 24, fontWeight: '800' },
   
   tabContainer: { flexDirection: 'row' },
   tab: { flex: 1, paddingVertical: 16, alignItems: 'center', position: 'relative' },
-  tabActive: { backgroundColor: '#FAFAF9' },
-  tabText: { color: '#94A3B8', fontSize: 14, fontWeight: '600' },
-  tabTextActive: { color: '#0D9488', fontWeight: '700' },
-  tabIndicator: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 3, backgroundColor: '#0D9488', borderTopLeftRadius: 3, borderTopRightRadius: 3 },
+  tabActive: { backgroundColor: theme.colors.background },
+  tabText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  tabTextActive: { color: theme.colors.primary, fontWeight: '700' },
+  tabIndicator: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 3, backgroundColor: theme.colors.primary, borderTopLeftRadius: 3, borderTopRightRadius: 3 },
   
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 24, paddingBottom: 60 },
   
-  caseWidget: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3, marginBottom: 16 },
+  caseWidget: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 20, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3, marginBottom: 16 },
   caseWidgetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statusPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
+  statusPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.md, borderWidth: 1 },
   statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
   statusText: { fontSize: 12, fontWeight: '700' },
-  caseDate: { color: '#94A3B8', fontSize: 12 },
-  caseTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  caseDesc: { color: '#475569', fontSize: 14, lineHeight: 22, marginBottom: 16 },
-  caseWidgetFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
+  caseDate: { color: theme.colors.textSecondary, fontSize: 12 },
+  caseTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  caseDesc: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 22, marginBottom: 16 },
+  caseWidgetFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.colors.secondary },
   caseAtty: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  attyName: { color: '#64748B', fontSize: 13, fontWeight: '500' },
+  attyName: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '500' },
   
-  primaryBtn: { backgroundColor: '#0D9488', paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  primaryBtn: { backgroundColor: theme.colors.primary, paddingVertical: 12, borderRadius: theme.borderRadius.md, alignItems: 'center' },
+  primaryBtnText: { color: theme.colors.surface, fontSize: 14, fontWeight: '700' },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 24 },
-  emptyTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  emptyDesc: { color: '#64748B', fontSize: 14, textAlign: 'center', lineHeight: 22 },
+  emptyTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  emptyDesc: { color: theme.colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 22 },
 });

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -61,7 +62,7 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
 
           <Pressable style={styles.listItem} onPress={() => navigation.navigate('TermsOfService' as any)}>
-            <View style={[styles.iconContainer, { backgroundColor: '#F1F5F9' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: theme.colors.secondary }]}>
               <Ionicons name="document-text" size={20} color="#475569" />
             </View>
             <View style={styles.itemTextContainer}>
@@ -73,7 +74,7 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
 
           <Pressable style={styles.listItem} onPress={() => navigation.navigate('PrivacyPolicy' as any)}>
-            <View style={[styles.iconContainer, { backgroundColor: '#F1F5F9' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: theme.colors.secondary }]}>
               <Ionicons name="shield-half" size={20} color="#475569" />
             </View>
             <View style={styles.itemTextContainer}>
@@ -91,7 +92,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -99,21 +100,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24, 
     paddingTop: Platform.OS === 'ios' ? 60 : 40, 
     paddingBottom: 20, 
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: theme.colors.surface, 
     borderBottomWidth: 1, 
-    borderBottomColor: '#E2E8F0' 
+    borderBottomColor: theme.colors.border 
   },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
   scrollContent: { padding: 24, paddingBottom: 60 },
   
-  sectionTitle: { color: '#0D9488', fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12, marginLeft: 4, marginTop: 24 },
-  list: { backgroundColor: '#FFFFFF', borderRadius: 20, paddingHorizontal: 20, paddingVertical: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  sectionTitle: { color: theme.colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12, marginLeft: 4, marginTop: 24 },
+  list: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, paddingHorizontal: 20, paddingVertical: 12, borderWidth: 1, borderColor: theme.colors.border },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16 },
-  iconContainer: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  iconContainer: { width: 40, height: 40, borderRadius: theme.borderRadius.md, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
   itemTextContainer: { flex: 1 },
-  listTitle: { color: '#1E293B', fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  listDesc: { color: '#64748B', fontSize: 13 },
-  divider: { height: 1, backgroundColor: '#F1F5F9', marginLeft: 56 },
-  versionText: { textAlign: 'center', color: '#94A3B8', fontSize: 13, marginTop: 32 },
+  listTitle: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  listDesc: { color: theme.colors.textSecondary, fontSize: 13 },
+  divider: { height: 1, backgroundColor: theme.colors.secondary, marginLeft: 56 },
+  versionText: { textAlign: 'center', color: theme.colors.textSecondary, fontSize: 13, marginTop: 32 },
 });

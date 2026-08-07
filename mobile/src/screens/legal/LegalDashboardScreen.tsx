@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -142,13 +143,13 @@ export default function LegalDashboardScreen() {
           <View>
             <Text style={styles.greeting}>Welcome back,</Text>
             {isLoading ? (
-               <ActivityIndicator size="small" color="#0D9488" style={{ alignSelf: 'flex-start', marginTop: 4 }} />
+               <ActivityIndicator size="small" color={theme.colors.primary} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
             ) : (
               <Text style={styles.name}>Atty. {firstName}</Text>
             )}
           </View>
           <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('Profile' as any)}>
-            <Ionicons name="person" size={24} color="#0D9488" />
+            <Ionicons name="person" size={24} color={theme.colors.primary} />
           </Pressable>
         </View>
         <View style={styles.tipBox}>
@@ -210,7 +211,7 @@ export default function LegalDashboardScreen() {
                       <Text style={[styles.statusText, { color: '#16A34A' }]}>Active</Text>
                     </View>
                     <View style={[styles.typeBadge, c.lawyer_preference === 'Private' ? styles.privateBadge : styles.proBonoBadge]}>
-                      <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : "#0D9488"} />
+                      <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : theme.colors.primary} />
                       <Text style={[styles.typeText, c.lawyer_preference === 'Private' ? styles.privateText : styles.proBonoText]}>
                         {c.lawyer_preference}
                       </Text>
@@ -231,7 +232,7 @@ export default function LegalDashboardScreen() {
                     style={[styles.reviewBtn, { backgroundColor: '#F0FDFA', borderColor: '#CCFBF1' }]}
                     onPress={() => navigation.navigate('LegalCaseDetails', { caseId: c.id })}
                   >
-                    <Text style={[styles.reviewBtnText, { color: '#0D9488' }]}>Manage Case</Text>
+                    <Text style={[styles.reviewBtnText, { color: theme.colors.primary }]}>Manage Case</Text>
                   </Pressable>
                 </View>
               );
@@ -265,7 +266,7 @@ export default function LegalDashboardScreen() {
                       <Text style={styles.statusText}>{c.status}</Text>
                     </View>
                     <View style={[styles.typeBadge, c.lawyer_preference === 'Private' ? styles.privateBadge : styles.proBonoBadge]}>
-                      <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : "#0D9488"} />
+                      <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : theme.colors.primary} />
                       <Text style={[styles.typeText, c.lawyer_preference === 'Private' ? styles.privateText : styles.proBonoText]}>
                         {c.lawyer_preference}
                       </Text>
@@ -323,7 +324,7 @@ export default function LegalDashboardScreen() {
                       <Text style={styles.statusText}>{c.status}</Text>
                     </View>
                     <View style={[styles.typeBadge, c.lawyer_preference === 'Private' ? styles.privateBadge : styles.proBonoBadge]}>
-                      <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : "#0D9488"} />
+                      <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : theme.colors.primary} />
                       <Text style={[styles.typeText, c.lawyer_preference === 'Private' ? styles.privateText : styles.proBonoText]}>
                         {c.lawyer_preference}
                       </Text>
@@ -363,49 +364,49 @@ export default function LegalDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF9' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(20, 184, 166, 0.08)', transform: [{ scaleX: 1.5 }] },
-  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
+  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: theme.borderRadius.xl0, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
   header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 16, backgroundColor: 'transparent' },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  greeting: { color: '#64748B', fontSize: 14, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  name: { color: '#1E293B', fontSize: 24, fontWeight: '800' },
-  avatarContainer: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 },
-  tipBox: { flexDirection: 'row', backgroundColor: '#D1FAE5', padding: 12, borderRadius: 12, alignItems: 'center' },
+  greeting: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  name: { color: theme.colors.textPrimary, fontSize: 24, fontWeight: '800' },
+  avatarContainer: { width: 48, height: 48, borderRadius: theme.borderRadius.xl, backgroundColor: theme.colors.surface, alignItems: 'center', justifyContent: 'center', shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 },
+  tipBox: { flexDirection: 'row', backgroundColor: '#D1FAE5', padding: 12, borderRadius: theme.borderRadius.md, alignItems: 'center' },
   tipText: { flex: 1, color: '#065F46', fontSize: 13, lineHeight: 18, fontWeight: '500' },
   
   scrollContent: { paddingBottom: 40 },
   
   statsRow: { flexDirection: 'row', gap: 16, marginBottom: 32, paddingHorizontal: 24 },
-  statCard: { flex: 1, borderRadius: 20, padding: 16, borderWidth: 1, shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  statIcon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  statValue: { fontSize: 28, fontWeight: '800', color: '#1E293B', marginBottom: 2 },
-  statLabel: { fontSize: 13, color: '#64748B', fontWeight: '500' },
+  statCard: { flex: 1, borderRadius: theme.borderRadius.xl, padding: 16, borderWidth: 1, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  statIcon: { width: 36, height: 36, borderRadius: theme.borderRadius.md, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  statValue: { fontSize: 28, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 2 },
+  statLabel: { fontSize: 13, color: theme.colors.textSecondary, fontWeight: '500' },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 24 },
-  sectionTitle: { color: '#94A3B8', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
-  viewAllText: { color: '#0D9488', fontSize: 13, fontWeight: '700' },
+  sectionTitle: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  viewAllText: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   
   casesScroll: { paddingHorizontal: 24, gap: 16 },
-  caseCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 3, width: 300 },
+  caseCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 20, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 3, width: 300 },
   caseHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF7ED', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#FFEDD5' },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF7ED', paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.md, borderWidth: 1, borderColor: '#FFEDD5' },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#EA580C', marginRight: 6 },
   statusText: { color: '#EA580C', fontSize: 12, fontWeight: '700' },
-  typeBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, gap: 4 },
+  typeBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.md, gap: 4 },
   proBonoBadge: { backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#CCFBF1' },
   privateBadge: { backgroundColor: '#FAF5FF', borderWidth: 1, borderColor: '#F3E8FF' },
   typeText: { fontSize: 12, fontWeight: '700' },
-  proBonoText: { color: '#0D9488' },
+  proBonoText: { color: theme.colors.primary },
   privateText: { color: '#9333EA' },
-  dateText: { color: '#94A3B8', fontSize: 12, fontWeight: '600', marginLeft: 'auto' },
-  caseTitle: { color: '#0F172A', fontSize: 18, fontWeight: '800', marginBottom: 8 },
-  casePreview: { color: '#475569', fontSize: 14, lineHeight: 20, marginBottom: 16 },
-  caseFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 16, marginBottom: 16 },
+  dateText: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600', marginLeft: 'auto' },
+  caseTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '800', marginBottom: 8 },
+  casePreview: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 16 },
+  caseFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: theme.colors.secondary, paddingTop: 16, marginBottom: 16 },
   locationContainer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locationText: { color: '#64748B', fontSize: 13, fontWeight: '600' },
-  reviewBtn: { backgroundColor: '#0D9488', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  reviewBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  emptyState: { padding: 24, alignItems: 'center', backgroundColor: '#FFFFFF', marginHorizontal: 24, borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0', borderStyle: 'dashed' },
-  emptyText: { color: '#64748B', marginTop: 12, fontWeight: '500' }
+  locationText: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  reviewBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, paddingVertical: 12, alignItems: 'center' },
+  reviewBtnText: { color: theme.colors.surface, fontSize: 14, fontWeight: '700' },
+  emptyState: { padding: 24, alignItems: 'center', backgroundColor: theme.colors.surface, marginHorizontal: 24, borderRadius: theme.borderRadius.xl, borderWidth: 1, borderColor: theme.colors.border, borderStyle: 'dashed' },
+  emptyText: { color: theme.colors.textSecondary, marginTop: 12, fontWeight: '500' }
 });

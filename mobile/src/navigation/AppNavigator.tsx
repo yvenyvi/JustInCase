@@ -15,6 +15,7 @@ import LegalMessagesScreen from '../screens/legal/LegalMessagesScreen';
 import LegalNotificationsScreen from '../screens/legal/LegalNotificationsScreen';
 import LegalProfileScreen from '../screens/legal/LegalProfileScreen';
 import { Ionicons } from '@expo/vector-icons';
+import { theme } from '../shared/theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -27,15 +28,15 @@ export function AppNavigator() {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: theme.colors.surface,
             borderTopWidth: 1,
-            borderTopColor: '#E2E8F0',
+            borderTopColor: theme.colors.border,
             paddingBottom: Platform.OS === 'ios' ? 20 : 10,
             paddingTop: 10,
             height: Platform.OS === 'ios' ? 88 : 68,
           },
-          tabBarActiveTintColor: '#0D9488',
-          tabBarInactiveTintColor: '#94A3B8',
+          tabBarActiveTintColor: theme.colors.primary,
+          tabBarInactiveTintColor: theme.colors.textSecondary,
           tabBarIcon: ({ focused, color, size }) => {
             let iconName: any = 'home';
             if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';
@@ -73,15 +74,15 @@ export function AppNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.colors.surface,
           borderTopWidth: 1,
-          borderTopColor: '#E2E8F0',
+          borderTopColor: theme.colors.border,
           paddingBottom: Platform.OS === 'ios' ? 20 : 10,
           paddingTop: 10,
           height: Platform.OS === 'ios' ? 88 : 68,
         },
-        tabBarActiveTintColor: '#0D9488',
-        tabBarInactiveTintColor: '#94A3B8',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textSecondary,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: any = 'home';
           if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';

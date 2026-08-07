@@ -5,6 +5,7 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -106,7 +107,7 @@ export default function PublicMessagesScreen() {
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#0D9488" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : threads.length === 0 ? (
         <View style={styles.emptyState}>
@@ -123,7 +124,7 @@ export default function PublicMessagesScreen() {
               onPress={() => navigation.navigate('ChatThread', { threadId: thread.id, threadName: thread.name })}
             >
               <View style={styles.avatarContainer}>
-                <Ionicons name="person" size={24} color="#0D9488" />
+                <Ionicons name="person" size={24} color={theme.colors.primary} />
                 {thread.unread > 0 && <View style={styles.unreadBadge}><Text style={styles.unreadText}>{thread.unread}</Text></View>}
               </View>
               <View style={styles.threadContent}>
@@ -145,29 +146,29 @@ export default function PublicMessagesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  headerTitle: { color: '#1E293B', fontSize: 28, fontWeight: '800', marginBottom: 4 },
-  headerSubtitle: { color: '#64748B', fontSize: 15 },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 28, fontWeight: '800', marginBottom: 4 },
+  headerSubtitle: { color: theme.colors.textSecondary, fontSize: 15 },
   headerActions: { flexDirection: 'row', gap: 12 },
-  iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  emptyTitle: { color: '#1E293B', fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { color: '#64748B', fontSize: 15, textAlign: 'center' },
+  emptyTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },
+  emptySubtitle: { color: theme.colors.textSecondary, fontSize: 15, textAlign: 'center' },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  threadCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  threadCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
   threadCardUnread: { backgroundColor: '#F0FDFA', borderColor: '#CCFBF1' },
   avatarContainer: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#E0F2FE', borderWidth: 1, borderColor: '#BAE6FD', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  unreadBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: '#EF4444', width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
-  unreadText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
+  unreadBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: theme.colors.error, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.surface },
+  unreadText: { color: theme.colors.surface, fontSize: 10, fontWeight: '800' },
   threadContent: { flex: 1, marginLeft: 16 },
   threadHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   threadName: { color: '#334155', fontSize: 16, fontWeight: '600' },
-  threadNameUnread: { color: '#0F172A', fontWeight: '800' },
-  threadTime: { color: '#94A3B8', fontSize: 12 },
-  threadTimeUnread: { color: '#0D9488', fontWeight: '700' },
-  threadCase: { color: '#0D9488', fontSize: 12, fontWeight: '600', marginBottom: 4 },
-  threadPreview: { color: '#64748B', fontSize: 14 },
-  threadPreviewUnread: { color: '#1E293B', fontWeight: '600' },
+  threadNameUnread: { color: theme.colors.textPrimary, fontWeight: '800' },
+  threadTime: { color: theme.colors.textSecondary, fontSize: 12 },
+  threadTimeUnread: { color: theme.colors.primary, fontWeight: '700' },
+  threadCase: { color: theme.colors.primary, fontSize: 12, fontWeight: '600', marginBottom: 4 },
+  threadPreview: { color: theme.colors.textSecondary, fontSize: 14 },
+  threadPreviewUnread: { color: theme.colors.textPrimary, fontWeight: '600' },
 });

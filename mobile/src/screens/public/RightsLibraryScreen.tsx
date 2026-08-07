@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, Act
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { mobileSupabase } from '../../shared/supabase';
+import { theme } from '../../shared/theme';
 
 export interface RightsCategory {
   id: string;
@@ -113,7 +114,7 @@ export default function RightsLibraryScreen() {
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#0D9488" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : (
         <>
@@ -168,7 +169,7 @@ export default function RightsLibraryScreen() {
                           <Ionicons 
                             name={article.article_url ? "open-outline" : (isExpanded ? "chevron-up" : "chevron-down")} 
                             size={20} 
-                            color="#0D9488" 
+                            color={theme.colors.primary} 
                             style={{ flexShrink: 0, marginLeft: 8, marginTop: 2 }}
                           />
                         </View>
@@ -204,40 +205,40 @@ export default function RightsLibraryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF9' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(20, 184, 166, 0.08)', transform: [{ scaleX: 1.5 }] },
-  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
+  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: theme.borderRadius.xl0, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
   header: { paddingHorizontal: 24, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', textAlign: 'center' },
   searchContainerWrapper: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 16, paddingHorizontal: 16, height: 50 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.secondary, borderRadius: theme.borderRadius.lg, paddingHorizontal: 16, height: 50 },
   searchIcon: { marginRight: 8 },
-  searchInput: { backgroundColor: '#F8FAFC', borderRadius: 12, paddingVertical: 12, paddingLeft: 44, paddingRight: 16, color: '#1E293B', fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0' },
-  searchHintText: { color: '#64748B', fontSize: 12, marginTop: 8, lineHeight: 16 },
-  chipsWrapper: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  searchInput: { backgroundColor: theme.colors.background, borderRadius: theme.borderRadius.md, paddingVertical: 12, paddingLeft: 44, paddingRight: 16, color: theme.colors.textPrimary, fontSize: 16, borderWidth: 1, borderColor: theme.colors.border },
+  searchHintText: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 8, lineHeight: 16 },
+  chipsWrapper: { backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   chipsContainer: { paddingHorizontal: 24, paddingVertical: 12, gap: 8 },
-  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
-  chipActive: { backgroundColor: '#0D9488', borderColor: '#0D9488' },
-  chipText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
-  chipTextActive: { color: '#FFFFFF' },
+  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: theme.borderRadius.xl, backgroundColor: theme.colors.secondary, borderWidth: 1, borderColor: theme.colors.border },
+  chipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  chipText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  chipTextActive: { color: theme.colors.surface },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 24, paddingBottom: 60, gap: 32 },
   categoryBlock: { gap: 16 },
   categoryHeader: { marginBottom: 4 },
   catTitleRow: { flexDirection: 'column', alignItems: 'flex-start', marginBottom: 8, gap: 4 },
-  categoryBadge: { color: '#0D9488', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, lineHeight: 18 },
-  lawRef: { color: '#64748B', fontSize: 12, fontWeight: '600', lineHeight: 16 },
-  catDesc: { color: '#64748B', fontSize: 14, lineHeight: 22 },
-  articleCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
-  articleCardExpanded: { borderColor: '#CCFBF1', backgroundColor: '#F0FDFA', shadowColor: '#0F766E' },
+  categoryBadge: { color: theme.colors.primary, fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, lineHeight: 18 },
+  lawRef: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600', lineHeight: 16 },
+  catDesc: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 22 },
+  articleCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: 16, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
+  articleCardExpanded: { borderColor: '#CCFBF1', backgroundColor: '#F0FDFA', shadowColor: theme.colors.primary },
   articleTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  articleTitle: { color: '#1E293B', fontSize: 16, fontWeight: '700', flex: 1, flexWrap: 'wrap', lineHeight: 24 },
-  expandedContent: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#E2E8F0' },
-  articleExcerpt: { color: '#475569', fontSize: 15, lineHeight: 24, marginBottom: 16 },
-  lawSectionBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, gap: 6, maxWidth: '100%' },
-  lawSectionText: { color: '#64748B', fontSize: 12, fontWeight: '600', flexShrink: 1, flexWrap: 'wrap' },
+  articleTitle: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700', flex: 1, flexWrap: 'wrap', lineHeight: 24 },
+  expandedContent: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.colors.border },
+  articleExcerpt: { color: theme.colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 16 },
+  lawSectionBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.secondary, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 6, borderRadius: theme.borderRadius.sm, gap: 6, maxWidth: '100%' },
+  lawSectionText: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600', flexShrink: 1, flexWrap: 'wrap' },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  emptyTitle: { color: '#1E293B', fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { color: '#64748B', fontSize: 15, textAlign: 'center', paddingHorizontal: 20 },
+  emptyTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },
+  emptySubtitle: { color: theme.colors.textSecondary, fontSize: 15, textAlign: 'center', paddingHorizontal: 20 },
 });

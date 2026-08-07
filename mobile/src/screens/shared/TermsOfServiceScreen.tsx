@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { theme } from '../../shared/theme';
 
 export default function TermsOfServiceScreen() {
   const navigation = useNavigation();
@@ -49,7 +50,7 @@ export default function TermsOfServiceScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: theme.colors.surface },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -57,14 +58,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24, 
     paddingTop: Platform.OS === 'ios' ? 60 : 40, 
     paddingBottom: 20, 
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: theme.colors.surface, 
     borderBottomWidth: 1, 
-    borderBottomColor: '#E2E8F0' 
+    borderBottomColor: theme.colors.border 
   },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
   scrollContent: { padding: 24, paddingBottom: 60 },
-  lastUpdated: { color: '#64748B', fontSize: 14, marginBottom: 24, fontStyle: 'italic' },
-  heading: { color: '#0D9488', fontSize: 16, fontWeight: '700', marginBottom: 8, marginTop: 16 },
+  lastUpdated: { color: theme.colors.textSecondary, fontSize: 14, marginBottom: 24, fontStyle: 'italic' },
+  heading: { color: theme.colors.primary, fontSize: 16, fontWeight: '700', marginBottom: 8, marginTop: 16 },
   paragraph: { color: '#334155', fontSize: 15, lineHeight: 24, marginBottom: 16 },
 });

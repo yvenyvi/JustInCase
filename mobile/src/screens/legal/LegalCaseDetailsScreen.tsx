@@ -5,6 +5,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import Toast from 'react-native-toast-message';
+import { theme } from '../../shared/theme';
 
 type LegalCaseDetailsRouteProp = RouteProp<RootStackParamList, 'LegalCaseDetails'>;
 
@@ -245,10 +246,14 @@ export default function LegalCaseDetailsScreen() {
     try {
       setIsSubmitting(true);
       if (!c || !currentUser) return;
+      
+      const isPending = c.status === 'Pending Triage';
+      const newStatus = isPending ? 'Pending Triage' : 'Withdrawn';
       const closingNotes = `Ground: ${withdrawGround}\nExplanation: ${withdrawExplanation}`;
+      
       const { error } = await mobileSupabase
         .from('cases')
-        .update({ status: 'Withdrawn', closing_notes: closingNotes, attorney_id: null })
+        .update({ status: newStatus, closing_notes: closingNotes, attorney_id: null })
         .eq('id', c.id);
       
       if (error) throw error;
@@ -259,8 +264,10 @@ export default function LegalCaseDetailsScreen() {
           .from('notifications')
           .insert({
             user_id: c.clientId,
-            title: 'Attorney Withdrew',
-            body: `Your attorney withdrew based on: ${withdrawGround}.`,
+            title: isPending ? 'Attorney Declined' : 'Attorney Withdrew',
+            body: isPending 
+              ? 'An attorney declined your specific request. Your case is now open to the public network for others to accept.' 
+              : `Your attorney withdrew based on: ${withdrawGround}.`,
             type: 'case_update',
             is_read: false
           });
@@ -268,30 +275,30 @@ export default function LegalCaseDetailsScreen() {
 
       await mobileSupabase.from('audit_logs').insert({
         user_id: currentUser.id,
-        action_type: 'Case Withdrawn/Rejected',
-        detail: `Attorney withdrew from case ${c.id}. Ground: ${withdrawGround}`
+        action_type: isPending ? 'Case Declined' : 'Case Withdrawn',
+        detail: `Attorney ${isPending ? 'declined' : 'withdrew from'} case ${c.id}. Ground: ${withdrawGround}`
       });
 
       setIsWithdrawModalVisible(false);
-      Toast.show({ type: 'success', text1: 'Success', text2: 'You have successfully withdrawn from this case.' });
+      Toast.show({ type: 'success', text1: 'Success', text2: isPending ? 'Case returned to open network.' : 'You have successfully withdrawn from this case.' });
       navigation.goBack();
     } catch (err: any) {
-      Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Failed to withdraw from case.' });
+      Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Failed to process request.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const getStatusColor = (status: string) => {
-    if (status.includes('Closed') || status === 'Withdrawn') return { bg: '#F1F5F9', text: '#64748B', border: '#E2E8F0' };
+    if (status.includes('Closed') || status === 'Withdrawn') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
     if (status === 'In Progress' || status === 'Accepted') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
-    return { bg: '#FEF3C7', text: '#D97706', border: '#FDE68A' };
+    return { bg: '#FEF3C7', text: theme.colors.warning, border: '#FDE68A' };
   };
 
   if (isLoading) {
     return (
       <View style={[styles.container, styles.centerBox]}>
-        <ActivityIndicator size="large" color="#0D9488" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -314,19 +321,21 @@ export default function LegalCaseDetailsScreen() {
 
   try {
     const jsonDesc = JSON.parse(c.description);
-    if (jsonDesc.isJsonFormat) {
-      parsedDesc = {
-        concern: jsonDesc.rawInput.description || '',
-        opposing: jsonDesc.rawInput.opposingPartyType || '',
-        urgency: jsonDesc.rawInput.urgency || '',
-        location: jsonDesc.rawInput.province || '',
-        income: jsonDesc.rawInput.income || '',
-        deadline: jsonDesc.rawInput.deadlineDate || 'None',
-        evidence: jsonDesc.rawInput.evidence || 'None',
-        outcome: jsonDesc.rawInput.outcome || ''
-      };
-      aiData = jsonDesc.aiAnalysis;
-    }
+    parsedDesc = {
+      concern: jsonDesc.summary || jsonDesc.description || jsonDesc.concern || '',
+      opposing: jsonDesc.opposingParty || jsonDesc.opposing_party || '',
+      urgency: jsonDesc.urgency || '',
+      location: jsonDesc.location || '',
+      income: jsonDesc.income || '',
+      deadline: jsonDesc.deadlineDate || jsonDesc.deadline || 'None',
+      evidence: jsonDesc.evidence || 'None',
+      outcome: jsonDesc.outcome || ''
+    };
+    aiData = jsonDesc.ai_assessment ? {
+      primary_issue: jsonDesc.summary || jsonDesc.primary_issue || '',
+      ai_assessment: jsonDesc.ai_assessment,
+      missing_details: jsonDesc.missing_details || 'None identified'
+    } : jsonDesc.aiAnalysis;
   } catch (e) {
     // Fallback to legacy plain text parsing
     const descLines = c.description.split('\n');
@@ -415,7 +424,7 @@ export default function LegalCaseDetailsScreen() {
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Urgency</Text>
-            <Text style={[styles.infoValue, parsedDesc.urgency.toLowerCase().includes('high') ? { color: '#EF4444' } : {}]}>
+            <Text style={[styles.infoValue, parsedDesc.urgency.toLowerCase().includes('high') ? { color: theme.colors.error } : {}]}>
               {parsedDesc.urgency || 'Standard'}
             </Text>
           </View>
@@ -453,7 +462,7 @@ export default function LegalCaseDetailsScreen() {
                   onPress={() => setIsWithdrawModalVisible(true)}
                 >
                   <Ionicons name="close-circle" size={20} color="#DC2626" style={{ marginRight: 8 }} />
-                  <Text style={[styles.actionBtnTextPrimary, { color: '#DC2626' }]}>Reject Request</Text>
+                  <Text style={[styles.actionBtnTextPrimary, { color: '#DC2626' }]}>Decline Request</Text>
                 </Pressable>
               )}
             </>
@@ -471,15 +480,15 @@ export default function LegalCaseDetailsScreen() {
               
               <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
                 <Pressable 
-                  style={[styles.actionBtn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1' }]} 
+                  style={[styles.actionBtn, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: '#CBD5E1' }]} 
                   onPress={() => setIsWithdrawModalVisible(true)}
                 >
                   <Ionicons name="close-circle" size={20} color="#64748B" style={{ marginRight: 8 }} />
-                  <Text style={[styles.actionBtnTextPrimary, { color: '#64748B' }]}>Withdraw</Text>
+                  <Text style={[styles.actionBtnTextPrimary, { color: theme.colors.textSecondary }]}>Withdraw</Text>
                 </Pressable>
                 
                 <Pressable style={[styles.actionBtn, { backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#CCFBF1' }]} onPress={() => setIsLogModalVisible(true)}>
-                  <Ionicons name="time" size={20} color="#0D9488" style={{ marginRight: 8 }} />
+                  <Ionicons name="time" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                   <Text style={styles.actionBtnText}>Log Hours</Text>
                 </Pressable>
               </View>
@@ -586,14 +595,14 @@ export default function LegalCaseDetailsScreen() {
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Withdraw / Reject Case</Text>
+              <Text style={styles.modalTitle}>Withdraw / Decline Case</Text>
               <Pressable onPress={() => setIsWithdrawModalVisible(false)} style={styles.modalCloseBtn}>
                 <Ionicons name="close" size={24} color="#64748B" />
               </Pressable>
             </View>
             
             <ScrollView style={styles.modalBody}>
-              <Text style={{ color: '#475569', fontSize: 13, marginBottom: 16 }}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
                 Under Philippine law, withdrawal requires valid justifiable cause. Select a ground below:
               </Text>
               
@@ -602,14 +611,14 @@ export default function LegalCaseDetailsScreen() {
                   key={ground} 
                   style={[
                     styles.radioOption, 
-                    withdrawGround === ground && { borderColor: '#0D9488', backgroundColor: '#F0FDFA' }
+                    withdrawGround === ground && { borderColor: theme.colors.primary, backgroundColor: '#F0FDFA' }
                   ]}
                   onPress={() => setWithdrawGround(ground)}
                 >
-                  <View style={[styles.radioCircle, withdrawGround === ground && { borderColor: '#0D9488' }]}>
+                  <View style={[styles.radioCircle, withdrawGround === ground && { borderColor: theme.colors.primary }]}>
                     {withdrawGround === ground && <View style={styles.radioInner} />}
                   </View>
-                  <Text style={[styles.radioText, withdrawGround === ground && { color: '#0D9488', fontWeight: '700' }]}>{ground}</Text>
+                  <Text style={[styles.radioText, withdrawGround === ground && { color: theme.colors.primary, fontWeight: '700' }]}>{ground}</Text>
                 </Pressable>
               ))}
 
@@ -645,71 +654,71 @@ export default function LegalCaseDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 24, paddingBottom: 40 },
   titleSection: { marginBottom: 24 },
-  caseTitle: { color: '#1E293B', fontSize: 26, fontWeight: '800', marginBottom: 12 },
-  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, alignSelf: 'flex-start' },
+  caseTitle: { color: theme.colors.textPrimary, fontSize: 26, fontWeight: '800', marginBottom: 12 },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.borderRadius.md, borderWidth: 1, alignSelf: 'flex-start' },
   statusText: { fontSize: 13, fontWeight: '700' },
-  dateLabel: { color: '#64748B', fontSize: 13, fontWeight: '600' },
+  dateLabel: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600' },
   
-  aiCard: { backgroundColor: '#F5F3FF', borderRadius: 20, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#DDD6FE', shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+  aiCard: { backgroundColor: '#F5F3FF', borderRadius: theme.borderRadius.xl, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#DDD6FE', shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
   aiHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   aiTitle: { color: '#7C3AED', fontSize: 16, fontWeight: '800', marginLeft: 8 },
   aiDescription: { color: '#8B5CF6', fontSize: 13, marginBottom: 16 },
-  aiContent: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#EDE9FE' },
+  aiContent: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, padding: 16, borderWidth: 1, borderColor: '#EDE9FE' },
   aiRow: { marginBottom: 12 },
   aiLabel: { color: '#8B5CF6', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  aiValue: { color: '#1E293B', fontSize: 14, fontWeight: '500', lineHeight: 20 },
+  aiValue: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '500', lineHeight: 20 },
 
-  card: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, marginBottom: 8, borderWidth: 1, borderColor: '#E2E8F0' },
-  sectionLabel: { color: '#0D9488', fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 16 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  infoLabel: { color: '#64748B', fontSize: 14 },
-  infoValue: { color: '#1E293B', fontSize: 14, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 20, marginBottom: 8, borderWidth: 1, borderColor: theme.colors.border },
+  sectionLabel: { color: theme.colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 16 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.secondary },
+  infoLabel: { color: theme.colors.textSecondary, fontSize: 14 },
+  infoValue: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
   
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
-  actionBtn: { flex: 1, backgroundColor: '#F0FDFA', borderRadius: 16, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#CCFBF1' },
-  actionBtnPrimary: { backgroundColor: '#0D9488', borderColor: '#0D9488' },
-  actionBtnText: { color: '#0D9488', fontSize: 14, fontWeight: '700' },
-  actionBtnTextPrimary: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  actionBtn: { flex: 1, backgroundColor: '#F0FDFA', borderRadius: theme.borderRadius.lg, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#CCFBF1' },
+  actionBtnPrimary: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  actionBtnText: { color: theme.colors.primary, fontSize: 14, fontWeight: '700' },
+  actionBtnTextPrimary: { color: theme.colors.surface, fontSize: 14, fontWeight: '800' },
   
   logItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
-  logItemBorder: { borderTopWidth: 1, borderTopColor: '#F1F5F9' },
-  logHours: { color: '#1E293B', fontSize: 15, fontWeight: '700' },
-  logDate: { color: '#94A3B8', fontSize: 13 },
-  logDesc: { color: '#475569', fontSize: 13, lineHeight: 18, marginTop: 4 },
-  verifiedPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#DCFCE7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  logItemBorder: { borderTopWidth: 1, borderTopColor: theme.colors.secondary },
+  logHours: { color: theme.colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  logDate: { color: theme.colors.textSecondary, fontSize: 13 },
+  logDesc: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 4 },
+  verifiedPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#DCFCE7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.borderRadius.md },
   verifiedText: { color: '#15803D', fontSize: 12, fontWeight: '700' },
 
   timeline: { marginTop: 8 },
   timelineItem: { flexDirection: 'row' },
   timelineNode: { width: 32, alignItems: 'center' },
-  timelineDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#0D9488', marginTop: 4 },
-  timelineLine: { width: 2, flex: 1, backgroundColor: '#E2E8F0', marginVertical: 4 },
+  timelineDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: theme.colors.primary, marginTop: 4 },
+  timelineLine: { width: 2, flex: 1, backgroundColor: theme.colors.border, marginVertical: 4 },
   timelineContent: { flex: 1, paddingBottom: 24, paddingLeft: 8 },
-  timelineDate: { color: '#64748B', fontSize: 12, fontWeight: '600', marginBottom: 4 },
-  timelineText: { color: '#1E293B', fontSize: 15, lineHeight: 22 },
+  timelineDate: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: 4 },
+  timelineText: { color: theme.colors.textPrimary, fontSize: 15, lineHeight: 22 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'center', padding: 24 },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  modalContent: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   modalBody: { maxHeight: 350 },
-  modalTitle: { color: '#1E293B', fontSize: 20, fontWeight: '800' },
-  modalCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  inputLabel: { color: '#475569', fontSize: 13, fontWeight: '600', marginBottom: 8 },
-  textInput: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 16, fontSize: 15, color: '#0F172A', marginBottom: 16 },
+  modalTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '800' },
+  modalCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  inputLabel: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 8 },
+  textInput: { backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.md, padding: 16, fontSize: 15, color: theme.colors.textPrimary, marginBottom: 16 },
   textArea: { height: 100 },
-  modalSubmitBtn: { backgroundColor: '#0D9488', borderRadius: 16, padding: 16, alignItems: 'center', marginTop: 8 },
-  modalSubmitText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  btnPrimary: { backgroundColor: '#0D9488', padding: 16, borderRadius: 12, alignItems: 'center' },
-  btnPrimaryText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-  radioOption: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 8 },
+  modalSubmitBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.lg, padding: 16, alignItems: 'center', marginTop: 8 },
+  modalSubmitText: { color: theme.colors.surface, fontSize: 16, fontWeight: '700' },
+  btnPrimary: { backgroundColor: theme.colors.primary, padding: 16, borderRadius: theme.borderRadius.md, alignItems: 'center' },
+  btnPrimaryText: { color: theme.colors.surface, fontSize: 15, fontWeight: '700' },
+  radioOption: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: theme.borderRadius.md, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 8 },
   radioCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#0D9488' },
-  radioText: { color: '#475569', fontSize: 14, fontWeight: '500' }
+  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: theme.colors.primary },
+  radioText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '500' }
 });

@@ -1,13 +1,13 @@
 import React from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { mobileSupabase } from '../shared/supabase';
+import { theme } from '../shared/theme';
 
 type ScreenShellProps = {
   title: string;
   subtitle: string;
 };
-
-import { Ionicons } from '@expo/vector-icons';
-import { mobileSupabase } from '../shared/supabase';
 
 export default function ScreenShell({ title, subtitle }: ScreenShellProps) {
   const handleLogout = async () => {
@@ -18,10 +18,10 @@ export default function ScreenShell({ title, subtitle }: ScreenShellProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={handleLogout} style={styles.logoutBtn}>
-          <Ionicons name="log-out-outline" size={24} color="#CBD5E1" />
+          <Ionicons name="log-out-outline" size={24} color={theme.colors.textSecondary} />
         </Pressable>
       </View>
-      <Text style={styles.kicker}>JusticeLink Mobile</Text>
+      <Text style={styles.kicker}>JusticeLink</Text>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
     </View>
@@ -33,46 +33,45 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#020617',
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.background,
     position: 'relative',
   },
   header: {
     position: 'absolute',
     top: 48,
-    right: 24,
+    right: theme.spacing.lg,
     zIndex: 10,
   },
   logoutBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#1E293B',
+    borderRadius: theme.borderRadius.round,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
+    ...theme.shadows.soft,
   },
   kicker: {
-    color: '#f59e0b',
+    color: theme.colors.primary,
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    marginBottom: 10,
+    marginBottom: theme.spacing.sm,
   },
   title: {
-    color: '#f8fafc',
-    fontSize: 30,
-    fontWeight: '800',
-    marginBottom: 12,
+    ...theme.typography.heading,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
-    color: '#cbd5e1',
-    fontSize: 16,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     maxWidth: 320,
-    lineHeight: 23,
   },
 });

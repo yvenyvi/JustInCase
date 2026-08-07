@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -101,7 +102,7 @@ export default function LegalProfileScreen() {
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#0D9488" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : profile ? (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -153,7 +154,7 @@ export default function LegalProfileScreen() {
             <Text style={styles.sectionTitle}>ACCOUNT</Text>
             <Pressable style={styles.menuItem} onPress={() => navigation.navigate('Settings' as any)}>
               <View style={[styles.menuIconContainer, { backgroundColor: '#F0FDFA' }]}>
-                <Ionicons name="settings-outline" size={20} color="#0D9488" />
+                <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
               </View>
               <Text style={styles.menuText}>Settings</Text>
               <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
@@ -175,22 +176,22 @@ export default function LegalProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  headerTitle: { color: '#1E293B', fontSize: 28, fontWeight: '800', marginBottom: 4 },
-  headerSubtitle: { color: '#64748B', fontSize: 15 },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 28, fontWeight: '800', marginBottom: 4 },
+  headerSubtitle: { color: theme.colors.textSecondary, fontSize: 15 },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { color: '#64748B', fontSize: 16 },
+  errorText: { color: theme.colors.textSecondary, fontSize: 16 },
   scrollContent: { padding: 24, paddingBottom: 60 },
   
   profileHeader: { alignItems: 'center', marginBottom: 32 },
-  avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#0D9488', alignItems: 'center', justifyContent: 'center', marginBottom: 16, shadowColor: '#0D9488', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
-  avatarText: { color: '#FFFFFF', fontSize: 32, fontWeight: '800', letterSpacing: 1 },
-  name: { color: '#1E293B', fontSize: 24, fontWeight: '700', marginBottom: 4 },
-  email: { color: '#64748B', fontSize: 15, marginBottom: 2 },
-  handle: { color: '#0D9488', fontSize: 14, fontWeight: '600', marginBottom: 12 },
+  avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 16, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  avatarText: { color: theme.colors.surface, fontSize: 32, fontWeight: '800', letterSpacing: 1 },
+  name: { color: theme.colors.textPrimary, fontSize: 24, fontWeight: '700', marginBottom: 4 },
+  email: { color: theme.colors.textSecondary, fontSize: 15, marginBottom: 2 },
+  handle: { color: theme.colors.primary, fontSize: 14, fontWeight: '600', marginBottom: 12 },
   
-  verificationBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, gap: 6 },
+  verificationBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.borderRadius.xl, gap: 6 },
   badgeVerified: { backgroundColor: '#DCFCE7' },
   badgeUnverified: { backgroundColor: '#FEF3C7' },
   verificationText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
@@ -198,20 +199,20 @@ const styles = StyleSheet.create({
   textUnverified: { color: '#B45309' },
 
   section: { marginBottom: 28 },
-  sectionTitle: { color: '#0D9488', fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12, marginLeft: 4 },
+  sectionTitle: { color: theme.colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12, marginLeft: 4 },
   
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: 20, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   infoRow: { flexDirection: 'row', alignItems: 'flex-start' },
   infoIcon: { marginTop: 2, marginRight: 16 },
   flex1: { flex: 1 },
-  infoLabel: { color: '#64748B', fontSize: 13, marginBottom: 4 },
-  infoValue: { color: '#1E293B', fontSize: 16, fontWeight: '500', lineHeight: 24 },
-  divider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 16 },
+  infoLabel: { color: theme.colors.textSecondary, fontSize: 13, marginBottom: 4 },
+  infoValue: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '500', lineHeight: 24 },
+  divider: { height: 1, backgroundColor: theme.colors.border, marginVertical: 16 },
 
-  menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' },
-  menuIconContainer: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
-  menuText: { flex: 1, color: '#1E293B', fontSize: 16, fontWeight: '500' },
+  menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, padding: 16, borderRadius: theme.borderRadius.lg, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
+  menuIconContainer: { width: 40, height: 40, borderRadius: theme.borderRadius.md, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  menuText: { flex: 1, color: theme.colors.textPrimary, fontSize: 16, fontWeight: '500' },
   
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF2F2', paddingVertical: 18, borderRadius: 16, borderWidth: 1, borderColor: '#FECACA', gap: 12, marginTop: 8 },
-  logoutText: { color: '#EF4444', fontSize: 16, fontWeight: '700' },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF2F2', paddingVertical: 18, borderRadius: theme.borderRadius.lg, borderWidth: 1, borderColor: '#FECACA', gap: 12, marginTop: 8 },
+  logoutText: { color: theme.colors.error, fontSize: 16, fontWeight: '700' },
 });

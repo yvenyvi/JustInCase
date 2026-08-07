@@ -5,6 +5,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { Card } from '../../components/ui/Card';
+import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -71,7 +73,7 @@ export default function PublicDashboardScreen() {
     switch (status?.toLowerCase()) {
       case 'in_progress': case 'in progress': return { bg: '#F0FDF4', border: '#BBF7D0', dot: '#16A34A', text: '#16A34A', label: 'In Progress' };
       case 'pending': return { bg: '#FFF7ED', border: '#FED7AA', dot: '#EA580C', text: '#EA580C', label: 'Pending' };
-      case 'closed': case 'resolved': return { bg: '#F1F5F9', border: '#CBD5E1', dot: '#64748B', text: '#64748B', label: 'Closed' };
+      case 'closed': case 'resolved': return { bg: theme.colors.secondary, border: '#CBD5E1', dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: 'Closed' };
       default: return { bg: '#F0FDF4', border: '#BBF7D0', dot: '#16A34A', text: '#16A34A', label: status || 'Active' };
     }
   };
@@ -88,17 +90,17 @@ export default function PublicDashboardScreen() {
           <View>
             <Text style={styles.greeting}>Magandang Araw,</Text>
             {isLoading ? (
-              <ActivityIndicator size="small" color="#0D9488" style={{ alignSelf: 'flex-start', marginTop: 4 }} />
+              <ActivityIndicator size="small" color={theme.colors.primary} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
             ) : (
               <Text style={styles.name}>{firstName}</Text>
             )}
           </View>
           <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('Profile' as any)}>
-            <Ionicons name="person" size={24} color="#0D9488" />
+            <Ionicons name="person" size={24} color={theme.colors.primary} />
           </Pressable>
         </View>
         <View style={styles.tipBox}>
-          <Ionicons name="bulb-outline" size={20} color="#D97706" style={{ marginRight: 8 }} />
+          <Ionicons name="bulb-outline" size={20} color={theme.colors.warning} style={{ marginRight: 8 }} />
           <Text style={styles.tipText}>{randomTip}</Text>
         </View>
       </View>
@@ -114,7 +116,7 @@ export default function PublicDashboardScreen() {
             <Text style={styles.heroSubtitle}>Sagutin ang ilang katanungan para mahanap ang tamang abogado para sa iyo.</Text>
             <View style={styles.heroBtn}>
               <Text style={styles.heroBtnText}>Simulan Ngayon</Text>
-              <Ionicons name="arrow-forward" size={16} color="#0D9488" />
+              <Ionicons name="arrow-forward" size={16} color={theme.colors.primary} />
             </View>
           </View>
           <Ionicons name="shield-checkmark" size={64} color="rgba(255,255,255,0.2)" style={styles.heroIconBg} />
@@ -123,24 +125,30 @@ export default function PublicDashboardScreen() {
         {/* Quick Tools */}
         <Text style={styles.sectionTitle}>MGA TOOLS</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickToolsScroll}>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('PublicDocumentGenerator')}>
-            <View style={[styles.toolIconContainer, { backgroundColor: '#F0FDF4' }]}>
-              <Ionicons name="document-text" size={24} color="#16A34A" />
-            </View>
-            <Text style={styles.toolText}>Legal Docs</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('PublicRightsLibrary')}>
-            <View style={[styles.toolIconContainer, { backgroundColor: '#EFF6FF' }]}>
-              <Ionicons name="library" size={24} color="#2563EB" />
-            </View>
-            <Text style={styles.toolText}>Rights Library</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('PublicNotifications')}>
-            <View style={[styles.toolIconContainer, { backgroundColor: '#FFF7ED' }]}>
-              <Ionicons name="notifications" size={24} color="#EA580C" />
-            </View>
-            <Text style={styles.toolText}>Updates</Text>
-          </Pressable>
+          <Card style={styles.toolCard}>
+            <Pressable onPress={() => navigation.navigate('PublicDocumentGenerator')} style={styles.toolCardInner}>
+              <View style={[styles.toolIconContainer, { backgroundColor: '#F0FDF4' }]}>
+                <Ionicons name="document-text" size={24} color="#16A34A" />
+              </View>
+              <Text style={styles.toolText}>Legal Docs</Text>
+            </Pressable>
+          </Card>
+          <Card style={styles.toolCard}>
+            <Pressable onPress={() => navigation.navigate('PublicRightsLibrary')} style={styles.toolCardInner}>
+              <View style={[styles.toolIconContainer, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="library" size={24} color="#2563EB" />
+              </View>
+              <Text style={styles.toolText}>Rights Library</Text>
+            </Pressable>
+          </Card>
+          <Card style={styles.toolCard}>
+            <Pressable onPress={() => navigation.navigate('PublicNotifications')} style={styles.toolCardInner}>
+              <View style={[styles.toolIconContainer, { backgroundColor: '#FFF7ED' }]}>
+                <Ionicons name="notifications" size={24} color="#EA580C" />
+              </View>
+              <Text style={styles.toolText}>Updates</Text>
+            </Pressable>
+          </Card>
         </ScrollView>
 
         {/* Active Case Widget */}
@@ -152,36 +160,35 @@ export default function PublicDashboardScreen() {
         </View>
 
         {activeCase ? (
-          <Pressable 
-            style={styles.caseWidget}
-            onPress={() => navigation.navigate('CaseDetails', { caseId: activeCase.id })}
-          >
-            <View style={styles.caseWidgetHeader}>
-              <View style={[styles.statusPill, { backgroundColor: getStatusColor(activeCase.status).bg, borderColor: getStatusColor(activeCase.status).border }]}>
-                <View style={[styles.statusDot, { backgroundColor: getStatusColor(activeCase.status).dot }]} />
-                <Text style={[styles.statusText, { color: getStatusColor(activeCase.status).text }]}>{getStatusColor(activeCase.status).label}</Text>
-              </View>
-              <Text style={styles.caseDate}>
-                {activeCase.updated_at ? `Updated ${new Date(activeCase.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
-              </Text>
-            </View>
-            <Text style={styles.caseTitle}>{activeCase.title}</Text>
-            <View style={styles.caseWidgetFooter}>
-              <View style={styles.caseAtty}>
-                <Ionicons name="person-circle-outline" size={20} color="#64748B" />
-                <Text style={styles.attyName}>
-                  {activeCase.attorney ? `Atty. ${activeCase.attorney.first_name} ${activeCase.attorney.last_name}`.trim() : 'Pending Assignment'}
+          <Card style={styles.caseWidget}>
+            <Pressable onPress={() => navigation.navigate('CaseDetails', { caseId: activeCase.id })}>
+              <View style={styles.caseWidgetHeader}>
+                <View style={[styles.statusPill, { backgroundColor: getStatusColor(activeCase.status).bg, borderColor: getStatusColor(activeCase.status).border }]}>
+                  <View style={[styles.statusDot, { backgroundColor: getStatusColor(activeCase.status).dot }]} />
+                  <Text style={[styles.statusText, { color: getStatusColor(activeCase.status).text }]}>{getStatusColor(activeCase.status).label}</Text>
+                </View>
+                <Text style={styles.caseDate}>
+                  {activeCase.updated_at ? `Updated ${new Date(activeCase.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
-            </View>
-          </Pressable>
+              <Text style={styles.caseTitle}>{activeCase.title}</Text>
+              <View style={styles.caseWidgetFooter}>
+                <View style={styles.caseAtty}>
+                  <Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />
+                  <Text style={styles.attyName}>
+                    {activeCase.attorney ? `Atty. ${activeCase.attorney.first_name} ${activeCase.attorney.last_name}`.trim() : 'Pending Assignment'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.border} />
+              </View>
+            </Pressable>
+          </Card>
         ) : (
-          <View style={[styles.caseWidget, { alignItems: 'center', paddingVertical: 32 }]}>
-            <Ionicons name="folder-open-outline" size={40} color="#CBD5E1" style={{ marginBottom: 12 }} />
-            <Text style={{ color: '#94A3B8', fontSize: 15, fontWeight: '600', marginBottom: 4 }}>No Active Cases</Text>
-            <Text style={{ color: '#CBD5E1', fontSize: 13, textAlign: 'center' }}>Your cases will appear here once you file a request.</Text>
-          </View>
+          <Card style={[styles.caseWidget, { alignItems: 'center', paddingVertical: 32 }]}>
+            <Ionicons name="folder-open-outline" size={40} color={theme.colors.border} style={{ marginBottom: 12 }} />
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 15, fontWeight: '600', marginBottom: 4 }}>No Active Cases</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Your cases will appear here once you file a request.</Text>
+          </Card>
         )}
 
       </ScrollView>
@@ -190,39 +197,40 @@ export default function PublicDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF9' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(20, 184, 166, 0.08)', transform: [{ scaleX: 1.5 }] },
-  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
+  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: theme.borderRadius.xl, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
   header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 16, backgroundColor: 'transparent' },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  greeting: { color: '#64748B', fontSize: 14, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  name: { color: '#1E293B', fontSize: 24, fontWeight: '800' },
-  avatarContainer: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 },
-  tipBox: { flexDirection: 'row', backgroundColor: 'rgba(254, 243, 199, 0.7)', padding: 12, borderRadius: 12, alignItems: 'center' },
+  greeting: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  name: { color: theme.colors.textPrimary, fontSize: 24, fontWeight: '800' },
+  avatarContainer: { width: 48, height: 48, borderRadius: theme.borderRadius.xl, backgroundColor: theme.colors.surface, alignItems: 'center', justifyContent: 'center', shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 },
+  tipBox: { flexDirection: 'row', backgroundColor: 'rgba(254, 243, 199, 0.7)', padding: 12, borderRadius: theme.borderRadius.md, alignItems: 'center' },
   tipText: { flex: 1, color: '#92400E', fontSize: 13, lineHeight: 18, fontWeight: '500' },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  heroCard: { backgroundColor: '#0D9488', borderRadius: 24, padding: 24, position: 'relative', overflow: 'hidden', marginBottom: 32, shadowColor: '#0F766E', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10 },
+  heroCard: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.xl, padding: 24, position: 'relative', overflow: 'hidden', marginBottom: 32, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10 },
   heroContent: { position: 'relative', zIndex: 2 },
-  heroTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '800', marginBottom: 8, width: '80%' },
+  heroTitle: { color: theme.colors.surface, fontSize: 22, fontWeight: '800', marginBottom: 8, width: '80%' },
   heroSubtitle: { color: '#CCFBF1', fontSize: 14, lineHeight: 20, marginBottom: 24, width: '85%' },
-  heroBtn: { backgroundColor: '#FFFFFF', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  heroBtnText: { color: '#0D9488', fontWeight: '700', fontSize: 14 },
+  heroBtn: { backgroundColor: theme.colors.surface, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: theme.borderRadius.xl, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  heroBtnText: { color: theme.colors.primary, fontWeight: '700', fontSize: 14 },
   heroIconBg: { position: 'absolute', right: -10, bottom: -10, transform: [{ rotate: '15deg' }] },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { color: '#94A3B8', fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12, marginLeft: 4 },
-  seeAllText: { color: '#0D9488', fontSize: 13, fontWeight: '700' },
+  sectionTitle: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12, marginLeft: 4 },
+  seeAllText: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   quickToolsScroll: { gap: 12, paddingBottom: 32 },
-  toolCard: { backgroundColor: '#FFFFFF', width: 110, padding: 16, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
-  toolIconContainer: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  toolText: { color: '#334155', fontSize: 13, fontWeight: '600', textAlign: 'center' },
-  caseWidget: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
-  caseWidgetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statusPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDF4', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#BBF7D0' },
+  toolCard: { width: 110, padding: 0, marginRight: 12 },
+  toolCardInner: { padding: 16, alignItems: 'center' },
+  toolIconContainer: { width: 48, height: 48, borderRadius: theme.borderRadius.lg, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  toolText: { color: theme.colors.textPrimary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  caseWidget: { padding: 0 },
+  caseWidgetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: 20, paddingBottom: 0 },
+  statusPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDF4', paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.md, borderWidth: 1, borderColor: '#BBF7D0' },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#16A34A', marginRight: 6 },
   statusText: { color: '#16A34A', fontSize: 12, fontWeight: '700' },
-  caseDate: { color: '#94A3B8', fontSize: 12 },
-  caseTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700', marginBottom: 16 },
-  caseWidgetFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
+  caseDate: { color: theme.colors.textSecondary, fontSize: 12 },
+  caseTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 16, paddingHorizontal: 20 },
+  caseWidgetFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderTopWidth: 1, borderTopColor: theme.colors.secondary },
   caseAtty: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  attyName: { color: '#64748B', fontSize: 13, fontWeight: '500' },
+  attyName: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '500' },
 });

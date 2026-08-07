@@ -47,9 +47,27 @@ function Do-Stop([switch]$Silent) {
     }
 }
 
+function Update-EnvIPs {
+    $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -match "^192\.168\." -or $_.IPAddress -match "^10\." } | Select-Object -First 1).IPAddress
+    if ($ip) {
+        Write-Host "  Auto-updating IP in .env files to: $ip" -ForegroundColor DarkGray
+        
+        $backendEnv = Join-Path $BACKEND ".env"
+        if (Test-Path $backendEnv) {
+            (Get-Content $backendEnv) -replace "BACKEND_PUBLIC_BASE_URL=http://[0-9\.]+:\d+", "BACKEND_PUBLIC_BASE_URL=http://${ip}:8000" | Set-Content $backendEnv
+        }
+
+        $mobileEnv = Join-Path $MOBILE ".env"
+        if (Test-Path $mobileEnv) {
+            (Get-Content $mobileEnv) -replace "EXPO_PUBLIC_API_BASE_URL=http://[0-9\.]+:\d+", "EXPO_PUBLIC_API_BASE_URL=http://${ip}:8000" | Set-Content $mobileEnv
+        }
+    }
+}
+
 function Do-Start {
     Show-Banner
     Do-Stop -Silent
+    Update-EnvIPs
 
     Write-Host "  Starting Backend (port 8000)..." -ForegroundColor Green
     $pythonExe = Join-Path $PWD ".venv\Scripts\python.exe"

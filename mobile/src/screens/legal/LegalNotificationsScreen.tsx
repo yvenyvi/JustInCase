@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndica
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { mobileSupabase } from '../../shared/supabase';
+import { theme } from '../../shared/theme';
 
 type NotificationItem = {
   id: string;
@@ -75,7 +76,7 @@ export default function LegalNotificationsScreen() {
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#0D9488" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.emptyState}>
@@ -89,7 +90,7 @@ export default function LegalNotificationsScreen() {
             <Pressable key={notif.id} style={[styles.notifCard, !notif.read && styles.notifCardUnread]} onPress={() => markAsRead(notif.id, notif.read)}>
               <View style={styles.iconCol}>
                 <View style={[styles.iconContainer, !notif.read && styles.iconContainerUnread]}>
-                  <Ionicons name="notifications" size={20} color={notif.read ? '#94A3B8' : '#0D9488'} />
+                  <Ionicons name="notifications" size={20} color={notif.read ? theme.colors.textSecondary : theme.colors.primary} />
                 </View>
               </View>
               <View style={styles.contentCol}>
@@ -108,24 +109,24 @@ export default function LegalNotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  headerTitle: { color: '#1E293B', fontSize: 28, fontWeight: '800', marginBottom: 4 },
-  headerSubtitle: { color: '#64748B', fontSize: 15 },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 28, fontWeight: '800', marginBottom: 4 },
+  headerSubtitle: { color: theme.colors.textSecondary, fontSize: 15 },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  emptyTitle: { color: '#1E293B', fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { color: '#64748B', fontSize: 15, textAlign: 'center' },
+  emptyTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },
+  emptySubtitle: { color: theme.colors.textSecondary, fontSize: 15, textAlign: 'center' },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  notifCard: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 1 },
+  notifCard: { flexDirection: 'row', backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 1 },
   notifCardUnread: { backgroundColor: '#F0FDFA', borderColor: '#CCFBF1' },
   iconCol: { marginRight: 16 },
-  iconContainer: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
+  iconContainer: { width: 40, height: 40, borderRadius: theme.borderRadius.xl, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
   iconContainerUnread: { backgroundColor: '#CCFBF1' },
   contentCol: { flex: 1 },
   notifHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  notifTitle: { color: '#475569', fontSize: 16, fontWeight: '600' },
-  notifTitleUnread: { color: '#0F172A', fontWeight: '700' },
-  notifTime: { color: '#64748B', fontSize: 12 },
-  notifDesc: { color: '#64748B', fontSize: 14, lineHeight: 20 },
+  notifTitle: { color: theme.colors.textSecondary, fontSize: 16, fontWeight: '600' },
+  notifTitleUnread: { color: theme.colors.textPrimary, fontWeight: '700' },
+  notifTime: { color: theme.colors.textSecondary, fontSize: 12 },
+  notifDesc: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 20 },
 });

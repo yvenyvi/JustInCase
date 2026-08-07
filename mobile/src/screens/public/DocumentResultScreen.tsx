@@ -7,6 +7,7 @@ import * as Clipboard from 'expo-clipboard';
 import { documentDirectory, writeAsStringAsync, EncodingType, StorageAccessFramework } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
+import { theme } from '../../shared/theme';
 
 export default function DocumentResultScreen() {
   const navigation = useNavigation();
@@ -24,7 +25,7 @@ export default function DocumentResultScreen() {
     return (
       <View style={styles.centerBox}>
         <Text>No result found.</Text>
-        <Pressable onPress={() => navigation.goBack()}><Text style={{ color: '#0D9488', marginTop: 12 }}>Go Back</Text></Pressable>
+        <Pressable onPress={() => navigation.goBack()}><Text style={{ color: theme.colors.primary, marginTop: 12 }}>Go Back</Text></Pressable>
       </View>
     );
   }
@@ -49,7 +50,7 @@ export default function DocumentResultScreen() {
     }
     setIsSaving(true);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.15.5.96:8000';
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
       const response = await fetch(`${baseUrl}/api/documents/save`, {
         method: 'POST',
         headers: {
@@ -77,7 +78,7 @@ export default function DocumentResultScreen() {
   const downloadFile = async (format: 'pdf' | 'docx', setLoader: (val: boolean) => void) => {
     setLoader(true);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.15.5.96:8000';
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
       const title = result.templateTitle ? result.templateTitle.replace(/\s+/g, '_') : 'Document';
       
       const response = await fetch(`${baseUrl}/api/documents/export/${format}`, {
@@ -178,7 +179,7 @@ export default function DocumentResultScreen() {
           <View style={styles.documentHeader}>
             <Text style={styles.documentTitle}>{result.templateTitle}</Text>
             <Pressable onPress={copyToClipboard} style={styles.copyBtn}>
-              <Ionicons name="copy-outline" size={18} color="#0D9488" />
+              <Ionicons name="copy-outline" size={18} color={theme.colors.primary} />
               <Text style={styles.copyBtnText}>Copy</Text>
             </Pressable>
           </View>
@@ -199,17 +200,17 @@ export default function DocumentResultScreen() {
       <View style={styles.footer}>
         <View style={styles.actionRow}>
           <Pressable style={styles.actionBtn} onPress={() => downloadFile('pdf', setIsDownloadingPdf)} disabled={isDownloadingPdf}>
-            {isDownloadingPdf ? <ActivityIndicator color="#0D9488" /> : <Ionicons name="document-text-outline" size={24} color="#0D9488" />}
+            {isDownloadingPdf ? <ActivityIndicator color={theme.colors.primary} /> : <Ionicons name="document-text-outline" size={24} color={theme.colors.primary} />}
             <Text style={styles.actionBtnText}>PDF</Text>
           </Pressable>
           
           <Pressable style={styles.actionBtn} onPress={() => downloadFile('docx', setIsDownloadingDocx)} disabled={isDownloadingDocx}>
-            {isDownloadingDocx ? <ActivityIndicator color="#0D9488" /> : <Ionicons name="document-outline" size={24} color="#0D9488" />}
+            {isDownloadingDocx ? <ActivityIndicator color={theme.colors.primary} /> : <Ionicons name="document-outline" size={24} color={theme.colors.primary} />}
             <Text style={styles.actionBtnText}>Word</Text>
           </Pressable>
 
           <Pressable style={styles.actionBtn} onPress={handleSaveToAccount} disabled={isSaving}>
-            {isSaving ? <ActivityIndicator color="#0D9488" /> : <Ionicons name="save-outline" size={24} color="#0D9488" />}
+            {isSaving ? <ActivityIndicator color={theme.colors.primary} /> : <Ionicons name="save-outline" size={24} color={theme.colors.primary} />}
             <Text style={styles.actionBtnText}>Save</Text>
           </Pressable>
         </View>
@@ -223,35 +224,35 @@ export default function DocumentResultScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
   headerTitleContainer: { flex: 1, alignItems: 'center', paddingHorizontal: 16 },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', textAlign: 'center' },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  successBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#D1FAE5', padding: 16, borderRadius: 16, marginBottom: 16 },
+  successBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#D1FAE5', padding: 16, borderRadius: theme.borderRadius.lg, marginBottom: 16 },
   successTextContainer: { marginLeft: 12, flex: 1 },
   successTitle: { color: '#065F46', fontSize: 16, fontWeight: '700', marginBottom: 2 },
   successSubtitle: { color: '#047857', fontSize: 13 },
-  aiBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginBottom: 16, gap: 6 },
+  aiBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.borderRadius.xl, marginBottom: 16, gap: 6 },
   aiBadgeText: { color: '#6D28D9', fontSize: 13, fontWeight: '700' },
-  warningBox: { flexDirection: 'row', backgroundColor: '#FEF3C7', padding: 16, borderRadius: 12, marginBottom: 20, alignItems: 'flex-start' },
+  warningBox: { flexDirection: 'row', backgroundColor: '#FEF3C7', padding: 16, borderRadius: theme.borderRadius.md, marginBottom: 20, alignItems: 'flex-start' },
   warningTextContainer: { marginLeft: 12, flex: 1 },
   warningText: { color: '#92400E', fontSize: 14, marginBottom: 4 },
-  documentCard: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, overflow: 'hidden', marginBottom: 20 },
-  documentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', backgroundColor: '#F8FAFC' },
-  documentTitle: { color: '#1E293B', fontSize: 15, fontWeight: '700', flex: 1 },
-  copyBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDFA', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, gap: 4 },
-  copyBtnText: { color: '#0D9488', fontSize: 13, fontWeight: '700' },
+  documentCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, overflow: 'hidden', marginBottom: 20 },
+  documentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background },
+  documentTitle: { color: theme.colors.textPrimary, fontSize: 15, fontWeight: '700', flex: 1 },
+  copyBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDFA', paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.borderRadius.sm, gap: 4 },
+  copyBtnText: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   documentBody: { padding: 20 },
   documentContent: { color: '#334155', fontSize: 14, lineHeight: 22, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  disclaimerBox: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#F1F5F9', padding: 16, borderRadius: 12, gap: 12 },
-  disclaimerText: { color: '#475569', fontSize: 13, lineHeight: 20, flex: 1 },
-  footer: { padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', gap: 16 },
+  disclaimerBox: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: theme.colors.secondary, padding: 16, borderRadius: theme.borderRadius.md, gap: 12 },
+  disclaimerText: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 20, flex: 1 },
+  footer: { padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderTopColor: theme.colors.border, gap: 16 },
   actionRow: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
-  actionBtn: { flex: 1, backgroundColor: '#F0FDFA', borderRadius: 16, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#CCFBF1' },
-  actionBtnText: { color: '#0D9488', fontSize: 13, fontWeight: '700', marginTop: 4 },
-  doneBtn: { backgroundColor: '#1E293B', borderRadius: 16, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
-  doneBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  actionBtn: { flex: 1, backgroundColor: '#F0FDFA', borderRadius: theme.borderRadius.lg, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#CCFBF1' },
+  actionBtnText: { color: theme.colors.primary, fontSize: 13, fontWeight: '700', marginTop: 4 },
+  doneBtn: { backgroundColor: theme.colors.textPrimary, borderRadius: theme.borderRadius.lg, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
+  doneBtnText: { color: theme.colors.surface, fontSize: 16, fontWeight: '700' },
 });

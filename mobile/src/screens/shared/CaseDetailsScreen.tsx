@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { theme } from '../../shared/theme';
 
 type CaseDetailsRouteProp = RouteProp<RootStackParamList, 'CaseDetails'>;
 
@@ -203,15 +204,15 @@ export default function CaseDetailsScreen() {
   };
 
   const getStatusColor = (status: string) => {
-    if (status.includes('Closed') || status === 'Withdrawn') return { bg: '#F1F5F9', text: '#64748B', border: '#E2E8F0' };
+    if (status.includes('Closed') || status === 'Withdrawn') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
     if (status === 'In Progress' || status === 'Accepted') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
-    return { bg: '#FEF3C7', text: '#D97706', border: '#FDE68A' };
+    return { bg: '#FEF3C7', text: theme.colors.warning, border: '#FDE68A' };
   };
 
   if (isLoading) {
     return (
       <View style={[styles.container, styles.centerBox]}>
-        <ActivityIndicator size="large" color="#0D9488" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -233,18 +234,16 @@ export default function CaseDetailsScreen() {
 
   try {
     const jsonDesc = JSON.parse(c.description);
-    if (jsonDesc.isJsonFormat) {
-      parsedDesc = {
-        concern: jsonDesc.rawInput.description || '',
-        opposing: jsonDesc.rawInput.opposingPartyType || '',
-        urgency: jsonDesc.rawInput.urgency || '',
-        location: jsonDesc.rawInput.province || '',
-        income: jsonDesc.rawInput.income || '',
-        deadline: jsonDesc.rawInput.deadlineDate || 'None',
-        evidence: jsonDesc.rawInput.evidence || '',
-        outcome: jsonDesc.rawInput.outcome || ''
-      };
-    }
+    parsedDesc = {
+      concern: jsonDesc.summary || jsonDesc.description || jsonDesc.concern || '',
+      opposing: jsonDesc.opposingParty || jsonDesc.opposing_party || '',
+      urgency: jsonDesc.urgency || '',
+      location: jsonDesc.location || '',
+      income: jsonDesc.income || '',
+      deadline: jsonDesc.deadlineDate || jsonDesc.deadline || 'None',
+      evidence: jsonDesc.evidence || '',
+      outcome: jsonDesc.outcome || ''
+    };
   } catch (e) {
     const descLines = c.description.split('\n');
     const concernLines: string[] = [];
@@ -262,6 +261,37 @@ export default function CaseDetailsScreen() {
     
     parsedDesc.concern = concernLines.join('\n').trim();
   }
+
+  const handleWithdrawCase = () => {
+    Alert.alert(
+      "Kanselahin ang Kaso",
+      "Sigurado ka bang gusto mong kanselahin ang kasong ito?",
+      [
+        { text: "Huwag", style: "cancel" },
+        { 
+          text: "Kanselahin", 
+          style: "destructive",
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              if (!c) return;
+              const { error } = await mobileSupabase
+                .from('cases')
+                .update({ status: 'Withdrawn' })
+                .eq('id', c.id);
+              if (error) throw error;
+              Alert.alert('Success', 'Nakansela na ang iyong kaso.');
+              fetchCaseDetails();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Nabigo ang pagkansela ng kaso.');
+            } finally {
+              setIsSubmitting(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -283,56 +313,70 @@ export default function CaseDetailsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionLabel}>OVERVIEW</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Assigned Attorney</Text>
-            <Text style={styles.infoValue}>{c.assignedTo || 'Unassigned'}</Text>
+          <View style={styles.gridContainer}>
+            <View style={styles.gridItem}>
+              <Text style={styles.infoLabel}>Assigned Attorney</Text>
+              <Text style={styles.infoValueCompact}>{c.assignedTo || 'Unassigned'}</Text>
+            </View>
+            <View style={styles.gridItem}>
+              <Text style={styles.infoLabel}>Date Created</Text>
+              <Text style={styles.infoValueCompact}>{c.createdAt}</Text>
+            </View>
+            {parsedDesc.urgency ? (
+              <View style={styles.gridItem}>
+                <Text style={styles.infoLabel}>Urgency</Text>
+                <Text style={styles.infoValueCompact}>{parsedDesc.urgency}</Text>
+              </View>
+            ) : null}
+            {parsedDesc.location ? (
+              <View style={styles.gridItem}>
+                <Text style={styles.infoLabel}>Location</Text>
+                <Text style={styles.infoValueCompact}>{parsedDesc.location}</Text>
+              </View>
+            ) : null}
+            {parsedDesc.income ? (
+              <View style={styles.gridItem}>
+                <Text style={styles.infoLabel}>Income Bracket</Text>
+                <Text style={styles.infoValueCompact}>{parsedDesc.income}</Text>
+              </View>
+            ) : null}
+            {parsedDesc.opposing ? (
+              <View style={[styles.gridItem, { width: '100%' }]}>
+                <Text style={styles.infoLabel}>Opposing Party</Text>
+                <Text style={styles.infoValueCompact}>{parsedDesc.opposing}</Text>
+              </View>
+            ) : null}
+            {parsedDesc.evidence ? (
+              <View style={[styles.gridItem, { width: '100%' }]}>
+                <Text style={styles.infoLabel}>Available Evidence</Text>
+                <Text style={styles.infoValueCompact}>{parsedDesc.evidence}</Text>
+              </View>
+            ) : null}
+            {parsedDesc.outcome ? (
+              <View style={[styles.gridItem, { width: '100%' }]}>
+                <Text style={styles.infoLabel}>Desired Outcome</Text>
+                <Text style={styles.infoValueCompact}>{parsedDesc.outcome}</Text>
+              </View>
+            ) : null}
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Date Created</Text>
-            <Text style={styles.infoValue}>{c.createdAt}</Text>
-          </View>
-          {parsedDesc.opposing ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Opposing Party</Text>
-              <Text style={styles.infoValue}>{parsedDesc.opposing}</Text>
-            </View>
-          ) : null}
-          {parsedDesc.urgency ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Urgency</Text>
-              <Text style={styles.infoValue}>{parsedDesc.urgency}</Text>
-            </View>
-          ) : null}
-          {parsedDesc.location ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Location</Text>
-              <Text style={styles.infoValue}>{parsedDesc.location}</Text>
-            </View>
-          ) : null}
-          {parsedDesc.income ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Income Bracket</Text>
-              <Text style={styles.infoValue}>{parsedDesc.income}</Text>
-            </View>
-          ) : null}
-          {parsedDesc.evidence ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Available Evidence</Text>
-              <Text style={styles.infoValue}>{parsedDesc.evidence}</Text>
-            </View>
-          ) : null}
-          {parsedDesc.outcome ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Desired Outcome</Text>
-              <Text style={styles.infoValue}>{parsedDesc.outcome}</Text>
-            </View>
-          ) : null}
+          
           <View style={styles.descriptionBox}>
-            <Text style={styles.descriptionText}>{parsedDesc.concern}</Text>
+            <Text style={styles.infoLabel}>Concern</Text>
+            <Text style={[styles.descriptionText, { marginTop: 4 }]}>{parsedDesc.concern}</Text>
           </View>
         </View>
 
         <View style={styles.actionGrid}>
+          {c.status === 'Pending Triage' && isClient && (
+            <Pressable 
+              style={[styles.actionBtn, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]} 
+              onPress={handleWithdrawCase}
+            >
+              <Ionicons name="close-circle" size={20} color="#DC2626" style={{ marginRight: 8 }} />
+              <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Cancel Case</Text>
+            </Pressable>
+          )}
+
           <Pressable 
             style={[styles.actionBtn, styles.actionBtnPrimary]} 
             onPress={() => navigation.navigate('ChatThread', { threadId: c.id, threadName: c.assignedTo || 'Support' })}
@@ -343,12 +387,12 @@ export default function CaseDetailsScreen() {
           
           {isAttorney ? (
             <Pressable style={styles.actionBtn} onPress={() => setIsLogModalVisible(true)}>
-              <Ionicons name="time" size={20} color="#0D9488" style={{ marginRight: 8 }} />
+              <Ionicons name="time" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
               <Text style={styles.actionBtnText}>Log Hours</Text>
             </Pressable>
           ) : (
             <Pressable style={styles.actionBtn}>
-              <Ionicons name="document-attach" size={20} color="#0D9488" style={{ marginRight: 8 }} />
+              <Ionicons name="document-attach" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
               <Text style={styles.actionBtnText}>Upload Doc</Text>
             </Pressable>
           )}
@@ -457,58 +501,61 @@ export default function CaseDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 24, paddingBottom: 40 },
   titleSection: { marginBottom: 24 },
-  caseTitle: { color: '#1E293B', fontSize: 26, fontWeight: '800', marginBottom: 12 },
-  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, alignSelf: 'flex-start' },
+  caseTitle: { color: theme.colors.textPrimary, fontSize: 26, fontWeight: '800', marginBottom: 12 },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.borderRadius.md, borderWidth: 1, alignSelf: 'flex-start' },
   statusText: { fontSize: 13, fontWeight: '700' },
   
-  card: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, marginBottom: 8, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
-  sectionLabel: { color: '#0D9488', fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 16 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  infoLabel: { color: '#64748B', fontSize: 14 },
-  infoValue: { color: '#1E293B', fontSize: 14, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
-  descriptionBox: { marginTop: 16, backgroundColor: '#F8FAFC', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
-  descriptionText: { color: '#475569', fontSize: 14, lineHeight: 22 },
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 20, marginBottom: 8, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  sectionLabel: { color: theme.colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 16 },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.secondary, paddingBottom: 16 },
+  gridItem: { width: '45%' },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.secondary },
+  infoLabel: { color: theme.colors.textSecondary, fontSize: 13, marginBottom: 4 },
+  infoValue: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
+  infoValueCompact: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600', textAlign: 'left' },
+  descriptionBox: { marginTop: 16, backgroundColor: theme.colors.background, padding: 16, borderRadius: theme.borderRadius.md, borderWidth: 1, borderColor: theme.colors.border },
+  descriptionText: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 22 },
   
-  actionGrid: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  actionBtn: { flex: 1, backgroundColor: '#F0FDFA', borderRadius: 16, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#CCFBF1' },
-  actionBtnPrimary: { backgroundColor: '#0D9488', borderColor: '#0D9488' },
-  actionBtnText: { color: '#0D9488', fontSize: 14, fontWeight: '700' },
-  actionBtnTextPrimary: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  actionGrid: { flexDirection: 'column', gap: 12, marginTop: 16 },
+  actionBtn: { flex: 1, backgroundColor: '#F0FDFA', borderRadius: theme.borderRadius.lg, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#CCFBF1' },
+  actionBtnPrimary: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  actionBtnText: { color: theme.colors.primary, fontSize: 14, fontWeight: '700' },
+  actionBtnTextPrimary: { color: theme.colors.surface, fontSize: 14, fontWeight: '800' },
   
   logItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
-  logItemBorder: { borderTopWidth: 1, borderTopColor: '#F1F5F9' },
-  logHours: { color: '#1E293B', fontSize: 15, fontWeight: '700' },
-  logDate: { color: '#94A3B8', fontSize: 13 },
-  logDesc: { color: '#475569', fontSize: 13, lineHeight: 18, marginTop: 4 },
-  verifyBtn: { backgroundColor: '#0D9488', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
-  verifyBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  verifiedPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#DCFCE7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  logItemBorder: { borderTopWidth: 1, borderTopColor: theme.colors.secondary },
+  logHours: { color: theme.colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  logDate: { color: theme.colors.textSecondary, fontSize: 13 },
+  logDesc: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 4 },
+  verifyBtn: { backgroundColor: theme.colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: theme.borderRadius.md },
+  verifyBtnText: { color: theme.colors.surface, fontSize: 13, fontWeight: '700' },
+  verifiedPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#DCFCE7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.borderRadius.md },
   verifiedText: { color: '#15803D', fontSize: 12, fontWeight: '700' },
 
   timeline: { marginTop: 8 },
   timelineItem: { flexDirection: 'row' },
   timelineNode: { width: 32, alignItems: 'center' },
-  timelineDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#0D9488', marginTop: 4 },
-  timelineLine: { width: 2, flex: 1, backgroundColor: '#E2E8F0', marginVertical: 4 },
+  timelineDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: theme.colors.primary, marginTop: 4 },
+  timelineLine: { width: 2, flex: 1, backgroundColor: theme.colors.border, marginVertical: 4 },
   timelineContent: { flex: 1, paddingBottom: 24, paddingLeft: 8 },
-  timelineDate: { color: '#64748B', fontSize: 12, fontWeight: '600', marginBottom: 4 },
-  timelineText: { color: '#1E293B', fontSize: 15, lineHeight: 22 },
+  timelineDate: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: 4 },
+  timelineText: { color: theme.colors.textPrimary, fontSize: 15, lineHeight: 22 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'center', padding: 24 },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  modalContent: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  modalTitle: { color: '#1E293B', fontSize: 20, fontWeight: '800' },
-  modalCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  inputLabel: { color: '#475569', fontSize: 13, fontWeight: '600', marginBottom: 8 },
-  textInput: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 16, fontSize: 15, color: '#1E293B', marginBottom: 20 },
+  modalTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '800' },
+  modalCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  inputLabel: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 8 },
+  textInput: { backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.md, padding: 16, fontSize: 15, color: theme.colors.textPrimary, marginBottom: 20 },
   textArea: { height: 100 },
-  modalSubmitBtn: { backgroundColor: '#0D9488', borderRadius: 16, padding: 16, alignItems: 'center', marginTop: 8 },
-  modalSubmitText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  modalSubmitBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.lg, padding: 16, alignItems: 'center', marginTop: 8 },
+  modalSubmitText: { color: theme.colors.surface, fontSize: 16, fontWeight: '700' },
 });

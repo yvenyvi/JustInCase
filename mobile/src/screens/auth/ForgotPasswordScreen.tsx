@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View, Image, Platform, ImageBackground } from 'react-native';
+import { StyleSheet, Text, View, Platform } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { Button } from '../../components/ui/Button';
+import { InputField } from '../../components/ui/InputField';
+import { Card } from '../../components/ui/Card';
+import { theme } from '../../shared/theme';
 
 type Props = NativeStackScreenProps<any>;
 
 export default function ForgotPasswordScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
-  const [isFocusedEmail, setIsFocusedEmail] = useState(false);
 
   return (
     <KeyboardAwareScrollView 
@@ -19,173 +23,62 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
       extraScrollHeight={20}
       keyboardShouldPersistTaps="handled"
     >
-        <ImageBackground 
-          source={require('../../assets/auth_bg.png')} 
-          style={styles.topSection}
-          imageStyle={styles.topSectionBackground}
-        >
-          <Image 
-            source={require('../../assets/logo.png')} 
-            style={styles.logo} 
-            resizeMode="contain"
-          />
-          <Text style={styles.brandTitle}>JUSTICELINK</Text>
-        </ImageBackground>
+      <View style={styles.ambientGlow1} />
+      <View style={styles.ambientGlow2} />
 
-        <View style={styles.bottomSection}>
-          <Text style={styles.formTitle}>Reset Password</Text>
-          <Text style={styles.formSubtitle}>Enter your email to receive recovery instructions.</Text>
-          
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              autoCapitalize="none"
-              keyboardType="email-address"
-              placeholder="example@email.com"
-              placeholderTextColor="#94A3B8"
-              style={[styles.input, isFocusedEmail && styles.inputFocused]}
-              value={email}
-              onChangeText={setEmail}
-              onFocus={() => setIsFocusedEmail(true)}
-              onBlur={() => setIsFocusedEmail(false)}
-            />
-          </View>
-
-          <Pressable 
-            style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]} 
-          >
-            <Text style={styles.primaryButtonText}>SEND RESET LINK</Text>
-          </Pressable>
-
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Remember your password? </Text>
-            <Pressable onPress={() => navigation.goBack()}>
-              <Text style={styles.loginLink}>Login</Text>
-            </Pressable>
+      <View style={styles.topSection}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoOuter}>
+            <View style={styles.logoInner}>
+              <Ionicons name="key-outline" size={40} color="#FFFFFF" />
+            </View>
           </View>
         </View>
+        <Text style={styles.brandTitle}>JUSTICELINK</Text>
+      </View>
+
+      <Card style={styles.bottomSection}>
+        <Text style={styles.formTitle}>Reset Password</Text>
+        <Text style={styles.formSubtitle}>Enter your email to receive recovery instructions.</Text>
+        
+        <InputField
+          label="Email"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          placeholder="example@email.com"
+          value={email}
+          onChangeText={setEmail}
+        />
+
+        <Button 
+          title="SEND RESET LINK"
+          onPress={() => {}}
+          style={{ marginTop: 8, marginBottom: 24 }}
+        />
+
+        <Button 
+          title="BACK TO LOGIN"
+          variant="outline"
+          onPress={() => navigation.goBack()}
+        />
+      </Card>
     </KeyboardAwareScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A111F',
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  topSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-    minHeight: 200,
-  },
-  topSectionBackground: {
-    opacity: 0.6,
-  },
-  logo: {
-    width: 70,
-    height: 70,
-    marginBottom: 12,
-    borderRadius: 16,
-  },
-  brandTitle: {
-    color: '#D4AF37',
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  bottomSection: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    paddingTop: 32,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 20,
-  },
-  formTitle: {
-    color: '#0F172A',
-    fontSize: 28,
-    fontWeight: '800',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  formSubtitle: {
-    color: '#64748B',
-    fontSize: 15,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  inputLabel: {
-    color: '#64748B',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 8,
-    marginLeft: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    color: '#0F172A',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    fontSize: 16,
-  },
-  inputFocused: {
-    borderColor: '#D4AF37',
-    borderWidth: 2,
-    paddingHorizontal: 19,
-    paddingVertical: 15,
-  },
-  primaryButton: {
-    backgroundColor: '#D4AF37',
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#D4AF37',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  primaryButtonPressed: {
-    backgroundColor: '#B99320',
-  },
-  primaryButtonText: {
-    color: '#0A111F',
-    fontWeight: '800',
-    fontSize: 16,
-    letterSpacing: 1,
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  loginText: {
-    color: '#64748B',
-    fontSize: 14,
-  },
-  loginLink: {
-    color: '#0F172A',
-    fontSize: 14,
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: theme.borderRadius.xl0, backgroundColor: theme.colors.primaryLight, transform: [{ scaleX: 1.5 }] },
+  ambientGlow2: { position: 'absolute', top: 300, right: -150, width: 400, height: 400, borderRadius: theme.borderRadius.xl0, backgroundColor: theme.colors.primaryLight, opacity: 0.5 },
+  scrollContent: { flexGrow: 1, justifyContent: 'space-between' },
+  
+  topSection: { alignItems: 'center', paddingTop: 80, paddingBottom: 40 },
+  logoContainer: { marginBottom: 20 },
+  logoOuter: { width: 110, height: 110, borderRadius: 35, backgroundColor: theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center', ...theme.shadows.soft },
+  logoInner: { width: 80, height: 80, borderRadius: 25, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-10deg' }] },
+  brandTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 26, letterSpacing: 2 },
+  
+  bottomSection: { borderTopLeftRadius: 40, borderTopRightRadius: 40, paddingTop: 40, paddingHorizontal: 32, paddingBottom: 40, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, flex: 1 },
+  formTitle: { ...theme.typography.heading, fontSize: 32, marginBottom: 8, letterSpacing: -1 },
+  formSubtitle: { ...theme.typography.body, color: theme.colors.textSecondary, marginBottom: 40 },
 });

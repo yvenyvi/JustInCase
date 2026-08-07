@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
+import { theme } from '../../shared/theme';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -36,7 +37,7 @@ export default function DocumentGeneratorScreen() {
     setIsLoading(true);
 
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.15.5.96:8000';
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
       const token = session?.access_token || '';
 
       const headers: Record<string, string> = {
@@ -121,7 +122,7 @@ export default function DocumentGeneratorScreen() {
       >
         <View style={styles.heroSection}>
           <View style={styles.iconContainer}>
-            <Ionicons name="document-text" size={32} color="#0D9488" />
+            <Ionicons name="document-text" size={32} color={theme.colors.primary} />
           </View>
           <Text style={styles.heroTitle}>Bumuo ng Dokumento</Text>
           <Text style={styles.heroSubtitle}>Sabihin sa akin ang iyong sitwasyon, at bubuuin natin ang nararapat na dokumento para sa iyo. Hindi mo na kailangan pumili ng template.</Text>
@@ -139,7 +140,7 @@ export default function DocumentGeneratorScreen() {
         {isLoading && (
           <View style={[styles.messageBubbleWrapper, styles.wrapperAssistant]}>
             <View style={[styles.messageBubble, styles.messageAssistant, { padding: 16 }]}>
-              <ActivityIndicator color="#0D9488" size="small" />
+              <ActivityIndicator color={theme.colors.primary} size="small" />
             </View>
           </View>
         )}
@@ -165,26 +166,26 @@ export default function DocumentGeneratorScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', zIndex: 10 },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border, zIndex: 10 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
   chatScrollView: { flex: 1 },
   chatScroll: { padding: 16, paddingBottom: 40 },
   heroSection: { alignItems: 'center', marginBottom: 32, marginTop: 16 },
-  iconContainer: { width: 64, height: 64, borderRadius: 20, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  heroTitle: { color: '#1E293B', fontSize: 24, fontWeight: '800', marginBottom: 8 },
-  heroSubtitle: { color: '#64748B', fontSize: 15, lineHeight: 22, textAlign: 'center', paddingHorizontal: 20 },
+  iconContainer: { width: 64, height: 64, borderRadius: theme.borderRadius.xl, backgroundColor: theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  heroTitle: { color: theme.colors.textPrimary, fontSize: 24, fontWeight: '800', marginBottom: 8 },
+  heroSubtitle: { color: theme.colors.textSecondary, fontSize: 15, lineHeight: 22, textAlign: 'center', paddingHorizontal: 20 },
   messageBubbleWrapper: { width: '100%', marginBottom: 16, flexDirection: 'row' },
   wrapperUser: { justifyContent: 'flex-end' },
   wrapperAssistant: { justifyContent: 'flex-start' },
-  messageBubble: { maxWidth: '85%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20 },
-  messageUser: { backgroundColor: '#0D9488', borderBottomRightRadius: 4 },
-  messageAssistant: { backgroundColor: '#FFFFFF', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  messageBubble: { maxWidth: '85%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: theme.borderRadius.xl },
+  messageUser: { backgroundColor: theme.colors.primary, borderBottomRightRadius: 4 },
+  messageAssistant: { backgroundColor: theme.colors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   messageText: { fontSize: 15, lineHeight: 22 },
-  messageTextUser: { color: '#FFFFFF' },
-  messageTextAssistant: { color: '#1E293B' },
-  inputArea: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, paddingBottom: 12, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0' },
-  textInput: { flex: 1, backgroundColor: '#F1F5F9', color: '#1E293B', borderRadius: 20, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, maxHeight: 120, fontSize: 15, borderWidth: 1, borderColor: '#E2E8F0' },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#0D9488', alignItems: 'center', justifyContent: 'center', marginLeft: 8, marginBottom: 2 },
+  messageTextUser: { color: theme.colors.surface },
+  messageTextAssistant: { color: theme.colors.textPrimary },
+  inputArea: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, paddingBottom: 12, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderTopColor: theme.colors.border },
+  textInput: { flex: 1, backgroundColor: theme.colors.secondary, color: theme.colors.textPrimary, borderRadius: theme.borderRadius.xl, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, maxHeight: 120, fontSize: 15, borderWidth: 1, borderColor: theme.colors.border },
+  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', marginLeft: 8, marginBottom: 2 },
 });

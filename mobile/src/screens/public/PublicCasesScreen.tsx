@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -65,9 +66,9 @@ export default function PublicCasesScreen() {
   };
 
   const getStatusColor = (status: string) => {
-    if (status.includes('Closed') || status === 'Withdrawn') return { bg: '#F1F5F9', text: '#64748B', border: '#E2E8F0' };
+    if (status.includes('Closed') || status === 'Withdrawn') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
     if (status === 'In Progress') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
-    return { bg: '#FEF3C7', text: '#D97706', border: '#FDE68A' };
+    return { bg: '#FEF3C7', text: theme.colors.warning, border: '#FDE68A' };
   };
 
   return (
@@ -89,7 +90,7 @@ export default function PublicCasesScreen() {
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#0D9488" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : cases.length === 0 ? (
         <View style={styles.emptyState}>
@@ -123,7 +124,7 @@ export default function PublicCasesScreen() {
 
                 <View style={styles.viewBtn}>
                   <Text style={styles.viewBtnText}>Tingnan ang Kaso</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#0D9488" />
+                  <Ionicons name="arrow-forward" size={16} color={theme.colors.primary} />
                 </View>
               </Pressable>
             );
@@ -135,26 +136,26 @@ export default function PublicCasesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  headerTitle: { color: '#1E293B', fontSize: 28, fontWeight: '800', marginBottom: 4 },
-  headerSubtitle: { color: '#64748B', fontSize: 15 },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 28, fontWeight: '800', marginBottom: 4 },
+  headerSubtitle: { color: theme.colors.textSecondary, fontSize: 15 },
   headerActions: { flexDirection: 'row', gap: 12 },
-  iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  emptyTitle: { color: '#1E293B', fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { color: '#64748B', fontSize: 15, textAlign: 'center' },
+  emptyTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },
+  emptySubtitle: { color: theme.colors.textSecondary, fontSize: 15, textAlign: 'center' },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  caseCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
+  caseCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  caseTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700', flex: 1, marginRight: 12 },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
+  caseTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', flex: 1, marginRight: 12 },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.md, borderWidth: 1 },
   statusText: { fontSize: 12, fontWeight: '700' },
   cardBody: { marginBottom: 20, gap: 8 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoText: { color: '#64748B', fontSize: 14 },
-  viewBtn: { backgroundColor: '#F0FDFA', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, gap: 8, borderWidth: 1, borderColor: '#CCFBF1' },
-  viewBtnText: { color: '#0D9488', fontWeight: '700', fontSize: 14 },
+  infoText: { color: theme.colors.textSecondary, fontSize: 14 },
+  viewBtn: { backgroundColor: '#F0FDFA', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: theme.borderRadius.md, gap: 8, borderWidth: 1, borderColor: '#CCFBF1' },
+  viewBtnText: { color: theme.colors.primary, fontWeight: '700', fontSize: 14 },
 });
 

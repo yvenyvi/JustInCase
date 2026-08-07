@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
+import { theme } from '../../shared/theme';
 
 interface UserDocument {
   id: string;
@@ -25,7 +26,7 @@ export default function MyDocumentsScreen() {
     if (!session?.access_token) return;
     setIsLoading(true);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.15.5.96:8000';
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
       const response = await fetch(`${baseUrl}/api/documents`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -63,7 +64,7 @@ export default function MyDocumentsScreen() {
   const renderItem = ({ item }: { item: UserDocument }) => (
     <Pressable style={styles.card} onPress={() => handleDocumentPress(item)}>
       <View style={styles.cardIcon}>
-        <Ionicons name="document-text" size={24} color="#0D9488" />
+        <Ionicons name="document-text" size={24} color={theme.colors.primary} />
       </View>
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle}>{item.title}</Text>
@@ -85,7 +86,7 @@ export default function MyDocumentsScreen() {
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#0D9488" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : documents.length === 0 ? (
         <View style={styles.centerBox}>
@@ -107,17 +108,17 @@ export default function MyDocumentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyTitle: { color: '#334155', fontSize: 18, fontWeight: '700', marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { color: '#64748B', fontSize: 14, textAlign: 'center' },
+  emptySubtitle: { color: theme.colors.textSecondary, fontSize: 14, textAlign: 'center' },
   listContent: { padding: 16, gap: 12 },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
-  cardIcon: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, padding: 16, borderRadius: theme.borderRadius.lg, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
+  cardIcon: { width: 48, height: 48, borderRadius: theme.borderRadius.md, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
   cardContent: { flex: 1 },
-  cardTitle: { color: '#1E293B', fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  cardDate: { color: '#64748B', fontSize: 13 },
+  cardTitle: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  cardDate: { color: theme.colors.textSecondary, fontSize: 13 },
 });

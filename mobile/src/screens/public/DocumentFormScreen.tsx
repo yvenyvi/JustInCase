@@ -5,6 +5,7 @@ import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
+import { theme } from '../../shared/theme';
 
 export default function DocumentFormScreen() {
   const navigation = useNavigation<any>();
@@ -21,7 +22,7 @@ export default function DocumentFormScreen() {
     return (
       <View style={styles.centerBox}>
         <Text>Template not found.</Text>
-        <Pressable onPress={() => navigation.goBack()}><Text style={{ color: '#0D9488', marginTop: 12 }}>Go Back</Text></Pressable>
+        <Pressable onPress={() => navigation.goBack()}><Text style={{ color: theme.colors.primary, marginTop: 12 }}>Go Back</Text></Pressable>
       </View>
     );
   }
@@ -184,25 +185,25 @@ export default function DocumentFormScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 24, paddingBottom: 40 },
   templateInfo: { marginBottom: 32 },
-  templateCategory: { color: '#0D9488', fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  templateTitle: { color: '#1E293B', fontSize: 24, fontWeight: '800', marginBottom: 12 },
-  templateDesc: { color: '#64748B', fontSize: 15, lineHeight: 24 },
-  formContainer: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  sectionTitle: { color: '#1E293B', fontSize: 16, fontWeight: '700', marginBottom: 16 },
+  templateCategory: { color: theme.colors.primary, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  templateTitle: { color: theme.colors.textPrimary, fontSize: 24, fontWeight: '800', marginBottom: 12 },
+  templateDesc: { color: theme.colors.textSecondary, fontSize: 15, lineHeight: 24 },
+  formContainer: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 20, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  sectionTitle: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 16 },
   inputGroup: { marginBottom: 20 },
-  label: { color: '#475569', fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  requiredStar: { color: '#EF4444' },
-  input: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: '#1E293B' },
+  label: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  requiredStar: { color: theme.colors.error },
+  input: { backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.md, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: theme.colors.textPrimary },
   textArea: { minHeight: 100, paddingTop: 12 },
-  footer: { padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0' },
-  generateBtn: { backgroundColor: '#0D9488', borderRadius: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#0D9488', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
-  generateBtnDisabled: { backgroundColor: '#94A3B8', shadowOpacity: 0 },
-  generateBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  footer: { padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderTopColor: theme.colors.border },
+  generateBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.lg, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  generateBtnDisabled: { backgroundColor: theme.colors.textSecondary, shadowOpacity: 0 },
+  generateBtnText: { color: theme.colors.surface, fontSize: 16, fontWeight: '700' },
 });
