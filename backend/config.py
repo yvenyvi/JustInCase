@@ -61,6 +61,7 @@ class Config:
     supabase_url: str
     supabase_service_role_key: str
     legal_verification_bucket: str
+    gemini_api_keys: tuple[str, ...]
     groq_api_keys: tuple[str, ...]
     groq_model: str
     didit_api_key: str
@@ -78,6 +79,10 @@ config = Config(
     supabase_url=_get_env("SUPABASE_URL", _get_env("VITE_SUPABASE_URL", "")).rstrip("/"),
     supabase_service_role_key=_get_env("SUPABASE_SERVICE_ROLE_KEY", "").strip(),
     legal_verification_bucket=_get_env("LEGAL_VERIFICATION_BUCKET", "verification-documents").strip() or "verification-documents",
+    gemini_api_keys=tuple(filter(None, [
+        _get_env("GEMINI_API_KEY_1", "").strip(),
+        _get_env("GEMINI_API_KEY_2", "").strip(),
+    ])),
     groq_api_keys=tuple(filter(None, [
         _get_env("GROQ_API_KEY_1", "").strip(),
         _get_env("GROQ_API_KEY_2", "").strip(),

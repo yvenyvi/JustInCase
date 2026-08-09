@@ -476,7 +476,7 @@ def document_generate(
 def get_lawyers() -> dict[str, Any]:
     try:
         resp = httpx.get(
-            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,selfie_url&limit=20",
+            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,selfie_url,pro_bono_logs!pro_bono_logs_attorney_id_fkey(hours,is_verified)",
             headers={
                 "apikey": config.supabase_service_role_key,
                 "Authorization": f"Bearer {config.supabase_service_role_key}",
@@ -484,7 +484,19 @@ def get_lawyers() -> dict[str, Any]:
             timeout=10,
         )
         resp.raise_for_status()
-        return {"lawyers": resp.json()}
+        lawyers_data = resp.json()
+        
+        # Filter lawyers who have < 60 verified pro-bono hours
+        filtered_lawyers = []
+        for l in lawyers_data:
+            logs = l.get("pro_bono_logs") or []
+            total_hours = sum(float(log.get("hours", 0)) for log in logs if log.get("is_verified"))
+            if total_hours < 60:
+                l.pop("pro_bono_logs", None) # clean up before sending to client
+                filtered_lawyers.append(l)
+                
+        # Limit to 20 after filtering
+        return {"lawyers": filtered_lawyers[:20]}
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to fetch lawyers.") from exc
 

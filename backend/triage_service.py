@@ -4,6 +4,7 @@ from typing import Any
 
 from config import config
 from groq_client import call_groq
+from gemini_client import call_gemini
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +58,24 @@ Provide a qualitative assessment for an attorney. Return ONLY a valid JSON objec
   "recommendation_reason": "A 1-sentence explanation to the client why this lawyer is the best fit (e.g. 'Atty. Santos is located near you and has a firm that can handle this.'). If no match, leave empty."
 }}"""
 
-    raw_content = call_groq(
-        messages=[{"role": "user", "content": prompt}],
-        model="llama-3.1-8b-instant",
-        temperature=0.2,
-        timeout=45.0,
-    )
+    try:
+        if config.gemini_api_keys:
+            raw_content = call_gemini(
+                messages=[{"role": "user", "content": prompt}],
+                model="gemini-flash-latest",
+                temperature=0.2,
+                timeout=45.0,
+            )
+        else:
+            raise ValueError("Gemini key not configured")
+    except Exception as e:
+        logger.warning("Gemini API failed, falling back to Groq: %s", e)
+        raw_content = call_groq(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.1-8b-instant",
+            temperature=0.2,
+            timeout=45.0,
+        )
 
     # Clean markdown backticks if present
     if raw_content.startswith("```"):
@@ -93,13 +106,14 @@ You need the following details:
 6. Desired Outcome
 7. Lawyer Preference (Pro Bono or Private)
 
-Step 1: CAREFULLY analyze the user's message to extract the details listed above. You must NOT ask for information that the user has already provided. For example, if the user explicitly mentions who they are complaining about (like a business partner, neighbor, husband, or company), consider the Opposing Party Type completely fulfilled and DO NOT ask them to clarify it from a specific list. Be smart in inferring details from context.
-Step 2: If you are STILL MISSING important information after reviewing everything the user has said, you MUST ask the user for it. 
+Step 1: CAREFULLY analyze the user's message to extract the details listed above. You must NOT ask for information that the user has already provided or can be reasonably inferred. For example, if the user explicitly mentions who they are complaining about (like a business partner, neighbor, husband, or company), consider the Opposing Party Type completely fulfilled. If they mention unpaid salary, the desired outcome is obviously to get paid. Be smart and decisive in inferring details from context. DO NOT nitpick or ask for clarification if the general idea is clear.
+Step 2: If you are STILL completely missing one of the 7 core pieces of information, you MUST ask the user for it. 
   - Prefix your response strictly with 'QUESTION: '.
   - Formulate your question in a polite, empathetic Tagalog/Taglish sentence.
   - Ask only 1 missing item at a time to keep it conversational.
+  - If the user hasn't specified their Lawyer Preference, YOU MUST EXPLICITLY ASK them (e.g., "Gusto niyo po ba ng libreng abogado (Pro Bono) o private lawyer?").
   - ONLY if the question you are currently asking is a multiple-choice question, add a single line at the very end of your response formatted exactly like this: OPTIONS: ["Option 1", "Option 2"]. DO NOT output OPTIONS for details you already know or questions you are not currently asking.
-Step 3: If the user uploaded a document, extract the details you need from it to avoid asking them redundantly.
+Step 3: If you have enough information to form a reasonable case summary (even if minor details are vague, as long as the 7 core requirements are generally present), YOU MUST STOP ASKING QUESTIONS. Immediately proceed to Step 4.
 Step 4: Once you have ALL the necessary information, you must output a final assessment. Prefix your response strictly with 'TRIAGE_RESULT: ' followed immediately by a valid JSON object containing:
 {
   "category_of_law": "The most appropriate legal category (e.g., Labor Law, Family Law, Criminal Defense, Civil Law, Property Law)",
@@ -111,7 +125,7 @@ Step 4: Once you have ALL the necessary information, you must output a final ass
   "location": "The province/city",
   "income": "Income bracket",
   "evidence": "Evidence available",
-  "lawyer_preference": "Pro Bono / Private / Any"
+  "lawyer_preference": "Must be EXACTLY 'Pro Bono', 'Private', or 'Any'."
 }
 """
 
@@ -131,10 +145,22 @@ def generate_interactive_triage(history: list[dict[str, Any]]) -> str:
     messages: list[dict[str, str]] = [{"role": "system", "content": INTERACTIVE_TRIAGE_PROMPT.strip()}]
     messages.extend(_normalize_chat_history(history))
 
-    return call_groq(
-        messages=messages,
-        model="llama-3.1-8b-instant",
-        temperature=0.3,
-        max_tokens=2000,
-        timeout=60.0,
-    )
+    try:
+        if config.gemini_api_keys:
+            return call_gemini(
+                messages=messages,
+                model="gemini-flash-latest",
+                temperature=0.3,
+                timeout=60.0,
+            )
+        else:
+            raise ValueError("Gemini key not configured")
+    except Exception as e:
+        logger.warning("Gemini API failed, falling back to Groq: %s", e)
+        return call_groq(
+            messages=messages,
+            model="llama-3.1-8b-instant",
+            temperature=0.3,
+            max_tokens=2000,
+            timeout=60.0,
+        )
