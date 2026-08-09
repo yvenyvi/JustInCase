@@ -108,15 +108,17 @@ export default function TriageScreen() {
       } else {
         let questionText = reply.replace(/^QUESTION:\s*/i, '');
         let extractedOptions: string[] = [];
-        const optionsMatch = questionText.match(/OPTIONS:\s*(\[.*\])/i);
+        const optionsMatch = questionText.match(/OPTIONS:\s*(\[.*?\])/i);
         if (optionsMatch) {
           try {
             extractedOptions = JSON.parse(optionsMatch[1]);
-            questionText = questionText.replace(/OPTIONS:\s*\[.*\]/i, '').trim();
           } catch (e) {
             console.error("Failed to parse options", e);
           }
         }
+        // Always strip OPTIONS from the text so it never shows to the user
+        questionText = questionText.replace(/OPTIONS:\s*\[.*?\]/gi, '').trim();
+        
         setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: questionText, options: extractedOptions.length > 0 ? extractedOptions : undefined }]);
       }
     } catch (error) {
@@ -149,7 +151,7 @@ export default function TriageScreen() {
   return (
     <View style={[styles.container, { paddingBottom: keyboardHeight > 0 ? keyboardHeight + insets.bottom : 0 }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.navigate('Dashboard')} style={styles.backBtn}>
+        <Pressable onPress={() => navigation.reset({ index: 0, routes: [{ name: 'PublicHome' }] })} style={styles.backBtn}>
           <Ionicons name="close" size={24} color="#64748B" />
         </Pressable>
         <Text style={styles.headerTitle}>AI Triage Intake</Text>
@@ -263,8 +265,8 @@ const styles = StyleSheet.create({
   textInput: { flex: 1, backgroundColor: theme.colors.secondary, color: theme.colors.textPrimary, borderRadius: theme.borderRadius.xl, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, maxHeight: 120, fontSize: 15, borderWidth: 1, borderColor: theme.colors.border },
   sendBtn: { width: 44, height: 44, borderRadius: theme.borderRadius.round, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', marginLeft: 8, marginBottom: 2 },
   resetBtn: { width: 44, height: 44, borderRadius: theme.borderRadius.round, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
-  optionsContainer: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-  optionsContent: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
-  optionBtn: { backgroundColor: theme.colors.primaryLight, paddingHorizontal: 16, paddingVertical: 8, borderRadius: theme.borderRadius.xl, borderWidth: 1, borderColor: '#C7D2FE' },
-  optionText: { color: theme.colors.primary, fontSize: 14, fontWeight: '600' },
+  optionsContainer: { paddingBottom: 8, marginTop: -8 },
+  optionsContent: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+  optionBtn: { backgroundColor: theme.colors.surface, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, borderWidth: 1.5, borderColor: theme.colors.primary, ...theme.shadows.soft },
+  optionText: { color: theme.colors.primary, fontSize: 14, fontWeight: '700' },
 });

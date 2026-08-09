@@ -68,8 +68,8 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: theme.borderRadius.xl0, backgroundColor: theme.colors.primaryLight, transform: [{ scaleX: 1.5 }] },
-  ambientGlow2: { position: 'absolute', top: 300, right: -150, width: 400, height: 400, borderRadius: theme.borderRadius.xl0, backgroundColor: theme.colors.primaryLight, opacity: 0.5 },
+  ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: theme.borderRadius.round, backgroundColor: theme.colors.primaryLight, transform: [{ scaleX: 1.5 }] },
+  ambientGlow2: { position: 'absolute', top: 300, right: -150, width: 400, height: 400, borderRadius: theme.borderRadius.round, backgroundColor: theme.colors.primaryLight, opacity: 0.5 },
   scrollContent: { flexGrow: 1, justifyContent: 'space-between' },
   
   topSection: { alignItems: 'center', paddingTop: 80, paddingBottom: 40 },

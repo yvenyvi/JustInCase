@@ -472,6 +472,23 @@ def document_generate(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to generate document draft right now.") from exc
 
 
+@app.get("/api/lawyers")
+def get_lawyers() -> dict[str, Any]:
+    try:
+        resp = httpx.get(
+            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,selfie_url&limit=20",
+            headers={
+                "apikey": config.supabase_service_role_key,
+                "Authorization": f"Bearer {config.supabase_service_role_key}",
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return {"lawyers": resp.json()}
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to fetch lawyers.") from exc
+
+
 @app.post("/api/triage/analyze")
 def triage_analyze(body: TriageAnalyzeBody) -> dict[str, Any]:
     deadline_str = f"Deadline: {body.deadlineDate}" if (body.hasDeadline and body.deadlineDate) else "None"
