@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { theme } from '../../shared/theme';
+import { NotificationBell } from '../../components/ui/NotificationBell';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -107,7 +108,8 @@ export default function LegalDashboardScreen() {
             const { data: logsData } = await mobileSupabase
               .from('pro_bono_logs')
               .select('hours, case_id')
-              .eq('attorney_id', user.id);
+              .eq('attorney_id', user.id)
+              .eq('is_verified', true);
             
             let pBono = 0;
             let pPrivate = 0;
@@ -148,9 +150,12 @@ export default function LegalDashboardScreen() {
               <Text style={styles.name}>Atty. {firstName}</Text>
             )}
           </View>
-          <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('Profile' as any)}>
-            <Ionicons name="person" size={24} color={theme.colors.primary} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <NotificationBell />
+            <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('Profile' as any)}>
+              <Ionicons name="person" size={24} color={theme.colors.primary} />
+            </Pressable>
+          </View>
         </View>
         <View style={styles.tipBox}>
           <Ionicons name="scale-outline" size={20} color="#047857" style={{ marginRight: 8 }} />
@@ -220,12 +225,12 @@ export default function LegalDashboardScreen() {
                   </View>
                   <Text style={styles.caseTitle} numberOfLines={1}>{c.title}</Text>
                   <Text style={styles.casePreview} numberOfLines={2}>
-                    {parsedDesc && parsedDesc.isJsonFormat ? parsedDesc.rawInput.description : c.description || 'No description provided'}
+                    {parsedDesc?.summary || parsedDesc?.rawInput?.description || c.description || 'No description provided'}
                   </Text>
                   <View style={styles.caseFooter}>
                     <View style={styles.locationContainer}>
                       <Ionicons name="location-outline" size={14} color="#64748B" />
-                      <Text style={styles.locationText}>{parsedDesc?.rawInput?.province || 'Location Unspecified'}</Text>
+                      <Text style={styles.locationText}>{parsedDesc?.location || parsedDesc?.rawInput?.province || 'Location Unspecified'}</Text>
                     </View>
                   </View>
                   <Pressable 
@@ -275,12 +280,12 @@ export default function LegalDashboardScreen() {
                   </View>
                   <Text style={styles.caseTitle} numberOfLines={1}>{c.title}</Text>
                   <Text style={styles.casePreview} numberOfLines={2}>
-                    {parsedDesc && parsedDesc.isJsonFormat ? parsedDesc.rawInput.description : c.description || 'No description provided'}
+                    {parsedDesc?.summary || parsedDesc?.rawInput?.description || c.description || 'No description provided'}
                   </Text>
                   <View style={styles.caseFooter}>
                     <View style={styles.locationContainer}>
                       <Ionicons name="location-outline" size={14} color="#64748B" />
-                      <Text style={styles.locationText}>{parsedDesc?.rawInput?.province || 'Location Unspecified'}</Text>
+                      <Text style={styles.locationText}>{parsedDesc?.location || parsedDesc?.rawInput?.province || 'Location Unspecified'}</Text>
                     </View>
                   </View>
                   <Pressable 
@@ -333,12 +338,12 @@ export default function LegalDashboardScreen() {
                   </View>
                   <Text style={styles.caseTitle} numberOfLines={1}>{c.title}</Text>
                   <Text style={styles.casePreview} numberOfLines={2}>
-                    {parsedDesc && parsedDesc.isJsonFormat ? parsedDesc.rawInput.description : c.description || 'No description provided'}
+                    {parsedDesc?.summary || parsedDesc?.rawInput?.description || c.description || 'No description provided'}
                   </Text>
                   <View style={styles.caseFooter}>
                     <View style={styles.locationContainer}>
                       <Ionicons name="location-outline" size={14} color="#64748B" />
-                      <Text style={styles.locationText}>{parsedDesc?.rawInput?.province || 'Location Unspecified'}</Text>
+                      <Text style={styles.locationText}>{parsedDesc?.location || parsedDesc?.rawInput?.province || 'Location Unspecified'}</Text>
                     </View>
                   </View>
                   <Pressable 

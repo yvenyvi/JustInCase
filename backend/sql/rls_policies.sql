@@ -109,7 +109,10 @@ CREATE POLICY "cases_attorney_update" ON public.cases
     attorney_id = auth.uid()
     OR (attorney_id IS NULL AND status = 'Pending Triage')
   )
-  WITH CHECK (attorney_id = auth.uid());
+  WITH CHECK (
+    attorney_id = auth.uid()
+    OR attorney_id IS NULL
+  );
 
 -- Admins can do everything
 CREATE POLICY "cases_admin_all" ON public.cases

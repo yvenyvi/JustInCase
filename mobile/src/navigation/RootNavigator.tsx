@@ -53,11 +53,11 @@ export function RootNavigator() {
               <Stack.Screen name="PublicDocumentResult" component={DocumentResultScreen} />
               <Stack.Screen name="PublicMyDocuments" component={require('../screens/public/MyDocumentsScreen').default} />
               <Stack.Screen name="PublicRightsLibrary" component={RightsLibraryScreen} />
-              <Stack.Screen name="PublicNotifications" component={NotificationsScreen} />
             </Stack.Group>
           )}
 
           {/* Shared Screens (Public, Legal, Admin) */}
+          <Stack.Screen name="PublicNotifications" component={NotificationsScreen} />
           <Stack.Screen name="ChatThread" component={ChatThreadScreen} />
           <Stack.Screen name="CaseDetails" component={CaseDetailsScreen} />
           <Stack.Screen name="LegalCaseDetails" component={LegalCaseDetailsScreen} />

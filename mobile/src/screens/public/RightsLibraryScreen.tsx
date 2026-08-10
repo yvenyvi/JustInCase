@@ -59,18 +59,72 @@ export default function RightsLibraryScreen() {
     fetchData();
   }, []);
 
+  const getContextKeywords = (query: string): string[] => {
+    const q = query.toLowerCase().trim();
+    if (!q) return [];
+    
+    const keywords = new Set<string>([q]);
+    const words = q.split(/\s+/);
+    
+    const CONTEXT_SYNONYMS: Record<string, string[]> = {
+      'kid': ['child', 'minor', 'youth', 'student', 'baby', 'children'],
+      'kids': ['child', 'minor', 'youth', 'student', 'baby', 'children'],
+      'job': ['labor', 'employment', 'work', 'employee', 'employer', 'salary', 'wage', 'pay'],
+      'jobs': ['labor', 'employment', 'work', 'employee', 'employer', 'salary', 'wage', 'pay'],
+      'wife': ['family', 'spouse', 'marriage', 'annulment', 'husband', 'partner'],
+      'husband': ['family', 'spouse', 'marriage', 'annulment', 'wife', 'partner'],
+      'house': ['property', 'land', 'estate', 'rent', 'tenant', 'landlord', 'real estate'],
+      'home': ['property', 'land', 'estate', 'rent', 'tenant', 'landlord', 'real estate'],
+      'police': ['arrest', 'warrant', 'rights', 'custody', 'crime', 'criminal', 'jail', 'prison', 'law enforcement'],
+      'fake': ['fraud', 'scam', 'cybercrime', 'deceit', 'forgery'],
+      'steal': ['theft', 'robbery', 'crime', 'criminal'],
+      'fight': ['assault', 'violence', 'abuse', 'crime', 'battery'],
+      'money': ['debt', 'loan', 'salary', 'wage', 'pay', 'financial', 'property'],
+      'boss': ['employer', 'labor', 'employment', 'manager', 'company'],
+      'worker': ['employee', 'labor', 'employment', 'job'],
+      'quit': ['resignation', 'labor', 'employment', 'termination'],
+      'fired': ['termination', 'labor', 'employment', 'dismissal'],
+      'chat': ['cybercrime', 'online', 'internet', 'message', 'text'],
+      'online': ['cybercrime', 'internet', 'social media', 'digital'],
+      'picture': ['cybercrime', 'privacy', 'photo', 'video', 'image'],
+      'scam': ['cybercrime', 'fraud', 'deceit', 'fake']
+    };
+
+    words.forEach(word => {
+      if (CONTEXT_SYNONYMS[word]) {
+        CONTEXT_SYNONYMS[word].forEach(syn => keywords.add(syn));
+      }
+    });
+
+    return Array.from(keywords);
+  };
+
   const filteredCategories = categories.filter(cat => 
     selectedCategoryId ? cat.id === selectedCategoryId : true
   ).map(cat => {
     const catArticles = articles.filter(a => a.category_id === cat.id);
-    const q = searchTerm.toLowerCase();
-    const catMatch = cat.title.toLowerCase().includes(q) || (cat.description || '').toLowerCase().includes(q);
-    const matchingArticles = catArticles.filter(a => a.title.toLowerCase().includes(q) || (a.detail || '').toLowerCase().includes(q));
+    const keywords = getContextKeywords(searchTerm);
+    
+    if (keywords.length === 0) {
+      return {
+        ...cat,
+        displayArticles: catArticles,
+        hasMatch: true
+      };
+    }
+
+    const catText = (cat.title + ' ' + (cat.description || '')).toLowerCase();
+    const catMatch = keywords.some(kw => catText.includes(kw));
+    
+    const matchingArticles = catArticles.filter(a => {
+      const artText = (a.title + ' ' + (a.detail || '')).toLowerCase();
+      return keywords.some(kw => artText.includes(kw));
+    });
     
     return {
       ...cat,
       displayArticles: catMatch ? catArticles : matchingArticles,
-      hasMatch: !searchTerm || catMatch || matchingArticles.length > 0
+      hasMatch: catMatch || matchingArticles.length > 0
     };
   }).filter(c => c.hasMatch && c.displayArticles.length > 0);
 
@@ -108,7 +162,7 @@ export default function RightsLibraryScreen() {
           />
         </View>
         <Text style={styles.searchHintText}>
-          Tip: You can search for specific keywords (e.g. "labor", "child", "cybersecurity") to find relevant details within the content itself.
+          Tip: Our contextual search allows you to use casual terms. Try searching "kid" to find Child Rights, or "job" to find Labor Laws.
         </Text>
       </View>
 
@@ -214,7 +268,7 @@ const styles = StyleSheet.create({
   searchContainerWrapper: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 },
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.secondary, borderRadius: theme.borderRadius.lg, paddingHorizontal: 16, height: 50 },
   searchIcon: { marginRight: 8 },
-  searchInput: { backgroundColor: theme.colors.background, borderRadius: theme.borderRadius.md, paddingVertical: 12, paddingLeft: 44, paddingRight: 16, color: theme.colors.textPrimary, fontSize: 16, borderWidth: 1, borderColor: theme.colors.border },
+  searchInput: { flex: 1, color: theme.colors.textPrimary, fontSize: 16, height: '100%', paddingVertical: 0 },
   searchHintText: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 8, lineHeight: 16 },
   chipsWrapper: { backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   chipsContainer: { paddingHorizontal: 24, paddingVertical: 12, gap: 8 },

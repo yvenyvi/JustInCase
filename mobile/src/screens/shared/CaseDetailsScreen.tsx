@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
@@ -17,7 +18,7 @@ type CaseData = {
   clientId: string | null;
   createdAt: string;
   description: string;
-  updates: { id: string; date: string; text: string }[];
+  updates: { date: string; activities: any[]; totalHours: number }[];
 };
 
 type TimeLog = {
@@ -43,13 +44,37 @@ export default function CaseDetailsScreen() {
   const [logHours, setLogHours] = useState('');
   const [logDesc, setLogDesc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({ visible: false, title: '', message: '', confirmText: '', onConfirm: () => {} });
 
   useEffect(() => {
     fetchCaseDetails();
+
+    const channel = mobileSupabase
+      .channel(`public_case_updates_${caseId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pro_bono_logs', filter: `case_id=eq.${caseId}` },
+        () => {
+          fetchTimeLogs();
+          fetchCaseDetails(false);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cases', filter: `id=eq.${caseId}` },
+        () => {
+          fetchCaseDetails(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mobileSupabase.removeChannel(channel);
+    };
   }, [caseId]);
 
-  const fetchCaseDetails = async () => {
-    setIsLoading(true);
+  const fetchCaseDetails = async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
     try {
       const { data: { user } } = await mobileSupabase.auth.getUser();
       setCurrentUser(user);
@@ -68,23 +93,44 @@ export default function CaseDetailsScreen() {
       // Fetch audit logs
       const { data: logsData } = await mobileSupabase
         .from('audit_logs')
-        .select('id, action, details, created_at')
-        .like('details', `%${caseId}%`)
+        .select('id, action_type, detail, created_at')
+        .like('detail', `%${caseId}%`)
         .order('created_at', { ascending: false });
 
-      let parsedLogs = (logsData || []).map((log: any) => ({
-        id: log.id,
-        date: new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-        text: `${log.action} - ${log.details}`
-      }));
+      const grouped: { [key: string]: { date: string, activities: any[], totalHours: number } } = {};
+      const order: string[] = [];
       
-      if (parsedLogs.length === 0) {
-        parsedLogs = [{
-          id: 'initial',
-          date: new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          text: 'Case submitted and pending review.'
-        }];
+      if (logsData && logsData.length > 0) {
+        logsData.forEach((log: any) => {
+          const dateStr = new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          if (!grouped[dateStr]) {
+            grouped[dateStr] = { date: dateStr, activities: [], totalHours: 0 };
+            order.push(dateStr);
+          }
+          
+          let text = log.detail;
+          text = text.replace(/case [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/gi, 'this case');
+          text = text.replace(/time log [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/gi, 'a time log');
+          
+          if (log.action_type === 'Hours Logged') {
+            const match = text.match(/logged ([\d.]+) hours/);
+            if (match && match[1]) {
+              grouped[dateStr].totalHours += parseFloat(match[1]);
+            }
+          }
+          grouped[dateStr].activities.push({ id: log.id, text, action: log.action_type });
+        });
+      } else {
+        const initialDate = new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        grouped[initialDate] = { 
+          date: initialDate, 
+          activities: [{ id: 'initial', text: 'Case submitted and pending review.', action: 'Initial' }], 
+          totalHours: 0 
+        };
+        order.push(initialDate);
       }
+
+      const parsedLogs = order.map(dateStr => grouped[dateStr]);
 
       const attorneyObj = Array.isArray(caseData.attorney) ? caseData.attorney[0] : caseData.attorney;
 
@@ -106,7 +152,7 @@ export default function CaseDetailsScreen() {
     } catch (err) {
       console.error('Error fetching case details:', err);
     } finally {
-      setIsLoading(false);
+      if (showLoader) setIsLoading(false);
     }
   };
 
@@ -135,11 +181,11 @@ export default function CaseDetailsScreen() {
   const handleLogSubmit = async () => {
     const hoursNum = parseFloat(logHours);
     if (isNaN(hoursNum) || hoursNum <= 0) {
-      Alert.alert('Invalid Input', 'Please enter a valid number of hours.');
+      Toast.show({ type: 'error', text1: 'Invalid Input', text2: 'Please enter a valid number of hours.' });
       return;
     }
     if (!logDesc.trim()) {
-      Alert.alert('Required Field', 'Please provide a description.');
+      Toast.show({ type: 'error', text1: 'Required Field', text2: 'Please provide a description.' });
       return;
     }
     if (!c || !currentUser) return;
@@ -159,26 +205,22 @@ export default function CaseDetailsScreen() {
 
       if (logErr) throw logErr;
 
-      // 2. Notify Client
-      if (c.clientId) {
-        await mobileSupabase
-          .from('notifications')
-          .insert({
-            user_id: c.clientId,
-            title: 'Verify Attorney Hours',
-            body: `Your attorney logged ${hoursNum} hours on case "${c.title}". Please verify.`,
-            type: 'case_update',
-            is_read: false
-          });
-      }
+      // Notification is handled by the database trigger
+
+      await mobileSupabase.from('audit_logs').insert({
+        user_id: currentUser.id,
+        action_type: 'Hours Logged',
+        detail: `Attorney logged ${hoursNum} hours for case ${c.id}.`
+      });
 
       setLogHours('');
       setLogDesc('');
       setIsLogModalVisible(false);
-      Alert.alert('Success', 'Hours logged successfully. Client has been notified for verification.');
+      Toast.show({ type: 'success', text1: 'Success', text2: 'Hours logged successfully.' });
       fetchTimeLogs();
+      fetchCaseDetails();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Could not log hours.');
+      Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Could not log hours.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -196,11 +238,29 @@ export default function CaseDetailsScreen() {
         })
         .eq('id', logId);
       
-      Alert.alert('Verified', 'You have verified this time log.');
+      Toast.show({ type: 'success', text1: 'Accepted', text2: 'You have verified this time log.' });
       fetchTimeLogs();
     } catch (err) {
       console.error('Error verifying log:', err);
     }
+  };
+
+  const handleRejectLog = async (logId: string) => {
+    setConfirmConfig({
+      visible: true,
+      title: "Reject Hours",
+      message: "Are you sure you want to reject and delete this time log?",
+      confirmText: "Reject",
+      onConfirm: async () => {
+        try {
+          await mobileSupabase.from('pro_bono_logs').delete().eq('id', logId);
+          Toast.show({ type: 'info', text1: 'Rejected', text2: 'The time log has been rejected and removed.' });
+          fetchTimeLogs();
+        } catch (err) {
+          console.error('Error rejecting log:', err);
+        }
+      }
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -227,6 +287,9 @@ export default function CaseDetailsScreen() {
 
   const colors = getStatusColor(c.status);
   const isAttorney = currentUser?.id === c.attorneyId;
+  const isAssigned = c.attorneyId === currentUser?.id;
+  const isAvailable = c.attorneyId === null;
+  const isCaseClosed = c.status.includes('Closed') || c.status === 'Withdrawn' || c.status === 'Dropped' || c.status === 'Resolved';
   const isClient = currentUser?.id === c.clientId;
 
   // Parse description
@@ -263,34 +326,29 @@ export default function CaseDetailsScreen() {
   }
 
   const handleWithdrawCase = () => {
-    Alert.alert(
-      "Kanselahin ang Kaso",
-      "Sigurado ka bang gusto mong kanselahin ang kasong ito?",
-      [
-        { text: "Huwag", style: "cancel" },
-        { 
-          text: "Kanselahin", 
-          style: "destructive",
-          onPress: async () => {
-            setIsSubmitting(true);
-            try {
-              if (!c) return;
-              const { error } = await mobileSupabase
-                .from('cases')
-                .update({ status: 'Withdrawn' })
-                .eq('id', c.id);
-              if (error) throw error;
-              Alert.alert('Success', 'Nakansela na ang iyong kaso.');
-              fetchCaseDetails();
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Nabigo ang pagkansela ng kaso.');
-            } finally {
-              setIsSubmitting(false);
-            }
-          }
+    setConfirmConfig({
+      visible: true,
+      title: "Kanselahin ang Kaso",
+      message: "Sigurado ka bang gusto mong kanselahin ang kasong ito?",
+      confirmText: "Kanselahin",
+      onConfirm: async () => {
+        setIsSubmitting(true);
+        try {
+          if (!c || !currentUser) return;
+          const { error } = await mobileSupabase
+            .from('cases')
+            .update({ status: 'Withdrawn' })
+            .eq('id', c.id);
+          if (error) throw error;
+          Toast.show({ type: 'success', text1: 'Success', text2: 'Nakansela na ang iyong kaso.' });
+          fetchCaseDetails();
+        } catch (err: any) {
+          Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Nabigo ang pagkansela ng kaso.' });
+        } finally {
+          setIsSubmitting(false);
         }
-      ]
-    );
+      }
+    });
   };
 
   return (
@@ -366,67 +424,74 @@ export default function CaseDetailsScreen() {
           </View>
         </View>
 
-        <View style={styles.actionGrid}>
-          {c.status === 'Pending Triage' && isClient && (
-            <Pressable 
-              style={[styles.actionBtn, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]} 
-              onPress={handleWithdrawCase}
-            >
-              <Ionicons name="close-circle" size={20} color="#DC2626" style={{ marginRight: 8 }} />
-              <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Cancel Case</Text>
-            </Pressable>
-          )}
+        {!isCaseClosed && (
+          <View style={styles.actionGrid}>
+            {isClient && (
+              <Pressable 
+                style={[styles.actionBtn, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]} 
+                onPress={handleWithdrawCase}
+              >
+                <Ionicons name="close-circle" size={20} color="#DC2626" style={{ marginRight: 8 }} />
+                <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Cancel Case</Text>
+              </Pressable>
+            )}
 
-          <Pressable 
-            style={[styles.actionBtn, styles.actionBtnPrimary]} 
-            onPress={() => navigation.navigate('ChatThread', { threadId: c.id, threadName: c.assignedTo || 'Support' })}
-          >
-            <Ionicons name="chatbubbles" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-            <Text style={styles.actionBtnTextPrimary}>Message {isAttorney ? 'Client' : 'Attorney'}</Text>
-          </Pressable>
-          
-          {isAttorney ? (
-            <Pressable style={styles.actionBtn} onPress={() => setIsLogModalVisible(true)}>
-              <Ionicons name="time" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
-              <Text style={styles.actionBtnText}>Log Hours</Text>
+            <Pressable 
+              style={[styles.actionBtn, styles.actionBtnPrimary]} 
+              onPress={() => navigation.navigate('ChatThread', { threadId: c.id, threadName: c.assignedTo || 'Support' })}
+            >
+              <Ionicons name="chatbubbles" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.actionBtnTextPrimary}>Message {isAttorney ? 'Client' : 'Attorney'}</Text>
             </Pressable>
-          ) : (
-            <Pressable style={styles.actionBtn}>
-              <Ionicons name="document-attach" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
-              <Text style={styles.actionBtnText}>Upload Doc</Text>
-            </Pressable>
-          )}
-        </View>
+            
+            {isAttorney ? (
+              <Pressable style={styles.actionBtn} onPress={() => setIsLogModalVisible(true)}>
+                <Ionicons name="time" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.actionBtnText}>Log Hours</Text>
+              </Pressable>
+            ) : (
+              <Pressable style={styles.actionBtn}>
+                <Ionicons name="document-attach" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.actionBtnText}>Upload Doc</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
 
         {timeLogs.length > 0 && (
           <View style={{ marginTop: 32 }}>
             <Text style={[styles.sectionLabel, { marginLeft: 8 }]}>TIME LOGS</Text>
             <View style={styles.card}>
               {timeLogs.map((log, index) => (
-                <View key={log.id} style={[styles.logItem, index > 0 && styles.logItemBorder]}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <View key={log.id} style={[styles.logItem, index > 0 && styles.logItemBorder, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Text style={styles.logHours}>{log.hours} Hours</Text>
                       <Text style={styles.logDate}> • {log.date}</Text>
                     </View>
-                    <Text style={styles.logDesc}>{log.description}</Text>
+                    
+                    {log.isVerified ? (
+                      <View style={styles.verifiedPill}>
+                        <Ionicons name="checkmark-circle" size={14} color="#15803D" style={{ marginRight: 4 }} />
+                        <Text style={styles.verifiedText}>Verified</Text>
+                      </View>
+                    ) : isClient ? (
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <Pressable style={[styles.verifyBtn, { backgroundColor: '#FEE2E2', paddingVertical: 6, paddingHorizontal: 12 }]} onPress={() => handleRejectLog(log.id)}>
+                          <Text style={[styles.verifyBtnText, { color: '#DC2626' }]}>Reject</Text>
+                        </Pressable>
+                        <Pressable style={[styles.verifyBtn, { paddingVertical: 6, paddingHorizontal: 12 }]} onPress={() => handleVerify(log.id)}>
+                          <Text style={styles.verifyBtnText}>Accept</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <View style={[styles.verifiedPill, { backgroundColor: '#FEF3C7' }]}>
+                        <Ionicons name="time" size={14} color="#B45309" style={{ marginRight: 4 }} />
+                        <Text style={[styles.verifiedText, { color: '#B45309' }]}>Pending</Text>
+                      </View>
+                    )}
                   </View>
-                  
-                  {log.isVerified ? (
-                    <View style={styles.verifiedPill}>
-                      <Ionicons name="checkmark-circle" size={14} color="#15803D" style={{ marginRight: 4 }} />
-                      <Text style={styles.verifiedText}>Verified</Text>
-                    </View>
-                  ) : isClient ? (
-                    <Pressable style={styles.verifyBtn} onPress={() => handleVerify(log.id)}>
-                      <Text style={styles.verifyBtnText}>Verify</Text>
-                    </Pressable>
-                  ) : (
-                    <View style={[styles.verifiedPill, { backgroundColor: '#FEF3C7' }]}>
-                      <Ionicons name="time" size={14} color="#B45309" style={{ marginRight: 4 }} />
-                      <Text style={[styles.verifiedText, { color: '#B45309' }]}>Pending</Text>
-                    </View>
-                  )}
+                  <Text style={styles.logDesc}>{log.description}</Text>
                 </View>
               ))}
             </View>
@@ -435,15 +500,34 @@ export default function CaseDetailsScreen() {
 
         <Text style={[styles.sectionLabel, { marginTop: 32, marginLeft: 8 }]}>CASE TIMELINE</Text>
         <View style={styles.timeline}>
-          {c.updates.map((update, index) => (
-            <View key={update.id} style={styles.timelineItem}>
+          {c.updates.map((dayGroup: any, index: number) => (
+            <View key={dayGroup.date} style={styles.timelineItem}>
               <View style={styles.timelineNode}>
                 <View style={styles.timelineDot} />
                 {index < c.updates.length - 1 && <View style={styles.timelineLine} />}
               </View>
               <View style={styles.timelineContent}>
-                <Text style={styles.timelineDate}>{update.date}</Text>
-                <Text style={styles.timelineText}>{update.text}</Text>
+                <Text style={styles.timelineDate}>
+                  {dayGroup.date} {dayGroup.totalHours > 0 ? ` • ${dayGroup.totalHours} Hours Logged` : ''}
+                </Text>
+                {dayGroup.activities.map((act: any, i: number) => (
+                  <View key={act.id} style={{ flexDirection: 'row', marginTop: i === 0 ? 8 : 12, alignItems: 'flex-start' }}>
+                    <View style={{ marginTop: 2, marginRight: 8 }}>
+                      <Ionicons 
+                        name={
+                          act.action.includes('Hours') ? 'time' : 
+                          act.action.includes('Accepted') ? 'person' : 
+                          act.action.includes('Closed') || act.action.includes('Resolved') ? 'checkmark-circle' : 
+                          act.action.includes('Withdrawn') || act.action.includes('Declined') || act.action.includes('Rejected') ? 'close-circle' : 
+                          'document-text'
+                        } 
+                        size={16} 
+                        color={theme.colors.primary} 
+                      />
+                    </View>
+                    <Text style={[styles.timelineText, { flex: 1 }]}>{act.text}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           ))}
@@ -494,6 +578,24 @@ export default function CaseDetailsScreen() {
             </Pressable>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Confirmation Modal */}
+      <Modal visible={confirmConfig.visible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxWidth: 320, alignSelf: 'center', width: '100%' }]}>
+            <Text style={[styles.modalTitle, { marginBottom: 12 }]}>{confirmConfig.title}</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 15, lineHeight: 22, marginBottom: 24 }}>{confirmConfig.message}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
+              <Pressable style={{ paddingHorizontal: 16, paddingVertical: 10 }} onPress={() => setConfirmConfig(c => ({...c, visible: false}))}>
+                <Text style={{ color: theme.colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+              </Pressable>
+              <Pressable style={{ backgroundColor: '#DC2626', paddingHorizontal: 16, paddingVertical: 10, borderRadius: theme.borderRadius.md }} onPress={() => { setConfirmConfig(c => ({...c, visible: false})); confirmConfig.onConfirm(); }}>
+                <Text style={{ color: '#FFF', fontWeight: '600' }}>{confirmConfig.confirmText || 'Confirm'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
 
     </View>

@@ -35,9 +35,13 @@ export default function ChatThreadScreen() {
 
   useEffect(() => {
     fetchMessages();
+  }, [threadId]);
 
-    const channel = mobileSupabase.channel(`room:${threadId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `thread_id=eq.${threadId}` }, payload => {
+  useEffect(() => {
+    if (!resolvedThreadId) return;
+    
+    const channel = mobileSupabase.channel(`room:${resolvedThreadId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `thread_id=eq.${resolvedThreadId}` }, payload => {
         const newMsg = payload.new;
         if (newMsg) {
           mobileSupabase.auth.getUser().then(({ data: { user } }) => {
@@ -63,7 +67,7 @@ export default function ChatThreadScreen() {
     return () => {
       mobileSupabase.removeChannel(channel);
     };
-  }, [threadId]);
+  }, [resolvedThreadId]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {

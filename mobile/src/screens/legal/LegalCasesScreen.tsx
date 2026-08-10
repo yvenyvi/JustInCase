@@ -166,7 +166,11 @@ export default function LegalCasesScreen() {
           {activeTab === 'available' && (
             <>
               {availableCases.length > 0 ? (
-                availableCases.map(c => (
+                availableCases.map(c => {
+                  let parsedDesc: any = null;
+                  try { parsedDesc = JSON.parse(c.description || '{}'); } catch(e) {}
+                  
+                  return (
                   <View key={c.id} style={styles.caseWidget}>
                     <View style={styles.caseWidgetHeader}>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -192,15 +196,15 @@ export default function LegalCasesScreen() {
                     </View>
                     
                     <Text style={styles.caseTitle}>{c.title}</Text>
-                    {c.description && (
-                      <Text style={styles.caseDesc} numberOfLines={3}>{c.description}</Text>
-                    )}
+                    {parsedDesc?.summary || parsedDesc?.rawInput?.description || c.description ? (
+                      <Text style={styles.caseDesc} numberOfLines={3}>{parsedDesc?.summary || parsedDesc?.rawInput?.description || c.description}</Text>
+                    ) : null}
                     
                     <View style={[styles.caseWidgetFooter, { flexDirection: 'column', alignItems: 'stretch' }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
                         <Ionicons name="location-outline" size={16} color="#64748B" />
                         <Text style={styles.attyName}>
-                          {c.client?.city_municipality ? `${c.client.city_municipality} Resident` : 'Location not provided'}
+                          {parsedDesc?.location || parsedDesc?.rawInput?.province || c.client?.city_municipality || 'Location not provided'}
                         </Text>
                       </View>
                       
@@ -209,7 +213,8 @@ export default function LegalCasesScreen() {
                       </Pressable>
                     </View>
                   </View>
-                ))
+                  );
+                })
               ) : (
                 <View style={styles.emptyState}>
                   <Ionicons name="checkmark-done-circle-outline" size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />

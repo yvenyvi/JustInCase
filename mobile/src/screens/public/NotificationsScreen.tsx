@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { theme } from '../../shared/theme';
 
@@ -11,10 +13,14 @@ type NotificationItem = {
   desc: string;
   time: string;
   read: boolean;
+  type?: string;
+  reference_id?: string;
 };
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export default function NotificationsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const isFocused = useIsFocused();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +39,7 @@ export default function NotificationsScreen() {
 
       const { data, error } = await mobileSupabase
         .from('notifications')
-        .select('id, title, body, created_at, is_read')
+        .select('id, title, body, created_at, is_read, type, reference_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -43,7 +49,9 @@ export default function NotificationsScreen() {
           title: n.title,
           desc: n.body,
           time: new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-          read: n.is_read
+          read: n.is_read,
+          type: n.type,
+          reference_id: n.reference_id
         }));
         setNotifications(mapped);
       }
@@ -54,14 +62,22 @@ export default function NotificationsScreen() {
     }
   };
 
-  const markAsRead = async (id: string, readStatus: boolean) => {
-    if (readStatus) return; // already read
-    
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    try {
-      await mobileSupabase.from('notifications').update({ is_read: true }).eq('id', id);
-    } catch (err) {
-      console.error('Error marking as read:', err);
+  const handleNotificationPress = async (notif: NotificationItem) => {
+    // Mark as read
+    if (!notif.read) {
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+      try {
+        await mobileSupabase.from('notifications').update({ is_read: true }).eq('id', notif.id);
+      } catch (err) {
+        console.error('Error marking as read:', err);
+      }
+    }
+
+    // Route
+    if (notif.type === 'message' && notif.reference_id) {
+      navigation.navigate('ChatThread', { threadId: notif.reference_id, threadName: 'Message Thread' });
+    } else if (['verify_hours', 'case_accepted', 'case_closed'].includes(notif.type || '') && notif.reference_id) {
+      navigation.navigate('CaseDetails', { caseId: notif.reference_id });
     }
   };
 
@@ -87,22 +103,29 @@ export default function NotificationsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {notifications.map((notif) => (
-            <Pressable key={notif.id} style={[styles.notifCard, !notif.read && styles.notifCardUnread]} onPress={() => markAsRead(notif.id, notif.read)}>
-              <View style={styles.iconCol}>
-                <View style={[styles.iconContainer, !notif.read && styles.iconContainerUnread]}>
-                  <Ionicons name="notifications" size={20} color={notif.read ? theme.colors.textSecondary : theme.colors.primary} />
+          {notifications.map((notif) => {
+            let iconName = "notifications";
+            if (notif.type === 'message') iconName = "chatbubble";
+            if (notif.type === 'verify_hours') iconName = "time";
+            if (notif.type === 'case_accepted') iconName = "briefcase";
+            
+            return (
+              <Pressable key={notif.id} style={[styles.notifCard, !notif.read && styles.notifCardUnread]} onPress={() => handleNotificationPress(notif)}>
+                <View style={styles.iconCol}>
+                  <View style={[styles.iconContainer, !notif.read && styles.iconContainerUnread]}>
+                    <Ionicons name={iconName as any} size={20} color={notif.read ? theme.colors.textSecondary : theme.colors.primary} />
+                  </View>
                 </View>
-              </View>
-              <View style={styles.contentCol}>
-                <View style={styles.notifHeader}>
-                  <Text style={[styles.notifTitle, !notif.read && styles.notifTitleUnread]} numberOfLines={1}>{notif.title}</Text>
-                  <Text style={styles.notifTime}>{notif.time}</Text>
+                <View style={styles.contentCol}>
+                  <View style={styles.notifHeader}>
+                    <Text style={[styles.notifTitle, !notif.read && styles.notifTitleUnread]} numberOfLines={1}>{notif.title}</Text>
+                    <Text style={styles.notifTime}>{notif.time}</Text>
+                  </View>
+                  <Text style={styles.notifDesc}>{notif.desc}</Text>
                 </View>
-                <Text style={styles.notifDesc}>{notif.desc}</Text>
-              </View>
-            </Pressable>
-          ))}
+              </Pressable>
+            );
+          })}
         </ScrollView>
       )}
     </View>

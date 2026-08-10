@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
@@ -19,7 +19,7 @@ type CaseData = {
   clientName: string | null;
   createdAt: string;
   description: string;
-  updates: { id: string; date: string; text: string }[];
+  updates: { date: string; activities: any[]; totalHours: number }[];
 };
 
 type TimeLog = {
@@ -49,13 +49,42 @@ export default function LegalCaseDetailsScreen() {
   const [logHours, setLogHours] = useState('');
   const [logDesc, setLogDesc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({ visible: false, title: '', message: '', confirmText: '', onConfirm: () => {} });
+  
+  // Close Case Modal State
+  const [isCloseModalVisible, setIsCloseModalVisible] = useState(false);
+  const [closeOutcome, setCloseOutcome] = useState('Closed - Won');
+  const [closeNotes, setCloseNotes] = useState('');
 
   useEffect(() => {
     fetchCaseDetails();
+
+    const channel = mobileSupabase
+      .channel(`legal_case_updates_${caseId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pro_bono_logs', filter: `case_id=eq.${caseId}` },
+        () => {
+          fetchTimeLogs();
+          fetchCaseDetails(false);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cases', filter: `id=eq.${caseId}` },
+        () => {
+          fetchCaseDetails(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mobileSupabase.removeChannel(channel);
+    };
   }, [caseId]);
 
-  const fetchCaseDetails = async () => {
-    setIsLoading(true);
+  const fetchCaseDetails = async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
     try {
       const { data: { user } } = await mobileSupabase.auth.getUser();
       setCurrentUser(user);
@@ -79,19 +108,40 @@ export default function LegalCaseDetailsScreen() {
         .like('detail', `%${caseId}%`)
         .order('created_at', { ascending: false });
 
-      let parsedLogs = (logsData || []).map((log: any) => ({
-        id: log.id,
-        date: new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-        text: `${log.action_type} - ${log.detail}`
-      }));
+      const grouped: { [key: string]: { date: string, activities: any[], totalHours: number } } = {};
+      const order: string[] = [];
       
-      if (parsedLogs.length === 0) {
-        parsedLogs = [{
-          id: 'initial',
-          date: new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          text: 'Case submitted and pending review.'
-        }];
+      if (logsData && logsData.length > 0) {
+        logsData.forEach((log: any) => {
+          const dateStr = new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          if (!grouped[dateStr]) {
+            grouped[dateStr] = { date: dateStr, activities: [], totalHours: 0 };
+            order.push(dateStr);
+          }
+          
+          let text = log.detail;
+          text = text.replace(/case [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/gi, 'this case');
+          text = text.replace(/time log [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/gi, 'a time log');
+          
+          if (log.action_type === 'Hours Logged') {
+            const match = text.match(/logged ([\d.]+) hours/);
+            if (match && match[1]) {
+              grouped[dateStr].totalHours += parseFloat(match[1]);
+            }
+          }
+          grouped[dateStr].activities.push({ id: log.id, text, action: log.action_type });
+        });
+      } else {
+        const initialDate = new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        grouped[initialDate] = { 
+          date: initialDate, 
+          activities: [{ id: 'initial', text: 'Case submitted and pending review.', action: 'Initial' }], 
+          totalHours: 0 
+        };
+        order.push(initialDate);
       }
+
+      const parsedLogs = order.map(dateStr => grouped[dateStr]);
 
       const attorneyObj = Array.isArray(caseData.attorney) ? caseData.attorney[0] : caseData.attorney;
       const clientObj = Array.isArray(caseData.client) ? caseData.client[0] : caseData.client;
@@ -115,7 +165,7 @@ export default function LegalCaseDetailsScreen() {
     } catch (err) {
       console.error('Error fetching case details:', err);
     } finally {
-      setIsLoading(false);
+      if (showLoader) setIsLoading(false);
     }
   };
 
@@ -167,17 +217,7 @@ export default function LegalCaseDetailsScreen() {
 
       if (logErr) throw logErr;
 
-      if (c.clientId) {
-        await mobileSupabase
-          .from('notifications')
-          .insert({
-            user_id: c.clientId,
-            title: 'Verify Attorney Hours',
-            body: `Your attorney logged ${hoursNum} hours on case "${c.title}". Please verify.`,
-            type: 'case_update',
-            is_read: false
-          });
-      }
+      // Notification is handled by the database trigger `trg_notify_on_pro_bono_log`
 
       await mobileSupabase.from('audit_logs').insert({
         user_id: currentUser.id,
@@ -190,6 +230,7 @@ export default function LegalCaseDetailsScreen() {
       setIsLogModalVisible(false);
       Toast.show({ type: 'success', text1: 'Success', text2: 'Hours logged successfully. Client has been notified for verification.' });
       fetchTimeLogs();
+      fetchCaseDetails();
     } catch (err: any) {
       Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Could not log hours.' });
     } finally {
@@ -284,6 +325,43 @@ export default function LegalCaseDetailsScreen() {
       navigation.goBack();
     } catch (err: any) {
       Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Failed to process request.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCloseCase = async () => {
+    setIsSubmitting(true);
+    try {
+      if (!c || !currentUser) return;
+      const { error } = await mobileSupabase
+        .from('cases')
+        .update({ status: closeOutcome, closing_notes: closeNotes })
+        .eq('id', c.id);
+      
+      if (error) throw error;
+
+      if (c.clientId) {
+        await mobileSupabase.from('notifications').insert({
+          user_id: c.clientId,
+          title: 'Case Closed',
+          body: `Your attorney has finalized and closed this case (${closeOutcome}).`,
+          type: 'case_update',
+          is_read: false
+        });
+      }
+
+      await mobileSupabase.from('audit_logs').insert({
+        user_id: currentUser.id,
+        action_type: 'Case Closed',
+        detail: `Attorney successfully closed case ${c.id} with outcome: ${closeOutcome}.`
+      });
+
+      setIsCloseModalVisible(false);
+      Toast.show({ type: 'success', text1: 'Success', text2: 'Case closed successfully.' });
+      fetchCaseDetails();
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Failed to close case.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -492,6 +570,14 @@ export default function LegalCaseDetailsScreen() {
                   <Text style={styles.actionBtnText}>Log Hours</Text>
                 </Pressable>
               </View>
+
+              <Pressable 
+                style={[styles.actionBtn, { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', width: '100%', marginTop: 12 }]} 
+                onPress={() => setIsCloseModalVisible(true)}
+              >
+                <Ionicons name="checkmark-done-circle" size={20} color="#16A34A" style={{ marginRight: 8 }} />
+                <Text style={[styles.actionBtnTextPrimary, { color: '#16A34A' }]}>Finalize & Close Case</Text>
+              </Pressable>
             </>
           )}
         </View>
@@ -501,26 +587,26 @@ export default function LegalCaseDetailsScreen() {
             <Text style={[styles.sectionLabel, { marginLeft: 8 }]}>SUBMITTED TIME LOGS</Text>
             <View style={styles.card}>
               {timeLogs.map((log, index) => (
-                <View key={log.id} style={[styles.logItem, index > 0 && styles.logItemBorder]}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <View key={log.id} style={[styles.logItem, index > 0 && styles.logItemBorder, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Text style={styles.logHours}>{log.hours} Hours</Text>
                       <Text style={styles.logDate}> • {log.date}</Text>
                     </View>
-                    <Text style={styles.logDesc}>{log.description}</Text>
+                    
+                    {log.isVerified ? (
+                      <View style={styles.verifiedPill}>
+                        <Ionicons name="checkmark-circle" size={14} color="#15803D" style={{ marginRight: 4 }} />
+                        <Text style={styles.verifiedText}>Verified</Text>
+                      </View>
+                    ) : (
+                      <View style={[styles.verifiedPill, { backgroundColor: '#FEF3C7' }]}>
+                        <Ionicons name="time" size={14} color="#B45309" style={{ marginRight: 4 }} />
+                        <Text style={[styles.verifiedText, { color: '#B45309' }]}>Pending</Text>
+                      </View>
+                    )}
                   </View>
-                  
-                  {log.isVerified ? (
-                    <View style={styles.verifiedPill}>
-                      <Ionicons name="checkmark-circle" size={14} color="#15803D" style={{ marginRight: 4 }} />
-                      <Text style={styles.verifiedText}>Verified</Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.verifiedPill, { backgroundColor: '#FEF3C7' }]}>
-                      <Ionicons name="time" size={14} color="#B45309" style={{ marginRight: 4 }} />
-                      <Text style={[styles.verifiedText, { color: '#B45309' }]}>Pending</Text>
-                    </View>
-                  )}
+                  <Text style={styles.logDesc}>{log.description}</Text>
                 </View>
               ))}
             </View>
@@ -529,15 +615,34 @@ export default function LegalCaseDetailsScreen() {
 
         <Text style={[styles.sectionLabel, { marginTop: 32, marginLeft: 8 }]}>CASE TIMELINE</Text>
         <View style={styles.timeline}>
-          {c.updates.map((update, index) => (
-            <View key={update.id} style={styles.timelineItem}>
+          {c.updates.map((dayGroup: any, index: number) => (
+            <View key={dayGroup.date} style={styles.timelineItem}>
               <View style={styles.timelineNode}>
                 <View style={styles.timelineDot} />
                 {index < c.updates.length - 1 && <View style={styles.timelineLine} />}
               </View>
               <View style={styles.timelineContent}>
-                <Text style={styles.timelineDate}>{update.date}</Text>
-                <Text style={styles.timelineText}>{update.text}</Text>
+                <Text style={styles.timelineDate}>
+                  {dayGroup.date} {dayGroup.totalHours > 0 ? ` • ${dayGroup.totalHours} Hours Logged` : ''}
+                </Text>
+                {dayGroup.activities.map((act: any, i: number) => (
+                  <View key={act.id} style={{ flexDirection: 'row', marginTop: i === 0 ? 8 : 12, alignItems: 'flex-start' }}>
+                    <View style={{ marginTop: 2, marginRight: 8 }}>
+                      <Ionicons 
+                        name={
+                          act.action.includes('Hours') ? 'time' : 
+                          act.action.includes('Accepted') ? 'person' : 
+                          act.action.includes('Closed') || act.action.includes('Resolved') ? 'checkmark-circle' : 
+                          act.action.includes('Withdrawn') || act.action.includes('Declined') || act.action.includes('Rejected') ? 'close-circle' : 
+                          'document-text'
+                        } 
+                        size={16} 
+                        color={theme.colors.primary} 
+                      />
+                    </View>
+                    <Text style={[styles.timelineText, { flex: 1 }]}>{act.text}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           ))}
@@ -647,6 +752,83 @@ export default function LegalCaseDetailsScreen() {
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Close Case Modal */}
+      <Modal visible={isCloseModalVisible} transparent animationType="fade">
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Finalize & Close Case</Text>
+              <Pressable onPress={() => setIsCloseModalVisible(false)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={24} color="#64748B" />
+              </Pressable>
+            </View>
+            
+            <ScrollView style={styles.modalBody}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
+                Select the final outcome of this case. This action cannot be undone.
+              </Text>
+              
+              {['Closed - Won', 'Closed - Lost', 'Dropped'].map((outcome) => (
+                <Pressable 
+                  key={outcome} 
+                  style={[
+                    styles.radioOption, 
+                    closeOutcome === outcome && { borderColor: '#16A34A', backgroundColor: '#F0FDF4' }
+                  ]}
+                  onPress={() => setCloseOutcome(outcome)}
+                >
+                  <View style={[styles.radioCircle, closeOutcome === outcome && { borderColor: '#16A34A' }]}>
+                    {closeOutcome === outcome && <View style={[styles.radioInner, { backgroundColor: '#16A34A' }]} />}
+                  </View>
+                  <Text style={[styles.radioText, closeOutcome === outcome && { color: '#16A34A', fontWeight: '700' }]}>{outcome}</Text>
+                </Pressable>
+              ))}
+
+              <Text style={[styles.inputLabel, { marginTop: 16 }]}>Closing Notes (Optional)</Text>
+              <TextInput
+                style={[styles.textInput, { height: 100 }]}
+                placeholder="Provide a final summary or notes..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                textAlignVertical="top"
+                value={closeNotes}
+                onChangeText={setCloseNotes}
+              />
+              
+              <Pressable 
+                style={[styles.btnPrimary, { marginTop: 24, backgroundColor: '#16A34A' }]} 
+                onPress={handleCloseCase}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.btnPrimaryText}>Confirm & Close</Text>
+                )}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Confirmation Modal */}
+      <Modal visible={confirmConfig.visible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxWidth: 320, alignSelf: 'center', width: '100%' }]}>
+            <Text style={[styles.modalTitle, { marginBottom: 12 }]}>{confirmConfig.title}</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 15, lineHeight: 22, marginBottom: 24 }}>{confirmConfig.message}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
+              <Pressable style={{ paddingHorizontal: 16, paddingVertical: 10 }} onPress={() => setConfirmConfig(c => ({...c, visible: false}))}>
+                <Text style={{ color: theme.colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+              </Pressable>
+              <Pressable style={{ backgroundColor: '#DC2626', paddingHorizontal: 16, paddingVertical: 10, borderRadius: theme.borderRadius.md }} onPress={() => { setConfirmConfig(c => ({...c, visible: false})); confirmConfig.onConfirm(); }}>
+                <Text style={{ color: '#FFF', fontWeight: '600' }}>{confirmConfig.confirmText || 'Confirm'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
 
     </View>

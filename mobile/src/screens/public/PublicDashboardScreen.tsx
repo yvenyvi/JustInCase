@@ -7,6 +7,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { Card } from '../../components/ui/Card';
 import { theme } from '../../shared/theme';
+import { NotificationBell } from '../../components/ui/NotificationBell';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -95,9 +96,12 @@ export default function PublicDashboardScreen() {
               <Text style={styles.name}>{firstName}</Text>
             )}
           </View>
-          <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('Profile' as any)}>
-            <Ionicons name="person" size={24} color={theme.colors.primary} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <NotificationBell />
+            <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('Profile' as any)}>
+              <Ionicons name="person" size={24} color={theme.colors.primary} />
+            </Pressable>
+          </View>
         </View>
         <View style={styles.tipBox}>
           <Ionicons name="bulb-outline" size={20} color={theme.colors.warning} style={{ marginRight: 8 }} />
