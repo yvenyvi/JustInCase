@@ -24,3 +24,6 @@ ios/build
 Thumbs.db
 
 test_e2e_accounts.js
+
+test_cruds.js
+wipe_user_records.js
