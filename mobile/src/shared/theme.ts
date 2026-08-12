@@ -45,21 +45,23 @@ export const theme = {
   },
   typography: {
     heading: {
+      fontFamily: 'Inter_800ExtraBold',
       fontSize: 24,
-      fontWeight: '800' as const,
       color: '#1E293B',
     },
     subheading: {
+      fontFamily: 'Inter_700Bold',
       fontSize: 18,
-      fontWeight: '700' as const,
       color: '#1E293B',
     },
     body: {
+      fontFamily: 'Inter_500Medium',
       fontSize: 15,
       lineHeight: 22,
       color: '#475569',
     },
     caption: {
+      fontFamily: 'Inter_400Regular',
       fontSize: 13,
       color: '#94A3B8',
     },

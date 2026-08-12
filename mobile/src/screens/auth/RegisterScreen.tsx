@@ -328,12 +328,11 @@ export default function RegisterScreen({ navigation, route }: Props) {
 
       {/* Header */}
         <View style={styles.topSection}>
-          <View style={styles.logoOuter}>
-            <View style={styles.logoInner}>
-              <Ionicons name="shield-checkmark-outline" size={44} color="#FFFFFF" />
-            </View>
+          <View style={styles.logoContainer}>
+            <Image source={require('../../assets/logo.png')} style={styles.appLogo} />
           </View>
           <Text style={styles.brandTitle}>LAYA</Text>
+          <Text style={styles.brandSlogan}>Empower Your Rights. Free Your Future.</Text>
         </View>
 
         {/* Content card */}
