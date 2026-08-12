@@ -667,8 +667,8 @@ const styles = StyleSheet.create({
 
   // ── Header ─────────────────────────────────────────────────────────────────
   topSection: { alignItems: 'center', paddingTop: 60, paddingBottom: 32 },
-  logoContainer: { marginBottom: 20 },
-  appLogo: { width: 180, height: 180, borderRadius: 40, resizeMode: 'contain' },
+  logoContainer: { marginBottom: 12 },
+  appLogo: { width: 130, height: 130, resizeMode: 'contain' },
   brandTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 32, letterSpacing: 2 },
   brandSlogan: { ...theme.typography.body, color: theme.colors.textSecondary, fontSize: 16, marginTop: 4, letterSpacing: 0.5 },
 
