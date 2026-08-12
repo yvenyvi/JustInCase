@@ -16,7 +16,7 @@ export default function LegalCasesScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [myCases, setMyCases] = useState<any[]>([]);
   const [availableCases, setAvailableCases] = useState<any[]>([]);
-  const [myCasesFilter, setMyCasesFilter] = useState<'Active' | 'Completed'>('Active');
+  const [myCasesFilter, setMyCasesFilter] = useState<'Active' | 'Completed' | 'Withdrawn'>('Active');
 
   const fetchCases = async () => {
     try {
@@ -66,7 +66,26 @@ export default function LegalCasesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      let isMounted = true;
+      const loadDataAsync = async () => {
+        if (!isMounted) return;
+        setIsLoading(true);
+        await fetchCases();
+        if (isMounted) setIsLoading(false);
+      };
+      loadDataAsync();
+
+      const subscription = mobileSupabase
+        .channel('legal-cases-list')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
+          if (isMounted) fetchCases();
+        })
+        .subscribe();
+
+      return () => {
+        isMounted = false;
+        subscription.unsubscribe();
+      };
     }, [])
   );
 
@@ -95,8 +114,12 @@ export default function LegalCasesScreen() {
   };
 
   const myActiveCases = myCases.filter(c => !c.status.includes('Closed') && c.status !== 'Withdrawn' && c.status !== 'Dropped');
-  const myCompletedCases = myCases.filter(c => c.status.includes('Closed') || c.status === 'Withdrawn' || c.status === 'Dropped');
-  const displayedMyCases = myCasesFilter === 'Active' ? myActiveCases : myCompletedCases;
+  const myCompletedCases = myCases.filter(c => c.status.includes('Closed') || c.status === 'Resolved');
+  const myWithdrawnCases = myCases.filter(c => c.status === 'Withdrawn' || c.status === 'Dropped');
+  
+  let displayedMyCases = myActiveCases;
+  if (myCasesFilter === 'Completed') displayedMyCases = myCompletedCases;
+  else if (myCasesFilter === 'Withdrawn') displayedMyCases = myWithdrawnCases;
 
   return (
     <View style={styles.container}>
@@ -151,6 +174,12 @@ export default function LegalCasesScreen() {
                 >
                   <Text style={[styles.subFilterText, myCasesFilter === 'Completed' && styles.subFilterTextActive]}>Completed</Text>
                 </Pressable>
+                <Pressable
+                  style={[styles.subFilterBtn, myCasesFilter === 'Withdrawn' && styles.subFilterBtnActive]}
+                  onPress={() => setMyCasesFilter('Withdrawn')}
+                >
+                  <Text style={[styles.subFilterText, myCasesFilter === 'Withdrawn' && styles.subFilterTextActive]}>Withdrawn</Text>
+                </Pressable>
               </View>
 
               {displayedMyCases.length > 0 ? (
@@ -188,7 +217,9 @@ export default function LegalCasesScreen() {
                   <Text style={styles.emptyDesc}>
                     {myCasesFilter === 'Active' 
                       ? "You are currently not handling any active cases. Check the Available Cases tab to find someone who needs help."
-                      : "You haven't completed any cases yet."}
+                      : myCasesFilter === 'Completed'
+                      ? "You haven't completed any cases yet."
+                      : "You don't have any withdrawn cases."}
                   </Text>
                 </View>
               )}

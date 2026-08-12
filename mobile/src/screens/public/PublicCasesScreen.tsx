@@ -21,10 +21,27 @@ export default function PublicCasesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [cases, setCases] = useState<CaseItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<'Active' | 'Completed'>('Active');
+  const [filter, setFilter] = useState<'Active' | 'Completed' | 'Withdrawn'>('Active');
 
   useEffect(() => {
-    fetchCases();
+    let isMounted = true;
+    const loadData = async () => {
+      if (!isMounted) return;
+      await fetchCases();
+    };
+    loadData();
+
+    const subscription = mobileSupabase
+      .channel('public-cases-list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
+        if (isMounted) fetchCases();
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchCases = async () => {
@@ -90,10 +107,13 @@ export default function PublicCasesScreen() {
     }
   };
 
-  const filteredCases = cases.filter(c => {
-    const isCompleted = c.status.includes('Closed') || c.status === 'Withdrawn' || c.status === 'Dropped';
-    return filter === 'Active' ? !isCompleted : isCompleted;
-  });
+  const activeCases = cases.filter(c => !c.status.includes('Closed') && c.status !== 'Withdrawn' && c.status !== 'Dropped');
+  const completedCases = cases.filter(c => c.status.includes('Closed') || c.status === 'Resolved');
+  const withdrawnCases = cases.filter(c => c.status === 'Withdrawn' || c.status === 'Dropped');
+  
+  let filteredCases = activeCases;
+  if (filter === 'Completed') filteredCases = completedCases;
+  else if (filter === 'Withdrawn') filteredCases = withdrawnCases;
 
   return (
     <View style={styles.container}>
@@ -124,6 +144,12 @@ export default function PublicCasesScreen() {
           onPress={() => setFilter('Completed')}
         >
           <Text style={[styles.tabText, filter === 'Completed' && styles.activeTabText]}>Completed Cases</Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.tab, filter === 'Withdrawn' && styles.activeTab]}
+          onPress={() => setFilter('Withdrawn')}
+        >
+          <Text style={[styles.tabText, filter === 'Withdrawn' && styles.activeTabText]}>Withdrawn</Text>
         </Pressable>
       </View>
 

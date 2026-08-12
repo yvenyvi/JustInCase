@@ -27,7 +27,9 @@ export default function PublicDashboardScreen() {
   ];
 
   useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
+      if (!isMounted) return;
       try {
         const { data: { user } } = await mobileSupabase.auth.getUser();
         if (!user) return;
@@ -52,22 +54,36 @@ export default function PublicDashboardScreen() {
             attorney:users!cases_attorney_id_fkey(first_name, last_name)
           `)
           .eq('client_id', user.id)
+          .in('status', ['Pending Triage', 'Pending Acceptance', 'In Progress', 'Hearing Scheduled', 'Demand Sent'])
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
         
-        if (caseData) {
-          setActiveCase(caseData);
+        if (isMounted) {
+          if (caseData) setActiveCase(caseData);
+          else setActiveCase(null);
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setFirstName('Citizen');
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
     fetchData();
     setRandomTip(TIPS[Math.floor(Math.random() * TIPS.length)]);
+
+    const subscription = mobileSupabase
+      .channel('public-dashboard-cases')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
+        if (isMounted) fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const getStatusColor = (status: string) => {

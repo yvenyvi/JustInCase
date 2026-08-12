@@ -23,7 +23,9 @@ export default function LegalDashboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      let isMounted = true;
       const fetchData = async () => {
+        if (!isMounted) return;
         setIsLoading(true);
         try {
           const { data: { user } } = await mobileSupabase.auth.getUser();
@@ -51,7 +53,7 @@ export default function LegalDashboardScreen() {
               description
             `, { count: 'exact' })
             .eq('attorney_id', user.id)
-            .eq('status', 'In Progress')
+            .in('status', ['Pending Acceptance', 'In Progress', 'Hearing Scheduled', 'Demand Sent'])
             .order('updated_at', { ascending: false });
           
           if (activeError) {
@@ -133,10 +135,22 @@ export default function LegalDashboardScreen() {
         } catch (err) {
           console.error('Error fetching legal dashboard data:', err);
         } finally {
-          setIsLoading(false);
+          if (isMounted) setIsLoading(false);
         }
       };
       fetchData();
+
+      const subscription = mobileSupabase
+        .channel('legal-dashboard-cases')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
+          if (isMounted) fetchData();
+        })
+        .subscribe();
+
+      return () => {
+        isMounted = false;
+        subscription.unsubscribe();
+      };
     }, [])
   );
 
