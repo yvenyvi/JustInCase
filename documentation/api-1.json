@@ -1,0 +1,4300 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Open Congress API",
+    "description": "A modern REST API for Philippine Congress data powered by Neo4j graph database."
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "API server"
+    }
+  ],
+  "components": {
+    "schemas": {},
+    "parameters": {}
+  },
+  "paths": {
+    "/congresses": {
+      "get": {
+        "tags": [
+          "Congresses"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by year (matches if within start_year and end_year)",
+              "example": "2022"
+            },
+            "required": false,
+            "name": "year",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by ordinal (e.g., '20th')",
+              "example": "20th"
+            },
+            "required": false,
+            "name": "ordinal",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Include member counts (senators, representatives, committees)",
+              "example": "true"
+            },
+            "required": false,
+            "name": "include_stats",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Items per page (max 100)",
+              "example": "20"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Number of items to skip",
+              "example": "0"
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved congresses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "01H8ZXR5KBQZ..."
+                          },
+                          "congress_number": {
+                            "type": "number",
+                            "example": 20
+                          },
+                          "congress_website_key": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "20th Congress of the Philippines"
+                          },
+                          "ordinal": {
+                            "type": "string",
+                            "example": "20th"
+                          },
+                          "start_date": {
+                            "type": "string",
+                            "example": "2022-06-30"
+                          },
+                          "end_date": {
+                            "type": "string",
+                            "example": "2025-06-30"
+                          },
+                          "start_year": {
+                            "type": "number",
+                            "example": 2022
+                          },
+                          "end_year": {
+                            "type": "number",
+                            "example": 2025
+                          },
+                          "year_range": {
+                            "type": "string",
+                            "example": "2022-2025"
+                          },
+                          "total_senators": {
+                            "type": "number"
+                          },
+                          "total_representatives": {
+                            "type": "number"
+                          },
+                          "total_committees": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "congress_number",
+                          "name",
+                          "ordinal"
+                        ]
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "pagination"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/congresses/{id}": {
+      "get": {
+        "tags": [
+          "Congresses"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Congress number or ULID",
+              "example": "20"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved congress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "01H8ZXR5KBQZ..."
+                        },
+                        "congress_number": {
+                          "type": "number",
+                          "example": 20
+                        },
+                        "congress_website_key": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "20th Congress of the Philippines"
+                        },
+                        "ordinal": {
+                          "type": "string",
+                          "example": "20th"
+                        },
+                        "start_date": {
+                          "type": "string",
+                          "example": "2022-06-30"
+                        },
+                        "end_date": {
+                          "type": "string",
+                          "example": "2025-06-30"
+                        },
+                        "start_year": {
+                          "type": "number",
+                          "example": 2022
+                        },
+                        "end_year": {
+                          "type": "number",
+                          "example": 2025
+                        },
+                        "year_range": {
+                          "type": "string",
+                          "example": "2022-2025"
+                        },
+                        "total_senators": {
+                          "type": "number"
+                        },
+                        "total_representatives": {
+                          "type": "number"
+                        },
+                        "total_committees": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "congress_number",
+                        "name",
+                        "ordinal"
+                      ]
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Congress not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/congresses/{id}/documents": {
+      "get": {
+        "tags": [
+          "Congresses"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Congress number or ULID",
+              "example": "20"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by document subtype (HB or SB)",
+              "example": "HB"
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "20"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0"
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved congress documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "01H8ZXR5KB..."
+                          },
+                          "type": {
+                            "type": "string",
+                            "example": "bill"
+                          },
+                          "subtype": {
+                            "type": "string",
+                            "example": "HB"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "HBN-00001"
+                          },
+                          "bill_number": {
+                            "type": "number",
+                            "example": 1
+                          },
+                          "congress": {
+                            "type": "number",
+                            "example": 20
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "long_title": {
+                            "type": "string"
+                          },
+                          "congress_website_title": {
+                            "type": "string"
+                          },
+                          "congress_website_abstract": {
+                            "type": "string"
+                          },
+                          "date_filed": {
+                            "type": "string",
+                            "example": "2022-07-01"
+                          },
+                          "scope": {
+                            "type": "string"
+                          },
+                          "subjects": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "authors_raw": {
+                            "type": "string"
+                          },
+                          "senate_website_permalink": {
+                            "type": "string"
+                          },
+                          "download_url_sources": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "authors": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "example": "01H8ZXR5KBQZ..."
+                                },
+                                "first_name": {
+                                  "type": "string"
+                                },
+                                "last_name": {
+                                  "type": "string"
+                                },
+                                "middle_name": {
+                                  "type": "string"
+                                },
+                                "name_prefix": {
+                                  "type": "string"
+                                },
+                                "name_suffix": {
+                                  "type": "string"
+                                },
+                                "full_name": {
+                                  "type": "string"
+                                },
+                                "professional_designations": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "senate_website_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "congress_website_primary_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  }
+                                },
+                                "congress_website_author_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "aliases": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "congresses": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "congress_id": {
+                                        "type": "string"
+                                      },
+                                      "congress_number": {
+                                        "type": "number"
+                                      },
+                                      "congress_ordinal": {
+                                        "type": "string"
+                                      },
+                                      "congress_name": {
+                                        "type": "string"
+                                      },
+                                      "position": {
+                                        "type": "string",
+                                        "enum": [
+                                          "senator",
+                                          "representative"
+                                        ]
+                                      },
+                                      "type": {
+                                        "type": "string"
+                                      },
+                                      "start_date": {
+                                        "type": "string"
+                                      },
+                                      "end_date": {
+                                        "type": "string"
+                                      },
+                                      "year_range": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "congress_id",
+                                      "congress_number",
+                                      "congress_ordinal",
+                                      "position"
+                                    ]
+                                  }
+                                },
+                                "congresses_served": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "congress_id": {
+                                        "type": "string"
+                                      },
+                                      "congress_number": {
+                                        "type": "number"
+                                      },
+                                      "congress_ordinal": {
+                                        "type": "string"
+                                      },
+                                      "congress_name": {
+                                        "type": "string"
+                                      },
+                                      "position": {
+                                        "type": "string",
+                                        "enum": [
+                                          "senator",
+                                          "representative"
+                                        ]
+                                      },
+                                      "type": {
+                                        "type": "string"
+                                      },
+                                      "start_date": {
+                                        "type": "string"
+                                      },
+                                      "end_date": {
+                                        "type": "string"
+                                      },
+                                      "year_range": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "congress_id",
+                                      "congress_number",
+                                      "congress_ordinal",
+                                      "position"
+                                    ]
+                                  }
+                                },
+                                "position": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id"
+                              ]
+                            }
+                          },
+                          "congress_details": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "example": "01H8ZXR5KBQZ..."
+                              },
+                              "congress_number": {
+                                "type": "number",
+                                "example": 20
+                              },
+                              "congress_website_key": {
+                                "type": "number"
+                              },
+                              "name": {
+                                "type": "string",
+                                "example": "20th Congress of the Philippines"
+                              },
+                              "ordinal": {
+                                "type": "string",
+                                "example": "20th"
+                              },
+                              "start_date": {
+                                "type": "string",
+                                "example": "2022-06-30"
+                              },
+                              "end_date": {
+                                "type": "string",
+                                "example": "2025-06-30"
+                              },
+                              "start_year": {
+                                "type": "number",
+                                "example": 2022
+                              },
+                              "end_year": {
+                                "type": "number",
+                                "example": 2025
+                              },
+                              "year_range": {
+                                "type": "string",
+                                "example": "2022-2025"
+                              },
+                              "total_senators": {
+                                "type": "number"
+                              },
+                              "total_representatives": {
+                                "type": "number"
+                              },
+                              "total_committees": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "congress_number",
+                              "name",
+                              "ordinal"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "type",
+                          "subtype"
+                        ]
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "pagination"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people": {
+      "get": {
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by position: senator or representative",
+              "example": "senator"
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by congress number",
+              "example": "20"
+            },
+            "required": false,
+            "name": "congress",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by exact last name"
+            },
+            "required": false,
+            "name": "last_name",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Search in names and aliases"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Sort field: first_name, middle_name, last_name, name_suffix",
+              "example": "last_name"
+            },
+            "required": false,
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Sort direction: asc or desc",
+              "example": "asc"
+            },
+            "required": false,
+            "name": "dir",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "20"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0"
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved people",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "01H8ZXR5KBQZ..."
+                          },
+                          "first_name": {
+                            "type": "string"
+                          },
+                          "last_name": {
+                            "type": "string"
+                          },
+                          "middle_name": {
+                            "type": "string"
+                          },
+                          "name_prefix": {
+                            "type": "string"
+                          },
+                          "name_suffix": {
+                            "type": "string"
+                          },
+                          "full_name": {
+                            "type": "string"
+                          },
+                          "professional_designations": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "senate_website_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "congress_website_primary_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "congress_website_author_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "congresses": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "congress_id": {
+                                  "type": "string"
+                                },
+                                "congress_number": {
+                                  "type": "number"
+                                },
+                                "congress_ordinal": {
+                                  "type": "string"
+                                },
+                                "congress_name": {
+                                  "type": "string"
+                                },
+                                "position": {
+                                  "type": "string",
+                                  "enum": [
+                                    "senator",
+                                    "representative"
+                                  ]
+                                },
+                                "type": {
+                                  "type": "string"
+                                },
+                                "start_date": {
+                                  "type": "string"
+                                },
+                                "end_date": {
+                                  "type": "string"
+                                },
+                                "year_range": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "congress_id",
+                                "congress_number",
+                                "congress_ordinal",
+                                "position"
+                              ]
+                            }
+                          },
+                          "congresses_served": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "congress_id": {
+                                  "type": "string"
+                                },
+                                "congress_number": {
+                                  "type": "number"
+                                },
+                                "congress_ordinal": {
+                                  "type": "string"
+                                },
+                                "congress_name": {
+                                  "type": "string"
+                                },
+                                "position": {
+                                  "type": "string",
+                                  "enum": [
+                                    "senator",
+                                    "representative"
+                                  ]
+                                },
+                                "type": {
+                                  "type": "string"
+                                },
+                                "start_date": {
+                                  "type": "string"
+                                },
+                                "end_date": {
+                                  "type": "string"
+                                },
+                                "year_range": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "congress_id",
+                                "congress_number",
+                                "congress_ordinal",
+                                "position"
+                              ]
+                            }
+                          },
+                          "position": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id"
+                        ]
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "pagination"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people/{id}": {
+      "get": {
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "01H8ZXR5KBQZ..."
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Include congresses served via MEMBER_OF and BELONGS_TO relationships",
+              "example": "true"
+            },
+            "required": false,
+            "name": "include_congresses",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved person",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "01H8ZXR5KBQZ..."
+                        },
+                        "first_name": {
+                          "type": "string"
+                        },
+                        "last_name": {
+                          "type": "string"
+                        },
+                        "middle_name": {
+                          "type": "string"
+                        },
+                        "name_prefix": {
+                          "type": "string"
+                        },
+                        "name_suffix": {
+                          "type": "string"
+                        },
+                        "full_name": {
+                          "type": "string"
+                        },
+                        "professional_designations": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "senate_website_keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "congress_website_primary_keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        },
+                        "congress_website_author_keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "aliases": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "congresses": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "congress_id": {
+                                "type": "string"
+                              },
+                              "congress_number": {
+                                "type": "number"
+                              },
+                              "congress_ordinal": {
+                                "type": "string"
+                              },
+                              "congress_name": {
+                                "type": "string"
+                              },
+                              "position": {
+                                "type": "string",
+                                "enum": [
+                                  "senator",
+                                  "representative"
+                                ]
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "start_date": {
+                                "type": "string"
+                              },
+                              "end_date": {
+                                "type": "string"
+                              },
+                              "year_range": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "congress_id",
+                              "congress_number",
+                              "congress_ordinal",
+                              "position"
+                            ]
+                          }
+                        },
+                        "congresses_served": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "congress_id": {
+                                "type": "string"
+                              },
+                              "congress_number": {
+                                "type": "number"
+                              },
+                              "congress_ordinal": {
+                                "type": "string"
+                              },
+                              "congress_name": {
+                                "type": "string"
+                              },
+                              "position": {
+                                "type": "string",
+                                "enum": [
+                                  "senator",
+                                  "representative"
+                                ]
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "start_date": {
+                                "type": "string"
+                              },
+                              "end_date": {
+                                "type": "string"
+                              },
+                              "year_range": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "congress_id",
+                              "congress_number",
+                              "congress_ordinal",
+                              "position"
+                            ]
+                          }
+                        },
+                        "position": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people/{id}/groups": {
+      "get": {
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "01H8ZXR5KBQZ..."
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by group type",
+              "example": "chamber"
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved person's groups/chambers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "example": "chamber"
+                          },
+                          "subtype": {
+                            "type": "string",
+                            "enum": [
+                              "senate",
+                              "house"
+                            ]
+                          },
+                          "congress": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "type"
+                        ]
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people/{id}/documents": {
+      "get": {
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "01H8ZXR5KBQZ..."
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "20"
+            },
+            "required": false,
+            "name": "congress",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "HB"
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "20"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0"
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved person's bills",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "01H8ZXR5KB..."
+                          },
+                          "type": {
+                            "type": "string",
+                            "example": "bill"
+                          },
+                          "subtype": {
+                            "type": "string",
+                            "example": "HB"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "HBN-00001"
+                          },
+                          "bill_number": {
+                            "type": "number",
+                            "example": 1
+                          },
+                          "congress": {
+                            "type": "number",
+                            "example": 20
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "long_title": {
+                            "type": "string"
+                          },
+                          "congress_website_title": {
+                            "type": "string"
+                          },
+                          "congress_website_abstract": {
+                            "type": "string"
+                          },
+                          "date_filed": {
+                            "type": "string",
+                            "example": "2022-07-01"
+                          },
+                          "scope": {
+                            "type": "string"
+                          },
+                          "subjects": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "authors_raw": {
+                            "type": "string"
+                          },
+                          "senate_website_permalink": {
+                            "type": "string"
+                          },
+                          "download_url_sources": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "authors": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "example": "01H8ZXR5KBQZ..."
+                                },
+                                "first_name": {
+                                  "type": "string"
+                                },
+                                "last_name": {
+                                  "type": "string"
+                                },
+                                "middle_name": {
+                                  "type": "string"
+                                },
+                                "name_prefix": {
+                                  "type": "string"
+                                },
+                                "name_suffix": {
+                                  "type": "string"
+                                },
+                                "full_name": {
+                                  "type": "string"
+                                },
+                                "professional_designations": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "senate_website_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "congress_website_primary_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  }
+                                },
+                                "congress_website_author_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "aliases": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "congresses": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "congress_id": {
+                                        "type": "string"
+                                      },
+                                      "congress_number": {
+                                        "type": "number"
+                                      },
+                                      "congress_ordinal": {
+                                        "type": "string"
+                                      },
+                                      "congress_name": {
+                                        "type": "string"
+                                      },
+                                      "position": {
+                                        "type": "string",
+                                        "enum": [
+                                          "senator",
+                                          "representative"
+                                        ]
+                                      },
+                                      "type": {
+                                        "type": "string"
+                                      },
+                                      "start_date": {
+                                        "type": "string"
+                                      },
+                                      "end_date": {
+                                        "type": "string"
+                                      },
+                                      "year_range": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "congress_id",
+                                      "congress_number",
+                                      "congress_ordinal",
+                                      "position"
+                                    ]
+                                  }
+                                },
+                                "congresses_served": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "congress_id": {
+                                        "type": "string"
+                                      },
+                                      "congress_number": {
+                                        "type": "number"
+                                      },
+                                      "congress_ordinal": {
+                                        "type": "string"
+                                      },
+                                      "congress_name": {
+                                        "type": "string"
+                                      },
+                                      "position": {
+                                        "type": "string",
+                                        "enum": [
+                                          "senator",
+                                          "representative"
+                                        ]
+                                      },
+                                      "type": {
+                                        "type": "string"
+                                      },
+                                      "start_date": {
+                                        "type": "string"
+                                      },
+                                      "end_date": {
+                                        "type": "string"
+                                      },
+                                      "year_range": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "congress_id",
+                                      "congress_number",
+                                      "congress_ordinal",
+                                      "position"
+                                    ]
+                                  }
+                                },
+                                "position": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id"
+                              ]
+                            }
+                          },
+                          "congress_details": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "example": "01H8ZXR5KBQZ..."
+                              },
+                              "congress_number": {
+                                "type": "number",
+                                "example": 20
+                              },
+                              "congress_website_key": {
+                                "type": "number"
+                              },
+                              "name": {
+                                "type": "string",
+                                "example": "20th Congress of the Philippines"
+                              },
+                              "ordinal": {
+                                "type": "string",
+                                "example": "20th"
+                              },
+                              "start_date": {
+                                "type": "string",
+                                "example": "2022-06-30"
+                              },
+                              "end_date": {
+                                "type": "string",
+                                "example": "2025-06-30"
+                              },
+                              "start_year": {
+                                "type": "number",
+                                "example": 2022
+                              },
+                              "end_year": {
+                                "type": "number",
+                                "example": 2025
+                              },
+                              "year_range": {
+                                "type": "string",
+                                "example": "2022-2025"
+                              },
+                              "total_senators": {
+                                "type": "number"
+                              },
+                              "total_representatives": {
+                                "type": "number"
+                              },
+                              "total_committees": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "congress_number",
+                              "name",
+                              "ordinal"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "type",
+                          "subtype"
+                        ]
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "pagination"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/people": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Search query for names and aliases",
+              "example": "Aquino"
+            },
+            "required": true,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by position: senator or representative",
+              "example": "senator"
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by congress number or 'all' (default: all)",
+              "example": "20"
+            },
+            "required": false,
+            "name": "congress",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Items per page (max 100)",
+              "example": "20"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Number of items to skip",
+              "example": "0"
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "01H8ZXR5KBQZ..."
+                          },
+                          "first_name": {
+                            "type": "string"
+                          },
+                          "last_name": {
+                            "type": "string"
+                          },
+                          "middle_name": {
+                            "type": "string"
+                          },
+                          "name_prefix": {
+                            "type": "string"
+                          },
+                          "name_suffix": {
+                            "type": "string"
+                          },
+                          "full_name": {
+                            "type": "string"
+                          },
+                          "professional_designations": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "senate_website_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "congress_website_primary_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "congress_website_author_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "congresses": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "congress_id": {
+                                  "type": "string"
+                                },
+                                "congress_number": {
+                                  "type": "number"
+                                },
+                                "congress_ordinal": {
+                                  "type": "string"
+                                },
+                                "congress_name": {
+                                  "type": "string"
+                                },
+                                "position": {
+                                  "type": "string",
+                                  "enum": [
+                                    "senator",
+                                    "representative"
+                                  ]
+                                },
+                                "type": {
+                                  "type": "string"
+                                },
+                                "start_date": {
+                                  "type": "string"
+                                },
+                                "end_date": {
+                                  "type": "string"
+                                },
+                                "year_range": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "congress_id",
+                                "congress_number",
+                                "congress_ordinal",
+                                "position"
+                              ]
+                            }
+                          },
+                          "congresses_served": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "congress_id": {
+                                  "type": "string"
+                                },
+                                "congress_number": {
+                                  "type": "number"
+                                },
+                                "congress_ordinal": {
+                                  "type": "string"
+                                },
+                                "congress_name": {
+                                  "type": "string"
+                                },
+                                "position": {
+                                  "type": "string",
+                                  "enum": [
+                                    "senator",
+                                    "representative"
+                                  ]
+                                },
+                                "type": {
+                                  "type": "string"
+                                },
+                                "start_date": {
+                                  "type": "string"
+                                },
+                                "end_date": {
+                                  "type": "string"
+                                },
+                                "year_range": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "congress_id",
+                                "congress_number",
+                                "congress_ordinal",
+                                "position"
+                              ]
+                            }
+                          },
+                          "position": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id"
+                        ]
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "pagination"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "20"
+            },
+            "required": false,
+            "name": "congress",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "HB or SB",
+              "example": "HB"
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "National"
+            },
+            "required": false,
+            "name": "scope",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by author last name"
+            },
+            "required": false,
+            "name": "author",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by author person ID (comma-separated for multiple)"
+            },
+            "required": false,
+            "name": "author_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Search in title, abstract, or author names"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "2022-01-01"
+            },
+            "required": false,
+            "name": "date_from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "2022-12-31"
+            },
+            "required": false,
+            "name": "date_to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Sort field",
+              "example": "date_filed"
+            },
+            "required": false,
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Sort direction (asc/desc)",
+              "example": "desc"
+            },
+            "required": false,
+            "name": "dir",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "20"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0"
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved bills",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "01H8ZXR5KB..."
+                          },
+                          "type": {
+                            "type": "string",
+                            "example": "bill"
+                          },
+                          "subtype": {
+                            "type": "string",
+                            "example": "HB"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "HBN-00001"
+                          },
+                          "bill_number": {
+                            "type": "number",
+                            "example": 1
+                          },
+                          "congress": {
+                            "type": "number",
+                            "example": 20
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "long_title": {
+                            "type": "string"
+                          },
+                          "congress_website_title": {
+                            "type": "string"
+                          },
+                          "congress_website_abstract": {
+                            "type": "string"
+                          },
+                          "date_filed": {
+                            "type": "string",
+                            "example": "2022-07-01"
+                          },
+                          "scope": {
+                            "type": "string"
+                          },
+                          "subjects": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "authors_raw": {
+                            "type": "string"
+                          },
+                          "senate_website_permalink": {
+                            "type": "string"
+                          },
+                          "download_url_sources": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "authors": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "example": "01H8ZXR5KBQZ..."
+                                },
+                                "first_name": {
+                                  "type": "string"
+                                },
+                                "last_name": {
+                                  "type": "string"
+                                },
+                                "middle_name": {
+                                  "type": "string"
+                                },
+                                "name_prefix": {
+                                  "type": "string"
+                                },
+                                "name_suffix": {
+                                  "type": "string"
+                                },
+                                "full_name": {
+                                  "type": "string"
+                                },
+                                "professional_designations": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "senate_website_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "congress_website_primary_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  }
+                                },
+                                "congress_website_author_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "aliases": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "congresses": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "congress_id": {
+                                        "type": "string"
+                                      },
+                                      "congress_number": {
+                                        "type": "number"
+                                      },
+                                      "congress_ordinal": {
+                                        "type": "string"
+                                      },
+                                      "congress_name": {
+                                        "type": "string"
+                                      },
+                                      "position": {
+                                        "type": "string",
+                                        "enum": [
+                                          "senator",
+                                          "representative"
+                                        ]
+                                      },
+                                      "type": {
+                                        "type": "string"
+                                      },
+                                      "start_date": {
+                                        "type": "string"
+                                      },
+                                      "end_date": {
+                                        "type": "string"
+                                      },
+                                      "year_range": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "congress_id",
+                                      "congress_number",
+                                      "congress_ordinal",
+                                      "position"
+                                    ]
+                                  }
+                                },
+                                "congresses_served": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "congress_id": {
+                                        "type": "string"
+                                      },
+                                      "congress_number": {
+                                        "type": "number"
+                                      },
+                                      "congress_ordinal": {
+                                        "type": "string"
+                                      },
+                                      "congress_name": {
+                                        "type": "string"
+                                      },
+                                      "position": {
+                                        "type": "string",
+                                        "enum": [
+                                          "senator",
+                                          "representative"
+                                        ]
+                                      },
+                                      "type": {
+                                        "type": "string"
+                                      },
+                                      "start_date": {
+                                        "type": "string"
+                                      },
+                                      "end_date": {
+                                        "type": "string"
+                                      },
+                                      "year_range": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "congress_id",
+                                      "congress_number",
+                                      "congress_ordinal",
+                                      "position"
+                                    ]
+                                  }
+                                },
+                                "position": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id"
+                              ]
+                            }
+                          },
+                          "congress_details": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "example": "01H8ZXR5KBQZ..."
+                              },
+                              "congress_number": {
+                                "type": "number",
+                                "example": 20
+                              },
+                              "congress_website_key": {
+                                "type": "number"
+                              },
+                              "name": {
+                                "type": "string",
+                                "example": "20th Congress of the Philippines"
+                              },
+                              "ordinal": {
+                                "type": "string",
+                                "example": "20th"
+                              },
+                              "start_date": {
+                                "type": "string",
+                                "example": "2022-06-30"
+                              },
+                              "end_date": {
+                                "type": "string",
+                                "example": "2025-06-30"
+                              },
+                              "start_year": {
+                                "type": "number",
+                                "example": 2022
+                              },
+                              "end_year": {
+                                "type": "number",
+                                "example": 2025
+                              },
+                              "year_range": {
+                                "type": "string",
+                                "example": "2022-2025"
+                              },
+                              "total_senators": {
+                                "type": "number"
+                              },
+                              "total_representatives": {
+                                "type": "number"
+                              },
+                              "total_committees": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "congress_number",
+                              "name",
+                              "ordinal"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "type",
+                          "subtype"
+                        ]
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "pagination"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Bill number or ULID",
+              "example": "HB00001"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved bill",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "01H8ZXR5KB..."
+                        },
+                        "type": {
+                          "type": "string",
+                          "example": "bill"
+                        },
+                        "subtype": {
+                          "type": "string",
+                          "example": "HB"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "HBN-00001"
+                        },
+                        "bill_number": {
+                          "type": "number",
+                          "example": 1
+                        },
+                        "congress": {
+                          "type": "number",
+                          "example": 20
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "long_title": {
+                          "type": "string"
+                        },
+                        "congress_website_title": {
+                          "type": "string"
+                        },
+                        "congress_website_abstract": {
+                          "type": "string"
+                        },
+                        "date_filed": {
+                          "type": "string",
+                          "example": "2022-07-01"
+                        },
+                        "scope": {
+                          "type": "string"
+                        },
+                        "subjects": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "authors_raw": {
+                          "type": "string"
+                        },
+                        "senate_website_permalink": {
+                          "type": "string"
+                        },
+                        "download_url_sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "authors": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "example": "01H8ZXR5KBQZ..."
+                              },
+                              "first_name": {
+                                "type": "string"
+                              },
+                              "last_name": {
+                                "type": "string"
+                              },
+                              "middle_name": {
+                                "type": "string"
+                              },
+                              "name_prefix": {
+                                "type": "string"
+                              },
+                              "name_suffix": {
+                                "type": "string"
+                              },
+                              "full_name": {
+                                "type": "string"
+                              },
+                              "professional_designations": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "senate_website_keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "congress_website_primary_keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                }
+                              },
+                              "congress_website_author_keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "aliases": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "congresses": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "congress_id": {
+                                      "type": "string"
+                                    },
+                                    "congress_number": {
+                                      "type": "number"
+                                    },
+                                    "congress_ordinal": {
+                                      "type": "string"
+                                    },
+                                    "congress_name": {
+                                      "type": "string"
+                                    },
+                                    "position": {
+                                      "type": "string",
+                                      "enum": [
+                                        "senator",
+                                        "representative"
+                                      ]
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    },
+                                    "start_date": {
+                                      "type": "string"
+                                    },
+                                    "end_date": {
+                                      "type": "string"
+                                    },
+                                    "year_range": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "congress_id",
+                                    "congress_number",
+                                    "congress_ordinal",
+                                    "position"
+                                  ]
+                                }
+                              },
+                              "congresses_served": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "congress_id": {
+                                      "type": "string"
+                                    },
+                                    "congress_number": {
+                                      "type": "number"
+                                    },
+                                    "congress_ordinal": {
+                                      "type": "string"
+                                    },
+                                    "congress_name": {
+                                      "type": "string"
+                                    },
+                                    "position": {
+                                      "type": "string",
+                                      "enum": [
+                                        "senator",
+                                        "representative"
+                                      ]
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    },
+                                    "start_date": {
+                                      "type": "string"
+                                    },
+                                    "end_date": {
+                                      "type": "string"
+                                    },
+                                    "year_range": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "congress_id",
+                                    "congress_number",
+                                    "congress_ordinal",
+                                    "position"
+                                  ]
+                                }
+                              },
+                              "position": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id"
+                            ]
+                          }
+                        },
+                        "congress_details": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "example": "01H8ZXR5KBQZ..."
+                            },
+                            "congress_number": {
+                              "type": "number",
+                              "example": 20
+                            },
+                            "congress_website_key": {
+                              "type": "number"
+                            },
+                            "name": {
+                              "type": "string",
+                              "example": "20th Congress of the Philippines"
+                            },
+                            "ordinal": {
+                              "type": "string",
+                              "example": "20th"
+                            },
+                            "start_date": {
+                              "type": "string",
+                              "example": "2022-06-30"
+                            },
+                            "end_date": {
+                              "type": "string",
+                              "example": "2025-06-30"
+                            },
+                            "start_year": {
+                              "type": "number",
+                              "example": 2022
+                            },
+                            "end_year": {
+                              "type": "number",
+                              "example": 2025
+                            },
+                            "year_range": {
+                              "type": "string",
+                              "example": "2022-2025"
+                            },
+                            "total_senators": {
+                              "type": "number"
+                            },
+                            "total_representatives": {
+                              "type": "number"
+                            },
+                            "total_committees": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "congress_number",
+                            "name",
+                            "ordinal"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "subtype"
+                      ]
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bill not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{id}/authors": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "HB00001"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved bill authors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "01H8ZXR5KBQZ..."
+                          },
+                          "first_name": {
+                            "type": "string"
+                          },
+                          "last_name": {
+                            "type": "string"
+                          },
+                          "middle_name": {
+                            "type": "string"
+                          },
+                          "name_prefix": {
+                            "type": "string"
+                          },
+                          "name_suffix": {
+                            "type": "string"
+                          },
+                          "full_name": {
+                            "type": "string"
+                          },
+                          "professional_designations": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "senate_website_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "congress_website_primary_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "congress_website_author_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "congresses": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "congress_id": {
+                                  "type": "string"
+                                },
+                                "congress_number": {
+                                  "type": "number"
+                                },
+                                "congress_ordinal": {
+                                  "type": "string"
+                                },
+                                "congress_name": {
+                                  "type": "string"
+                                },
+                                "position": {
+                                  "type": "string",
+                                  "enum": [
+                                    "senator",
+                                    "representative"
+                                  ]
+                                },
+                                "type": {
+                                  "type": "string"
+                                },
+                                "start_date": {
+                                  "type": "string"
+                                },
+                                "end_date": {
+                                  "type": "string"
+                                },
+                                "year_range": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "congress_id",
+                                "congress_number",
+                                "congress_ordinal",
+                                "position"
+                              ]
+                            }
+                          },
+                          "congresses_served": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "congress_id": {
+                                  "type": "string"
+                                },
+                                "congress_number": {
+                                  "type": "number"
+                                },
+                                "congress_ordinal": {
+                                  "type": "string"
+                                },
+                                "congress_name": {
+                                  "type": "string"
+                                },
+                                "position": {
+                                  "type": "string",
+                                  "enum": [
+                                    "senator",
+                                    "representative"
+                                  ]
+                                },
+                                "type": {
+                                  "type": "string"
+                                },
+                                "start_date": {
+                                  "type": "string"
+                                },
+                                "end_date": {
+                                  "type": "string"
+                                },
+                                "year_range": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "congress_id",
+                                "congress_number",
+                                "congress_ordinal",
+                                "position"
+                              ]
+                            }
+                          },
+                          "position": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id"
+                        ]
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/documents": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Search query for title, abstract, or author names",
+              "example": "education"
+            },
+            "required": true,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by congress number, ULID, or 'all' (default: all)",
+              "example": "20"
+            },
+            "required": false,
+            "name": "congress",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by scope: national, local, both, any (default: any)",
+              "example": "national"
+            },
+            "required": false,
+            "name": "scope",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by document type: hb, sb, any (default: any)",
+              "example": "hb"
+            },
+            "required": false,
+            "name": "subtype",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Sort field: date_filed, congress, bill_number, title, scope",
+              "example": "date_filed"
+            },
+            "required": false,
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Sort direction: asc or desc",
+              "example": "desc"
+            },
+            "required": false,
+            "name": "dir",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Items per page (max 100)",
+              "example": "20"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Number of items to skip",
+              "example": "0"
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "01H8ZXR5KB..."
+                          },
+                          "type": {
+                            "type": "string",
+                            "example": "bill"
+                          },
+                          "subtype": {
+                            "type": "string",
+                            "example": "HB"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "HBN-00001"
+                          },
+                          "bill_number": {
+                            "type": "number",
+                            "example": 1
+                          },
+                          "congress": {
+                            "type": "number",
+                            "example": 20
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "long_title": {
+                            "type": "string"
+                          },
+                          "congress_website_title": {
+                            "type": "string"
+                          },
+                          "congress_website_abstract": {
+                            "type": "string"
+                          },
+                          "date_filed": {
+                            "type": "string",
+                            "example": "2022-07-01"
+                          },
+                          "scope": {
+                            "type": "string"
+                          },
+                          "subjects": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "authors_raw": {
+                            "type": "string"
+                          },
+                          "senate_website_permalink": {
+                            "type": "string"
+                          },
+                          "download_url_sources": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "authors": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "example": "01H8ZXR5KBQZ..."
+                                },
+                                "first_name": {
+                                  "type": "string"
+                                },
+                                "last_name": {
+                                  "type": "string"
+                                },
+                                "middle_name": {
+                                  "type": "string"
+                                },
+                                "name_prefix": {
+                                  "type": "string"
+                                },
+                                "name_suffix": {
+                                  "type": "string"
+                                },
+                                "full_name": {
+                                  "type": "string"
+                                },
+                                "professional_designations": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "senate_website_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "congress_website_primary_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  }
+                                },
+                                "congress_website_author_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "aliases": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "congresses": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "congress_id": {
+                                        "type": "string"
+                                      },
+                                      "congress_number": {
+                                        "type": "number"
+                                      },
+                                      "congress_ordinal": {
+                                        "type": "string"
+                                      },
+                                      "congress_name": {
+                                        "type": "string"
+                                      },
+                                      "position": {
+                                        "type": "string",
+                                        "enum": [
+                                          "senator",
+                                          "representative"
+                                        ]
+                                      },
+                                      "type": {
+                                        "type": "string"
+                                      },
+                                      "start_date": {
+                                        "type": "string"
+                                      },
+                                      "end_date": {
+                                        "type": "string"
+                                      },
+                                      "year_range": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "congress_id",
+                                      "congress_number",
+                                      "congress_ordinal",
+                                      "position"
+                                    ]
+                                  }
+                                },
+                                "congresses_served": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "congress_id": {
+                                        "type": "string"
+                                      },
+                                      "congress_number": {
+                                        "type": "number"
+                                      },
+                                      "congress_ordinal": {
+                                        "type": "string"
+                                      },
+                                      "congress_name": {
+                                        "type": "string"
+                                      },
+                                      "position": {
+                                        "type": "string",
+                                        "enum": [
+                                          "senator",
+                                          "representative"
+                                        ]
+                                      },
+                                      "type": {
+                                        "type": "string"
+                                      },
+                                      "start_date": {
+                                        "type": "string"
+                                      },
+                                      "end_date": {
+                                        "type": "string"
+                                      },
+                                      "year_range": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "congress_id",
+                                      "congress_number",
+                                      "congress_ordinal",
+                                      "position"
+                                    ]
+                                  }
+                                },
+                                "position": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id"
+                              ]
+                            }
+                          },
+                          "congress_details": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "example": "01H8ZXR5KBQZ..."
+                              },
+                              "congress_number": {
+                                "type": "number",
+                                "example": 20
+                              },
+                              "congress_website_key": {
+                                "type": "number"
+                              },
+                              "name": {
+                                "type": "string",
+                                "example": "20th Congress of the Philippines"
+                              },
+                              "ordinal": {
+                                "type": "string",
+                                "example": "20th"
+                              },
+                              "start_date": {
+                                "type": "string",
+                                "example": "2022-06-30"
+                              },
+                              "end_date": {
+                                "type": "string",
+                                "example": "2025-06-30"
+                              },
+                              "start_year": {
+                                "type": "number",
+                                "example": 2022
+                              },
+                              "end_year": {
+                                "type": "number",
+                                "example": 2025
+                              },
+                              "year_range": {
+                                "type": "string",
+                                "example": "2022-2025"
+                              },
+                              "total_senators": {
+                                "type": "number"
+                              },
+                              "total_representatives": {
+                                "type": "number"
+                              },
+                              "total_committees": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "congress_number",
+                              "name",
+                              "ordinal"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "type",
+                          "subtype"
+                        ]
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "pagination"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "tags": [
+          "Utilities"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total_bills": {
+                          "type": "number"
+                        },
+                        "total_house_bills": {
+                          "type": "number"
+                        },
+                        "total_senate_bills": {
+                          "type": "number"
+                        },
+                        "total_congresses": {
+                          "type": "number"
+                        },
+                        "total_people": {
+                          "type": "number"
+                        },
+                        "total_committees": {
+                          "type": "number"
+                        },
+                        "bills_with_dates": {
+                          "type": "number"
+                        },
+                        "bills_without_dates": {
+                          "type": "number"
+                        },
+                        "bills_by_congress": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "congress": {
+                                "type": "number"
+                              },
+                              "total": {
+                                "type": "number"
+                              },
+                              "house_bills": {
+                                "type": "number"
+                              },
+                              "senate_bills": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "congress",
+                              "total",
+                              "house_bills",
+                              "senate_bills"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "total_bills",
+                        "total_house_bills",
+                        "total_senate_bills",
+                        "total_congresses",
+                        "total_people",
+                        "total_committees",
+                        "bills_with_dates",
+                        "bills_without_dates",
+                        "bills_by_congress"
+                      ]
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ping": {
+      "get": {
+        "tags": [
+          "Utilities"
+        ],
+        "responses": {
+          "200": {
+            "description": "API and database are healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "example": "ok"
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "example": "2025-10-08T13:00:00.000Z"
+                        },
+                        "database": {
+                          "type": "string",
+                          "example": "connected"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "timestamp",
+                        "database"
+                      ]
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "limit",
+                        "offset",
+                        "has_more"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "API or database is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -12,6 +12,7 @@ export type RootStackParamList = {
   PublicDocumentResult: { result: any };
   PublicMyDocuments: undefined;
   PublicRightsLibrary: undefined;
+  PublicLegislationTracker: undefined;
   PublicNotifications: undefined;
   ChatThread: { threadId: string; threadName: string };
   CaseDetails: { caseId: string };

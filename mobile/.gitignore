@@ -22,3 +22,5 @@ ios/build
 *.log
 .DS_Store
 Thumbs.db
+
+test_e2e_accounts.js

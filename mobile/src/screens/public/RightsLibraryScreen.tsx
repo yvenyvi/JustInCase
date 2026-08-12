@@ -164,6 +164,13 @@ export default function RightsLibraryScreen() {
         <Text style={styles.searchHintText}>
           Tip: Our contextual search allows you to use casual terms. Try searching "kid" to find Child Rights, or "job" to find Labor Laws.
         </Text>
+        <Pressable 
+          style={styles.trackerBtn}
+          onPress={() => navigation.navigate('PublicLegislationTracker' as never)}
+        >
+          <Ionicons name="document-text" size={20} color="#fff" />
+          <Text style={styles.trackerBtnText}>Track Pending Legislation</Text>
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -270,6 +277,8 @@ const styles = StyleSheet.create({
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, color: theme.colors.textPrimary, fontSize: 16, height: '100%', paddingVertical: 0 },
   searchHintText: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 8, lineHeight: 16 },
+  trackerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.primary, paddingHorizontal: 16, paddingVertical: 12, borderRadius: theme.borderRadius.md, marginTop: 16, justifyContent: 'center', gap: 8 },
+  trackerBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   chipsWrapper: { backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   chipsContainer: { paddingHorizontal: 24, paddingVertical: 12, gap: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: theme.borderRadius.xl, backgroundColor: theme.colors.secondary, borderWidth: 1, borderColor: theme.colors.border },
