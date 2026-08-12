@@ -102,7 +102,7 @@ export default function ChatThreadScreen() {
         .maybeSingle();
 
       if (!directThread) {
-        // threadId is a case_id — look up or create the message thread
+        // threadId is assumed to be a case_id — look up or create the message thread
         const { data: existingThread } = await mobileSupabase
           .from('message_threads')
           .select('id')
@@ -118,7 +118,20 @@ export default function ChatThreadScreen() {
             .insert({ case_id: threadId })
             .select('id')
             .single();
-          if (threadErr) throw threadErr;
+            
+          if (threadErr) {
+            if (threadErr.code === '23503') {
+              // Foreign key violation: The case was deleted or the threadId was actually a deleted thread's ID
+              Toast.show({
+                type: 'error',
+                text1: 'Hindi na available',
+                text2: 'Ang case o thread na ito ay nabura na.',
+              });
+              navigation.goBack();
+              return;
+            }
+            throw threadErr;
+          }
           resolvedThreadId = newThread.id;
         }
       }

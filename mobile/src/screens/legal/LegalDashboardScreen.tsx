@@ -107,7 +107,7 @@ export default function LegalDashboardScreen() {
           try {
             const { data: logsData } = await mobileSupabase
               .from('pro_bono_logs')
-              .select('hours, case_id')
+              .select('hours, case_id, cases!inner(lawyer_preference)')
               .eq('attorney_id', user.id)
               .eq('is_verified', true);
             
@@ -115,7 +115,14 @@ export default function LegalDashboardScreen() {
             let pPrivate = 0;
             
             if (logsData) {
-              pBono = logsData.reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
+              logsData.forEach((log: any) => {
+                const preference = log.cases?.lawyer_preference;
+                if (preference === 'Private') {
+                  pPrivate += (log.hours || 0);
+                } else {
+                  pBono += (log.hours || 0);
+                }
+              });
             }
             setProBonoHours(pBono);
             setPrivateHours(pPrivate);

@@ -56,6 +56,10 @@ export default function LegalCaseDetailsScreen() {
   const [closeOutcome, setCloseOutcome] = useState('Closed - Won');
   const [closeNotes, setCloseNotes] = useState('');
 
+  // Update Status Modal State
+  const [isUpdateStatusModalVisible, setIsUpdateStatusModalVisible] = useState(false);
+  const [newStatus, setNewStatus] = useState('Demand Sent');
+
   useEffect(() => {
     fetchCaseDetails();
 
@@ -248,18 +252,7 @@ export default function LegalCaseDetailsScreen() {
       
       if (error) throw error;
       
-      // Notify Client
-      if (c.clientId) {
-         await mobileSupabase
-          .from('notifications')
-          .insert({
-            user_id: c.clientId,
-            title: 'Case Accepted',
-            body: `An attorney has accepted your case "${c.title}".`,
-            type: 'case_update',
-            is_read: false
-          });
-      }
+      // Notify Client (handled automatically by database trigger trg_notify_on_case_status)
 
       await mobileSupabase.from('audit_logs').insert({
         user_id: currentUser.id,
@@ -342,13 +335,7 @@ export default function LegalCaseDetailsScreen() {
       if (error) throw error;
 
       if (c.clientId) {
-        await mobileSupabase.from('notifications').insert({
-          user_id: c.clientId,
-          title: 'Case Closed',
-          body: `Your attorney has finalized and closed this case (${closeOutcome}).`,
-          type: 'case_update',
-          is_read: false
-        });
+        // Notification is handled automatically by database trigger trg_notify_on_case_status
       }
 
       await mobileSupabase.from('audit_logs').insert({
@@ -367,8 +354,36 @@ export default function LegalCaseDetailsScreen() {
     }
   };
 
+  const handleUpdateStatus = async () => {
+    setIsSubmitting(true);
+    try {
+      if (!c || !currentUser) return;
+      const { error } = await mobileSupabase
+        .from('cases')
+        .update({ status: newStatus })
+        .eq('id', c.id);
+      
+      if (error) throw error;
+
+      await mobileSupabase.from('audit_logs').insert({
+        user_id: currentUser.id,
+        action_type: 'Status Updated',
+        detail: `Attorney updated case status to ${newStatus}.`
+      });
+
+      setIsUpdateStatusModalVisible(false);
+      Toast.show({ type: 'success', text1: 'Status Updated', text2: `Case is now marked as ${newStatus}.` });
+      fetchCaseDetails();
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Failed to update status.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
-    if (status.includes('Closed') || status === 'Withdrawn') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
+    if (status.includes('Closed') || status === 'Withdrawn' || status === 'Dropped') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
+    if (status === 'Demand Sent' || status === 'Hearing Scheduled') return { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' };
     if (status === 'In Progress' || status === 'Accepted') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
     return { bg: '#FEF3C7', text: theme.colors.warning, border: '#FDE68A' };
   };
@@ -571,13 +586,23 @@ export default function LegalCaseDetailsScreen() {
                 </Pressable>
               </View>
 
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginTop: 12 }}>
               <Pressable 
-                style={[styles.actionBtn, { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', width: '100%', marginTop: 12 }]} 
+                style={[styles.actionBtn, { flex: 1, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }]} 
                 onPress={() => setIsCloseModalVisible(true)}
               >
                 <Ionicons name="checkmark-done-circle" size={20} color="#16A34A" style={{ marginRight: 8 }} />
-                <Text style={[styles.actionBtnTextPrimary, { color: '#16A34A' }]}>Finalize & Close Case</Text>
+                <Text style={[styles.actionBtnTextPrimary, { color: '#16A34A' }]}>Close Case</Text>
               </Pressable>
+
+              <Pressable 
+                style={[styles.actionBtn, { flex: 1, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' }]} 
+                onPress={() => setIsUpdateStatusModalVisible(true)}
+              >
+                <Ionicons name="refresh-circle" size={20} color="#D97706" style={{ marginRight: 8 }} />
+                <Text style={[styles.actionBtnTextPrimary, { color: '#D97706' }]}>Update Status</Text>
+              </Pressable>
+            </View>
             </>
           )}
         </View>
@@ -688,7 +713,7 @@ export default function LegalCaseDetailsScreen() {
               {isSubmitting ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.modalSubmitText}>Submit Hours</Text>
+                <Text style={styles.modalSubmitBtnText}>Submit Hours</Text>
               )}
             </Pressable>
           </View>
@@ -831,6 +856,58 @@ export default function LegalCaseDetailsScreen() {
         </View>
       </Modal>
 
+      {/* Update Status Modal */}
+      <Modal visible={isUpdateStatusModalVisible} transparent animationType="slide" onRequestClose={() => setIsUpdateStatusModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Update Case Status</Text>
+              <Pressable onPress={() => setIsUpdateStatusModalVisible(false)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={24} color="#64748B" />
+              </Pressable>
+            </View>
+
+            <Text style={{ color: theme.colors.textSecondary, marginBottom: 16 }}>Select the new status for this case. The client will be automatically notified.</Text>
+            
+            <View style={{ gap: 12, marginBottom: 24 }}>
+              {['In Progress', 'Hearing Scheduled', 'Demand Sent'].map(statusOption => (
+                <Pressable
+                  key={statusOption}
+                  style={[
+                    styles.outcomeBtn,
+                    newStatus === statusOption && styles.outcomeBtnActive
+                  ]}
+                  onPress={() => setNewStatus(statusOption)}
+                >
+                  <Ionicons 
+                    name={newStatus === statusOption ? "radio-button-on" : "radio-button-off"} 
+                    size={20} 
+                    color={newStatus === statusOption ? theme.colors.primary : "#94A3B8"} 
+                    style={{ marginRight: 12 }}
+                  />
+                  <Text style={[
+                    styles.outcomeText,
+                    newStatus === statusOption && styles.outcomeTextActive
+                  ]}>{statusOption}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Pressable 
+              style={[styles.modalSubmitBtn, isSubmitting && { opacity: 0.7 }]} 
+              onPress={handleUpdateStatus}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.modalSubmitBtnText}>Save Status Update</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -895,12 +972,16 @@ const styles = StyleSheet.create({
   inputLabel: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 8 },
   textInput: { backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.md, padding: 16, fontSize: 15, color: theme.colors.textPrimary, marginBottom: 16 },
   textArea: { height: 100 },
-  modalSubmitBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.lg, padding: 16, alignItems: 'center', marginTop: 8 },
-  modalSubmitText: { color: theme.colors.surface, fontSize: 16, fontWeight: '700' },
+  modalSubmitBtn: { backgroundColor: theme.colors.primary, paddingVertical: 14, borderRadius: theme.borderRadius.md, alignItems: 'center' },
+  modalSubmitBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   btnPrimary: { backgroundColor: theme.colors.primary, padding: 16, borderRadius: theme.borderRadius.md, alignItems: 'center' },
   btnPrimaryText: { color: theme.colors.surface, fontSize: 15, fontWeight: '700' },
   radioOption: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: theme.borderRadius.md, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 8 },
   radioCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: theme.colors.primary },
-  radioText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '500' }
+  radioText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '500' },
+  outcomeBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 16, borderRadius: theme.borderRadius.md, borderWidth: 1, borderColor: theme.colors.border },
+  outcomeBtnActive: { backgroundColor: '#F0F9FF', borderColor: theme.colors.primary },
+  outcomeText: { fontSize: 16, color: theme.colors.textSecondary, fontWeight: '500' },
+  outcomeTextActive: { color: theme.colors.primary, fontWeight: '700' }
 });

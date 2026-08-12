@@ -16,6 +16,7 @@ export default function LegalCasesScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [myCases, setMyCases] = useState<any[]>([]);
   const [availableCases, setAvailableCases] = useState<any[]>([]);
+  const [myCasesFilter, setMyCasesFilter] = useState<'Active' | 'Completed'>('Active');
 
   const fetchCases = async () => {
     try {
@@ -75,16 +76,27 @@ export default function LegalCasesScreen() {
       case 'in_progress':
       case 'accepted':
         return { bg: '#F0FDF4', border: '#BBF7D0', dot: '#16A34A', text: '#16A34A', label: 'Active' };
+      case 'demand sent':
+      case 'hearing scheduled':
+        return { bg: '#EFF6FF', border: '#BFDBFE', dot: '#3B82F6', text: '#2563EB', label: status };
       case 'pending triage':
       case 'pending':
         return { bg: '#FFF7ED', border: '#FED7AA', dot: '#EA580C', text: '#EA580C', label: 'Pending' };
       case 'closed':
       case 'resolved':
+      case 'closed - won':
+      case 'closed - lost':
+      case 'withdrawn':
+      case 'dropped':
         return { bg: theme.colors.secondary, border: '#CBD5E1', dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: 'Closed' };
       default:
         return { bg: theme.colors.background, border: theme.colors.border, dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: status || 'Unknown' };
     }
   };
+
+  const myActiveCases = myCases.filter(c => !c.status.includes('Closed') && c.status !== 'Withdrawn' && c.status !== 'Dropped');
+  const myCompletedCases = myCases.filter(c => c.status.includes('Closed') || c.status === 'Withdrawn' || c.status === 'Dropped');
+  const displayedMyCases = myCasesFilter === 'Active' ? myActiveCases : myCompletedCases;
 
   return (
     <View style={styles.container}>
@@ -125,8 +137,24 @@ export default function LegalCasesScreen() {
           
           {activeTab === 'my_cases' && (
             <>
-              {myCases.length > 0 ? (
-                myCases.map(c => (
+              {/* Sub-Filter for My Cases */}
+              <View style={styles.subFilterContainer}>
+                <Pressable
+                  style={[styles.subFilterBtn, myCasesFilter === 'Active' && styles.subFilterBtnActive]}
+                  onPress={() => setMyCasesFilter('Active')}
+                >
+                  <Text style={[styles.subFilterText, myCasesFilter === 'Active' && styles.subFilterTextActive]}>Active</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.subFilterBtn, myCasesFilter === 'Completed' && styles.subFilterBtnActive]}
+                  onPress={() => setMyCasesFilter('Completed')}
+                >
+                  <Text style={[styles.subFilterText, myCasesFilter === 'Completed' && styles.subFilterTextActive]}>Completed</Text>
+                </Pressable>
+              </View>
+
+              {displayedMyCases.length > 0 ? (
+                displayedMyCases.map(c => (
                   <Pressable 
                     key={c.id}
                     style={styles.caseWidget}
@@ -156,8 +184,12 @@ export default function LegalCasesScreen() {
               ) : (
                 <View style={styles.emptyState}>
                   <Ionicons name="briefcase-outline" size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
-                  <Text style={styles.emptyTitle}>No Active Cases</Text>
-                  <Text style={styles.emptyDesc}>You are currently not handling any active cases. Check the Available Cases tab to find someone who needs help.</Text>
+                  <Text style={styles.emptyTitle}>No {myCasesFilter} Cases</Text>
+                  <Text style={styles.emptyDesc}>
+                    {myCasesFilter === 'Active' 
+                      ? "You are currently not handling any active cases. Check the Available Cases tab to find someone who needs help."
+                      : "You haven't completed any cases yet."}
+                  </Text>
                 </View>
               )}
             </>
@@ -263,6 +295,13 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: theme.colors.surface, fontSize: 14, fontWeight: '700' },
 
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 24 },
-  emptyTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  emptyDesc: { color: theme.colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 22 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 8 },
+  emptyDesc: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+
+  // Sub-filter styling
+  subFilterContainer: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 999, padding: 4, marginBottom: 16, width: '100%' },
+  subFilterBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 999 },
+  subFilterBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  subFilterText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+  subFilterTextActive: { color: theme.colors.primary }
 });

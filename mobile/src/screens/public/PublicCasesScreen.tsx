@@ -21,6 +21,7 @@ export default function PublicCasesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [cases, setCases] = useState<CaseItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState<'Active' | 'Completed'>('Active');
 
   useEffect(() => {
     fetchCases();
@@ -66,10 +67,33 @@ export default function PublicCasesScreen() {
   };
 
   const getStatusColor = (status: string) => {
-    if (status.includes('Closed') || status === 'Withdrawn') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
-    if (status === 'In Progress') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
-    return { bg: '#FEF3C7', text: theme.colors.warning, border: '#FDE68A' };
+    switch (status?.toLowerCase()) {
+      case 'in progress':
+      case 'in_progress':
+      case 'accepted':
+        return { bg: '#F0FDF4', border: '#BBF7D0', dot: '#16A34A', text: '#16A34A', label: 'Active' };
+      case 'demand sent':
+      case 'hearing scheduled':
+        return { bg: '#EFF6FF', border: '#BFDBFE', dot: '#3B82F6', text: '#2563EB', label: status };
+      case 'pending triage':
+      case 'pending':
+        return { bg: '#FFF7ED', border: '#FED7AA', dot: '#EA580C', text: '#EA580C', label: 'Pending' };
+      case 'closed':
+      case 'closed - won':
+      case 'closed - lost':
+      case 'withdrawn':
+      case 'dropped':
+      case 'resolved':
+        return { bg: theme.colors.secondary, border: '#CBD5E1', dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: 'Closed' };
+      default:
+        return { bg: theme.colors.background, border: theme.colors.border, dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: status || 'Unknown' };
+    }
   };
+
+  const filteredCases = cases.filter(c => {
+    const isCompleted = c.status.includes('Closed') || c.status === 'Withdrawn' || c.status === 'Dropped';
+    return filter === 'Active' ? !isCompleted : isCompleted;
+  });
 
   return (
     <View style={styles.container}>
@@ -88,6 +112,21 @@ export default function PublicCasesScreen() {
         </View>
       </View>
 
+      <View style={styles.tabContainer}>
+        <Pressable 
+          style={[styles.tab, filter === 'Active' && styles.activeTab]}
+          onPress={() => setFilter('Active')}
+        >
+          <Text style={[styles.tabText, filter === 'Active' && styles.activeTabText]}>Active Cases</Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.tab, filter === 'Completed' && styles.activeTab]}
+          onPress={() => setFilter('Completed')}
+        >
+          <Text style={[styles.tabText, filter === 'Completed' && styles.activeTabText]}>Completed Cases</Text>
+        </Pressable>
+      </View>
+
       {isLoading ? (
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -98,9 +137,15 @@ export default function PublicCasesScreen() {
           <Text style={styles.emptyTitle}>Wala kang kaso</Text>
           <Text style={styles.emptySubtitle}>Pumunta sa Triage para makahanap ng abogado.</Text>
         </View>
+      ) : filteredCases.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="briefcase-outline" size={48} color="#CBD5E1" />
+          <Text style={styles.emptyTitle}>No {filter.toLowerCase()} cases</Text>
+          <Text style={styles.emptySubtitle}>You do not have any {filter.toLowerCase()} cases at the moment.</Text>
+        </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {cases.map((c) => {
+          {filteredCases.map((c) => {
             const colors = getStatusColor(c.status);
             return (
               <Pressable key={c.id} style={styles.caseCard} onPress={() => navigation.navigate('CaseDetails', { caseId: c.id })}>
@@ -142,6 +187,11 @@ const styles = StyleSheet.create({
   headerSubtitle: { color: theme.colors.textSecondary, fontSize: 15 },
   headerActions: { flexDirection: 'row', gap: 12 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.border },
+  tabContainer: { flexDirection: 'row', paddingHorizontal: 24, paddingTop: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border, backgroundColor: theme.colors.surface },
+  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  activeTab: { borderBottomColor: theme.colors.primary },
+  tabText: { fontSize: 15, fontWeight: '600', color: theme.colors.textSecondary },
+  activeTabText: { color: theme.colors.primary },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },

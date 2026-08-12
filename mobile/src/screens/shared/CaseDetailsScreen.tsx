@@ -88,7 +88,13 @@ export default function CaseDetailsScreen() {
         .eq('id', caseId)
         .single();
 
-      if (caseError) throw caseError;
+      if (caseError) {
+        if (caseError.code === 'PGRST116') {
+          setC(null);
+          return;
+        }
+        throw caseError;
+      }
 
       // Fetch audit logs
       const { data: logsData } = await mobileSupabase
@@ -264,7 +270,8 @@ export default function CaseDetailsScreen() {
   };
 
   const getStatusColor = (status: string) => {
-    if (status.includes('Closed') || status === 'Withdrawn') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
+    if (status.includes('Closed') || status === 'Withdrawn' || status === 'Dropped') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
+    if (status === 'Demand Sent' || status === 'Hearing Scheduled') return { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' };
     if (status === 'In Progress' || status === 'Accepted') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
     return { bg: '#FEF3C7', text: theme.colors.warning, border: '#FDE68A' };
   };

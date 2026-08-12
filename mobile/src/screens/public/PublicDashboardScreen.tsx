@@ -73,6 +73,7 @@ export default function PublicDashboardScreen() {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'in_progress': case 'in progress': return { bg: '#F0FDF4', border: '#BBF7D0', dot: '#16A34A', text: '#16A34A', label: 'In Progress' };
+      case 'demand sent': case 'hearing scheduled': return { bg: '#EFF6FF', border: '#BFDBFE', dot: '#3B82F6', text: '#2563EB', label: status };
       case 'pending': return { bg: '#FFF7ED', border: '#FED7AA', dot: '#EA580C', text: '#EA580C', label: 'Pending' };
       case 'closed': case 'resolved': return { bg: theme.colors.secondary, border: '#CBD5E1', dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: 'Closed' };
       default: return { bg: '#F0FDF4', border: '#BBF7D0', dot: '#16A34A', text: '#16A34A', label: status || 'Active' };

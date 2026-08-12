@@ -18,14 +18,18 @@ function Show-Banner {
     Write-Host ""
 }
 
-function Kill-Port([int]$Port) {
-    $conns = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
-    foreach ($c in $conns) {
-        try { Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue } catch {}
-    }
+function Stop-PortProcess([int]$Port) {
+    try {
+        $conns = Get-NetTCPConnection -LocalPort $Port -ErrorAction Stop
+        foreach ($c in $conns) {
+            if ($c.OwningProcess -and $c.OwningProcess -gt 0) {
+                try { Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue } catch {}
+            }
+        }
+    } catch {}
 }
 
-function Kill-Saved {
+function Stop-SavedProcess {
     if (Test-Path $PID_FILE) {
         foreach ($p in (Get-Content $PID_FILE)) {
             if ($p -match "^\d+$") {
@@ -36,11 +40,11 @@ function Kill-Saved {
     }
 }
 
-function Do-Stop([switch]$Silent) {
+function Stop-DevEnvironment([switch]$Silent) {
     if (-not $Silent) { Write-Host "  Stopping all services..." -ForegroundColor Yellow }
-    Kill-Saved
-    Kill-Port 8000
-    Kill-Port 8081
+    Stop-SavedProcess
+    Stop-PortProcess 8000
+    Stop-PortProcess 8081
     if (-not $Silent) {
         Write-Host "  Stopped." -ForegroundColor Green
         Write-Host ""
@@ -64,9 +68,9 @@ function Update-EnvIPs {
     }
 }
 
-function Do-Start {
+function Start-DevEnvironment {
     Show-Banner
-    Do-Stop -Silent
+    Stop-DevEnvironment -Silent
     Update-EnvIPs
 
     Write-Host "  Starting Backend (port 8000)..." -ForegroundColor Green
@@ -84,7 +88,7 @@ function Do-Start {
 
     Write-Host "  Starting Expo (port 8081)..." -ForegroundColor Green
     $expo = Start-Process "cmd" `
-        -ArgumentList "/c npm start" `
+        -ArgumentList "/k npm start -- -c" `
         -WorkingDirectory $MOBILE `
         -PassThru -WindowStyle Normal
 
@@ -100,18 +104,18 @@ function Do-Start {
     Write-Host ""
 }
 
-function Do-Restart {
+function Restart-DevEnvironment {
     Show-Banner
     Write-Host "  Restarting..." -ForegroundColor Cyan
-    Do-Stop -Silent
+    Stop-DevEnvironment -Silent
     Start-Sleep -Milliseconds 800
-    Do-Start
+    Start-DevEnvironment
 }
 
 switch ($Command.ToLower()) {
-    "start"   { Do-Start }
-    "stop"    { Show-Banner; Do-Stop }
-    "restart" { Do-Restart }
+    "start"   { Start-DevEnvironment }
+    "stop"    { Show-Banner; Stop-DevEnvironment }
+    "restart" { Restart-DevEnvironment }
     default {
         Show-Banner
         Write-Host "  Usage: .\dev.ps1 [start|stop|restart]" -ForegroundColor Yellow

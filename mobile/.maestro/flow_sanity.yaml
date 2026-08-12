@@ -1,0 +1,5 @@
+appId: com.justicelink.mobile
+---
+- launchApp
+- assertVisible:
+    text: "JusticeLink" # Replace with a core text that appears on startup
