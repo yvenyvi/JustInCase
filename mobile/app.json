@@ -12,6 +12,9 @@
     "android": {
       "softwareKeyboardLayoutMode": "resize"
     },
-    "plugins": ["expo-secure-store"]
+    "plugins": [
+      "expo-secure-store",
+      "expo-font"
+    ]
   }
 }
