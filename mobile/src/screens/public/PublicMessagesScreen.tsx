@@ -63,7 +63,7 @@ export default function PublicMessagesScreen() {
             .single();
 
           const attorney = t.cases.attorney;
-          const name = attorney ? `Atty. ${attorney.first_name} ${attorney.last_name}`.trim() : 'JusticeLink Support';
+          const name = attorney ? `Atty. ${attorney.first_name} ${attorney.last_name}`.trim() : 'LAYA Support';
           
           return {
             id: t.id,

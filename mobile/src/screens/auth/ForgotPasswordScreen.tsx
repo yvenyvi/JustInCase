@@ -34,7 +34,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
             </View>
           </View>
         </View>
-        <Text style={styles.brandTitle}>JUSTICELINK</Text>
+        <Text style={styles.brandTitle}>LAYA</Text>
       </View>
 
       <Card style={styles.bottomSection}>

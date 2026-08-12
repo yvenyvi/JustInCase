@@ -85,7 +85,7 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
-        <Text style={styles.versionText}>JusticeLink v1.0.0</Text>
+        <Text style={styles.versionText}>LAYA v1.0.0</Text>
       </ScrollView>
     </View>
   );

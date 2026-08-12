@@ -22,27 +22,27 @@ export default function TermsOfServiceScreen() {
         
         <Text style={styles.heading}>1. Pagtanggap sa mga Tuntunin</Text>
         <Text style={styles.paragraph}>
-          Sa pamamagitan ng pag-access at paggamit ng JusticeLink, sumasang-ayon ka na sumunod sa mga Tuntunin ng Serbisyo na ito. Kung hindi ka sumasang-ayon sa anumang bahagi ng mga tuntunin, mangyaring huwag gamitin ang aming application.
+          Sa pamamagitan ng pag-access at paggamit ng LAYA, sumasang-ayon ka na sumunod sa mga Tuntunin ng Serbisyo na ito. Kung hindi ka sumasang-ayon sa anumang bahagi ng mga tuntunin, mangyaring huwag gamitin ang aming application.
         </Text>
 
         <Text style={styles.heading}>2. Paggamit ng Serbisyo</Text>
         <Text style={styles.paragraph}>
-          Ang JusticeLink ay isang platform na nag-uugnay sa mga mamamayan sa mga pro-bono na abogado at nagbibigay ng impormasyon tungkol sa mga legal na karapatan. Hindi ito pamalit sa pormal na legal na payo mula sa isang pribadong abogado, maliban na lang kung pormal nang tinanggap ng abogado ang iyong kaso sa pamamagitan ng app.
+          Ang LAYA ay isang platform na nag-uugnay sa mga mamamayan sa mga pro-bono na abogado at nagbibigay ng impormasyon tungkol sa mga legal na karapatan. Hindi ito pamalit sa pormal na legal na payo mula sa isang pribadong abogado, maliban na lang kung pormal nang tinanggap ng abogado ang iyong kaso sa pamamagitan ng app.
         </Text>
 
         <Text style={styles.heading}>3. Mga Pananagutan ng User</Text>
         <Text style={styles.paragraph}>
-          Kinakailangang magbigay ng totoo at tumpak na impormasyon, lalo na sa pag-upload ng iyong mga dokumento at government ID para sa verification. May karapatan ang JusticeLink na isuspinde ang anumang account na magpapadala ng pekeng impormasyon o gagamit ng system para sa panloloko.
+          Kinakailangang magbigay ng totoo at tumpak na impormasyon, lalo na sa pag-upload ng iyong mga dokumento at government ID para sa verification. May karapatan ang LAYA na isuspinde ang anumang account na magpapadala ng pekeng impormasyon o gagamit ng system para sa panloloko.
         </Text>
 
         <Text style={styles.heading}>4. Pagkapribado at Seguridad</Text>
         <Text style={styles.paragraph}>
-          Tinitiyak ng JusticeLink na ligtas ang iyong mga personal na impormasyon at mga detalye ng kaso. Ang lahat ng komunikasyon sa pagitan mo at ng iyong abogado ay sakop ng attorney-client privilege.
+          Tinitiyak ng LAYA na ligtas ang iyong mga personal na impormasyon at mga detalye ng kaso. Ang lahat ng komunikasyon sa pagitan mo at ng iyong abogado ay sakop ng attorney-client privilege.
         </Text>
 
         <Text style={styles.heading}>5. Limitasyon ng Pananagutan</Text>
         <Text style={styles.paragraph}>
-          Bagama't sinisikap naming maging tumpak ang lahat ng impormasyon sa app (tulad ng Rights Library at Document Generators), hindi mananagot ang JusticeLink platform o ang mga developer nito sa anumang resulta na nag-ugat sa maling pagkakaintindi ng batas. Palaging komunsulta sa iyong nakatalagang abogado para sa legal na katiyakan.
+          Bagama't sinisikap naming maging tumpak ang lahat ng impormasyon sa app (tulad ng Rights Library at Document Generators), hindi mananagot ang LAYA platform o ang mga developer nito sa anumang resulta na nag-ugat sa maling pagkakaintindi ng batas. Palaging komunsulta sa iyong nakatalagang abogado para sa legal na katiyakan.
         </Text>
       </ScrollView>
     </View>

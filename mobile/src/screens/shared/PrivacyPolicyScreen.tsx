@@ -27,7 +27,7 @@ export default function PrivacyPolicyScreen() {
 
         <Text style={styles.heading}>2. Paggamit ng Iyong Impormasyon</Text>
         <Text style={styles.paragraph}>
-          Ang iyong data ay ginagamit eksklusibo para sa layunin ng JusticeLink app: upang ipares ka sa mga abogado, magpadala ng mga update tungkol sa iyong kaso, at para sa identity verification sa tulong ng Didit. Hindi namin ibebenta ang iyong personal na impormasyon sa anumang third party.
+          Ang iyong data ay ginagamit eksklusibo para sa layunin ng LAYA app: upang ipares ka sa mga abogado, magpadala ng mga update tungkol sa iyong kaso, at para sa identity verification sa tulong ng Didit. Hindi namin ibebenta ang iyong personal na impormasyon sa anumang third party.
         </Text>
 
         <Text style={styles.heading}>3. Proteksyon ng mga Dokumento</Text>

@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "JusticeLink",
-    "slug": "justicelink-mobile",
-    "scheme": "justicelink",
+    "name": "Laya",
+    "slug": "laya-mobile",
+    "scheme": "laya",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",

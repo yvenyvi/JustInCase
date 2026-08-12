@@ -21,7 +21,7 @@ export default function ScreenShell({ title, subtitle }: ScreenShellProps) {
           <Ionicons name="log-out-outline" size={24} color={theme.colors.textSecondary} />
         </Pressable>
       </View>
-      <Text style={styles.kicker}>JusticeLink</Text>
+      <Text style={styles.kicker}>LAYA</Text>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
     </View>

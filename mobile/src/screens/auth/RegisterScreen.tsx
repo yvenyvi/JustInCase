@@ -333,7 +333,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
               <Ionicons name="shield-checkmark-outline" size={44} color="#FFFFFF" />
             </View>
           </View>
-          <Text style={styles.brandTitle}>JUSTICELINK</Text>
+          <Text style={styles.brandTitle}>LAYA</Text>
         </View>
 
         {/* Content card */}

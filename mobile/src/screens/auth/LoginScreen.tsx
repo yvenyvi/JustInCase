@@ -66,7 +66,7 @@ export default function LoginScreen({ navigation }: Props) {
               </View>
             </View>
           </View>
-          <Text style={styles.brandTitle}>JUSTICELINK</Text>
+          <Text style={styles.brandTitle}>LAYA</Text>
         </View>
 
         <Card style={styles.bottomSection}>
@@ -136,4 +136,4 @@ const styles = StyleSheet.create({
   forgotPasswordContainer: { alignItems: 'flex-end', marginBottom: 32 },
   forgotPasswordText: { color: theme.colors.primary, fontSize: 14, fontWeight: '700', textDecorationLine: 'underline' },
   error: { color: theme.colors.error, marginBottom: 20, textAlign: 'center', fontSize: 14, fontWeight: '500' },
-});
+});
