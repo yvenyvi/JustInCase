@@ -667,9 +667,10 @@ const styles = StyleSheet.create({
 
   // ── Header ─────────────────────────────────────────────────────────────────
   topSection: { alignItems: 'center', paddingTop: 60, paddingBottom: 32 },
-  logoOuter: { width: 100, height: 100, borderRadius: 32, backgroundColor: theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 16, ...theme.shadows.soft },
-  logoInner: { width: 72, height: 72, borderRadius: 22, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-10deg' }] },
-  brandTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 24, letterSpacing: 2 },
+  logoContainer: { marginBottom: 20 },
+  appLogo: { width: 180, height: 180, borderRadius: 40, resizeMode: 'contain' },
+  brandTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 32, letterSpacing: 2 },
+  brandSlogan: { ...theme.typography.body, color: theme.colors.textSecondary, fontSize: 16, marginTop: 4, letterSpacing: 0.5 },
 
   // ── Content card ───────────────────────────────────────────────────────────
   bottomSection: { backgroundColor: theme.colors.surface, borderTopLeftRadius: 40, borderTopRightRadius: 40, paddingTop: 36, paddingHorizontal: 28, paddingBottom: 48, ...theme.shadows.soft, flex: 1 },

@@ -58,16 +58,12 @@ export default function LoginScreen({ navigation }: Props) {
       <View style={styles.ambientGlow2} />
 
       <View style={styles.topSection}>
-          <View style={styles.logoContainer}>
-            <View style={styles.logoOuter}>
-              <View style={styles.logoInner}>
-                <Ionicons name="link" size={32} color="#FFFFFF" style={{ position: 'absolute', transform: [{ rotate: '45deg' }] }} />
-                <Ionicons name="shield-checkmark-outline" size={48} color="#FFFFFF" />
-              </View>
-            </View>
-          </View>
-          <Text style={styles.brandTitle}>LAYA</Text>
+        <View style={styles.logoContainer}>
+          <Image source={require('../../assets/logo.png')} style={styles.appLogo} />
         </View>
+        <Text style={styles.brandTitle}>LAYA</Text>
+        <Text style={styles.brandSlogan}>Empower Your Rights. Free Your Future.</Text>
+      </View>
 
         <Card style={styles.bottomSection}>
           <Text style={styles.formTitle}>Welcome back</Text>
@@ -125,9 +121,9 @@ const styles = StyleSheet.create({
   
   topSection: { alignItems: 'center', paddingTop: 80, paddingBottom: 40 },
   logoContainer: { marginBottom: 20 },
-  logoOuter: { width: 110, height: 110, borderRadius: 35, backgroundColor: theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center', ...theme.shadows.soft },
-  logoInner: { width: 80, height: 80, borderRadius: 25, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-10deg' }] },
-  brandTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 26, letterSpacing: 2 },
+  appLogo: { width: 180, height: 180, borderRadius: 40, resizeMode: 'contain' },
+  brandTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 32, letterSpacing: 2 },
+  brandSlogan: { ...theme.typography.body, color: theme.colors.textSecondary, fontSize: 16, marginTop: 4, letterSpacing: 0.5 },
   
   bottomSection: { borderTopLeftRadius: 40, borderTopRightRadius: 40, paddingTop: 40, paddingHorizontal: 32, paddingBottom: 40, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
   formTitle: { ...theme.typography.heading, fontSize: 32, marginBottom: 8, letterSpacing: -1 },
