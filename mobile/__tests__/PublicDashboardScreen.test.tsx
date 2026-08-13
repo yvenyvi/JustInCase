@@ -19,7 +19,10 @@ jest.mock('../src/shared/supabase', () => ({
       getUser: jest.fn(),
     },
     from: jest.fn(),
-    channel: jest.fn().mockReturnValue({ on: jest.fn().mockReturnThis(), subscribe: jest.fn() }),
+    channel: jest.fn().mockReturnValue({ 
+      on: jest.fn().mockReturnThis(), 
+      subscribe: jest.fn().mockReturnValue({ unsubscribe: jest.fn() }) 
+    }),
     removeChannel: jest.fn(),
   },
 }));
@@ -47,6 +50,7 @@ describe('PublicDashboardScreen', () => {
 
     const mockSelect = jest.fn().mockReturnThis();
     const mockEq = jest.fn().mockReturnThis();
+    const mockIn = jest.fn().mockReturnThis();
     const mockOrder = jest.fn().mockReturnThis();
     const mockLimit = jest.fn().mockReturnThis();
     const mockSingle = jest.fn().mockResolvedValue({
@@ -67,9 +71,9 @@ describe('PublicDashboardScreen', () => {
         return { select: mockSelect, eq: mockEq, single: mockSingle };
       }
       if (table === 'cases') {
-        return { select: mockSelect, eq: mockEq, order: mockOrder, limit: mockLimit, maybeSingle: mockMaybeSingle };
+        return { select: mockSelect, eq: mockEq, in: mockIn, order: mockOrder, limit: mockLimit, maybeSingle: mockMaybeSingle };
       }
-      return { select: mockSelect, eq: mockEq, maybeSingle: mockMaybeSingle };
+      return { select: mockSelect, eq: mockEq, in: mockIn, maybeSingle: mockMaybeSingle };
     });
 
     const { getByText, findByText } = await render(<PublicDashboardScreen />);
