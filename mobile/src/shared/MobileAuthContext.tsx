@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import type { Session, User } from '@supabase/supabase-js';
 
 import { mobileSupabase } from './supabase';
@@ -33,12 +34,24 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
   const resolveRole = async (userId: string) => {
     const { data, error } = await mobileSupabase
       .from('users')
-      .select('role')
+      .select('role, status_verification')
       .eq('id', userId)
       .single();
 
     if (error || !data?.role) {
       setRole('public');
+      return;
+    }
+
+    if (data.status_verification === 'pending' || data.status_verification === 'unverified') {
+      await mobileSupabase.auth.signOut();
+      Alert.alert(
+        "Account Pending Verification", 
+        "Your account is currently under review by our administrators. Please wait for a few days (maximum of 7 days) until it has been verified before you can log in."
+      );
+      setRole(null);
+      setSession(null);
+      setUser(null);
       return;
     }
 

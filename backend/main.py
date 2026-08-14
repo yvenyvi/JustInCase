@@ -280,9 +280,65 @@ async def legal_registration_upload_proof(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-    except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to upload verification asset right now.") from exc
+
+
+@app.post("/api/legal-registration/ocr")
+async def legal_registration_ocr(
+    file: UploadFile = File(...)
+) -> dict[str, Any]:
+    try:
+        file_bytes = await file.read()
+        import base64
+        import json
+        from gemini_client import call_gemini_vision
+        
+        base64_image = base64.b64encode(file_bytes).decode("utf-8")
+        prompt = """
+        Extract the following information from this Philippine ID:
+        - First Name
+        - Last Name
+        - Middle Name
+        - Date of Birth (YYYY-MM-DD)
+        - ID Number
+        - Expiration Date (YYYY-MM-DD)
+        - Sex (Male/Female)
+        - Address (Street, City, Province)
+
+        Respond ONLY with a valid JSON object matching this schema exactly:
+        {
+            "firstName": "",
+            "lastName": "",
+            "middleName": "",
+            "dob": "",
+            "idNumber": "",
+            "expirationDate": "",
+            "sex": "",
+            "streetAddress": "",
+            "city": "",
+            "province": ""
+        }
+        Return empty string for missing fields. Do NOT wrap in markdown code blocks.
+        """
+        
+        response_text = call_gemini_vision(
+            prompt=prompt,
+            base64_image=base64_image,
+            mime_type=file.content_type or "image/jpeg"
+        )
+        
+        # Clean markdown code block if present
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+            
+        data = json.loads(response_text.strip())
+        return {"ok": True, "data": data}
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
 
 
 @app.post("/api/kampi/chat")

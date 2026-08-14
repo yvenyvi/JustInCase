@@ -70,3 +70,60 @@ def call_gemini(
         if hasattr(e, 'response') and e.response is not None:
             logger.error(f"Response body: {e.response.text}")
         raise
+
+def call_gemini_vision(
+    prompt: str,
+    base64_image: str,
+    mime_type: str = "image/jpeg",
+    model: str = "gemini-flash-latest",
+    temperature: float = 0.1,
+    timeout: float = 60.0
+) -> str:
+    if not config.gemini_api_keys:
+        raise ValueError("Gemini API keys are not configured.")
+
+    api_key = random.choice(config.gemini_api_keys)
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": prompt},
+                    {
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": base64_image
+                        }
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": temperature,
+            "responseMimeType": "application/json"
+        }
+    }
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+
+    try:
+        response = requests.post(url, json=payload, timeout=timeout)
+        response.raise_for_status()
+        data = response.json()
+        
+        candidates = data.get("candidates", [])
+        if not candidates:
+            return ""
+            
+        parts = candidates[0].get("content", {}).get("parts", [])
+        if not parts:
+            return ""
+            
+        return parts[0].get("text", "")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Gemini Vision API request failed: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            logger.error(f"Response body: {e.response.text}")
+        raise
+

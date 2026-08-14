@@ -10,8 +10,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import Toast from 'react-native-toast-message';
 import { mobileSupabase } from '../../shared/supabase';
+import { createClient } from '@supabase/supabase-js';
 import AddressPicker from '../../components/AddressPicker';
 import { theme } from '../../shared/theme';
+import * as ImagePicker from 'expo-image-picker';
 
 type Props = NativeStackScreenProps<any>;
 
@@ -22,7 +24,7 @@ type Props = NativeStackScreenProps<any>;
 // Step 4: Review OCR-extracted details + finalize
 // Step 5: Success screen
 type Step = 1 | 2 | 3 | 4 | 5;
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 export default function RegisterScreen({ navigation, route }: Props) {
   // ── Step 1 ─────────────────────────────────────────────────────────────────
@@ -56,6 +58,11 @@ export default function RegisterScreen({ navigation, route }: Props) {
   const [city, setCity] = useState('');
   const [barangay, setBarangay] = useState('');
   const [imageUrls, setImageUrls] = useState<any>(null);
+
+  // ── Lawyer Upload State ────────────────────────────────────────────────────
+  const [localIdImage, setLocalIdImage] = useState<string | null>(null);
+  const [localSelfieImage, setLocalSelfieImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // ── Resume logic (if app crashed and restarted during verification) ────────
   useEffect(() => {
@@ -100,8 +107,12 @@ export default function RegisterScreen({ navigation, route }: Props) {
 
   // ── Step 1 → 2: Start session, navigate to Scan Instructions ──────────────
   const handleStepOne = async () => {
+    if (!email.trim() || !password) {
+      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Please fill out all fields.' });
+      return;
+    }
     if (accountType === 'lawyer') {
-      Toast.show({ type: 'info', text1: 'Coming Soon', text2: 'Legal Professional registration is coming soon.' });
+      setStep(2);
       return;
     }
     if (!email.trim() || !password) {
@@ -141,6 +152,81 @@ export default function RegisterScreen({ navigation, route }: Props) {
       pollDiditStatus(attemptId);
     } catch (err: any) {
       Toast.show({ type: 'error', text1: 'Browser Error', text2: 'Could not open verification browser.' });
+    }
+  };
+
+  // ── Lawyer Specific Upload Handlers ────────────────────────────────────────
+  const handleLawyerPickId = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Toast.show({ type: 'error', text1: 'Permission Denied', text2: 'We need gallery access to upload your ID.' });
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0].uri) {
+      setLocalIdImage(result.assets[0].uri);
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', {
+          uri: result.assets[0].uri,
+          name: 'id.jpg',
+          type: 'image/jpeg',
+        } as any);
+
+        const response = await fetch(`${apiBaseUrl}/api/legal-registration/ocr`, {
+          method: 'POST',
+          body: formData,
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+           throw new Error(payload?.detail || 'OCR Failed');
+        }
+
+        const ocr = payload.data || {};
+        setFirstName(ocr.firstName || '');
+        setLastName(ocr.lastName || '');
+        setMiddleName(ocr.middleName || '');
+        setDob(ocr.dob || '');
+        setIdNumber(ocr.idNumber || '');
+        setExpirationDate(ocr.expirationDate || '');
+        setSex(ocr.sex || '');
+        setStreetAddress(ocr.streetAddress || '');
+        setCity(ocr.city || '');
+        setProvince(ocr.province || '');
+
+        setStep(3);
+      } catch (e: any) {
+        Toast.show({ type: 'info', text1: 'OCR Unavailable', text2: 'Could not extract details automatically. Please enter them manually.' });
+        setStep(3);
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
+  const handleLawyerPickSelfie = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Toast.show({ type: 'error', text1: 'Permission Denied', text2: 'We need camera access for the selfie.' });
+      return;
+    }
+
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    
+    if (!result.canceled && result.assets[0].uri) {
+      setLocalSelfieImage(result.assets[0].uri);
+      setStep(4);
     }
   };
 
@@ -216,7 +302,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
 
   // ── Step 4: Finalize ───────────────────────────────────────────────────────
   const finalizeRegistration = async () => {
-    if (!attemptId) {
+    if (accountType === 'citizen' && !attemptId) {
       Toast.show({ type: 'error', text1: 'Error', text2: 'Verification session not found. Please restart.' });
       return;
     }
@@ -228,23 +314,52 @@ export default function RegisterScreen({ navigation, route }: Props) {
       Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Mobile number is required.' });
       return;
     }
+    if (accountType === 'lawyer' && !rollNumber.trim()) {
+      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Roll Number is required.' });
+      return;
+    }
 
     setIsFinalizing(true);
     try {
-      // 1. Finalize with our backend (marks the attempt as done)
-      const response = await fetch(`${apiBaseUrl}/api/public-registration/finalize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          attemptId,
-          email: email.trim().toLowerCase(),
-          password,
-          phoneNumber: phone,
-          address: { region, province, city, barangay },
-        }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.detail || 'Failed to finalize.');
+      let finalIdUrl = imageUrls?.idPictureUrl || null;
+      let finalSelfieUrl = imageUrls?.selfieUrl || null;
+
+      if (accountType === 'lawyer' && (localIdImage || localSelfieImage)) {
+        if (localIdImage) {
+           const fdId = new FormData();
+           fdId.append('email', email.trim().toLowerCase());
+           fdId.append('kind', 'ibp');
+           fdId.append('file', { uri: localIdImage, name: 'id.jpg', type: 'image/jpeg' } as any);
+           const rId = await fetch(`${apiBaseUrl}/api/legal-registration/upload-proof`, { method: 'POST', body: fdId });
+           const dId = await rId.json();
+           if (dId.ok) finalIdUrl = dId.url;
+        }
+        if (localSelfieImage) {
+           const fdS = new FormData();
+           fdS.append('email', email.trim().toLowerCase());
+           fdS.append('kind', 'selfie');
+           fdS.append('file', { uri: localSelfieImage, name: 'selfie.jpg', type: 'image/jpeg' } as any);
+           const rS = await fetch(`${apiBaseUrl}/api/legal-registration/upload-proof`, { method: 'POST', body: fdS });
+           const dS = await rS.json();
+           if (dS.ok) finalSelfieUrl = dS.url;
+        }
+      }
+
+      if (accountType === 'citizen') {
+        const response = await fetch(`${apiBaseUrl}/api/public-registration/finalize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            attemptId,
+            email: email.trim().toLowerCase(),
+            password,
+            phoneNumber: phone,
+            address: { region, province, city, barangay },
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload?.detail || 'Failed to finalize.');
+      }
 
       // 2. Create the Supabase account with full metadata
       const baseHandle = `${firstName.trim()}_${lastName.trim()}`
@@ -252,7 +367,14 @@ export default function RegisterScreen({ navigation, route }: Props) {
         .replace(/[^a-z0-9_]/g, '_');
       const handle = baseHandle || `user_${Math.random().toString(36).slice(2, 8)}`;
 
-      const { error: signUpError } = await mobileSupabase.auth.signUp({
+      // We use a temporary client to sign up so it doesn't trigger the app's global onAuthStateChange and auto-login
+      const tempSupabase = createClient(
+        process.env.EXPO_PUBLIC_SUPABASE_URL || '',
+        process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+        { auth: { persistSession: false, autoRefreshToken: false } }
+      );
+
+      const { error: signUpError } = await tempSupabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
         options: {
@@ -266,16 +388,17 @@ export default function RegisterScreen({ navigation, route }: Props) {
             province,
             city_municipality: city,
             barangay,
-            is_didit_verified: true,
-            status_verification: 'verified',
-            role: 'Citizen',
+            is_didit_verified: accountType === 'citizen',
+            status_verification: accountType === 'lawyer' ? 'pending' : 'verified',
+            role: accountType === 'lawyer' ? 'Volunteer Attorney' : 'Citizen',
             date_of_birth: dob || null,
             id_number: idNumber || null,
             expiration_date: expirationDate || null,
             sex: sex || null,
             handle,
-            id_picture_url: imageUrls?.idPictureUrl || null,
-            selfie_url: imageUrls?.selfieUrl || null,
+            roll_number: accountType === 'lawyer' ? rollNumber : null,
+            id_picture_url: finalIdUrl,
+            selfie_url: finalSelfieUrl,
           },
         },
       });
@@ -337,25 +460,29 @@ export default function RegisterScreen({ navigation, route }: Props) {
 
         {/* Content card */}
         <View style={styles.bottomSection}>
-          {/* Step counter */}
-          <View style={styles.stepIndicatorRow}>
-            <Text style={styles.stepLabel}>Step {step} of {TOTAL_STEPS}</Text>
-          </View>
+          {step < 5 && (
+            <>
+              {/* Step counter */}
+              <View style={styles.stepIndicatorRow}>
+                <Text style={styles.stepLabel}>Step {step} of {TOTAL_STEPS}</Text>
+              </View>
 
-          {/* Step dots */}
-          <View style={styles.stepDotsContainer}>
-            {([1, 2, 3, 4] as Step[]).map((s, i) => (
-              <React.Fragment key={s}>
-                <View style={[styles.stepDot, step >= s && styles.stepDotActive]}>
-                  {step > s
-                    ? <Ionicons name="checkmark" size={12} color="#fff" />
-                    : <Text style={[styles.stepDotNum, step === s && styles.stepDotNumActive]}>{s}</Text>
-                  }
-                </View>
-                {i < 3 && <View style={[styles.stepLine, step > s && styles.stepLineActive]} />}
-              </React.Fragment>
-            ))}
-          </View>
+              {/* Step dots */}
+              <View style={styles.stepDotsContainer}>
+                {([1, 2, 3, 4] as Step[]).map((s, i) => (
+                  <React.Fragment key={s}>
+                    <View style={[styles.stepDot, step >= s && styles.stepDotActive]}>
+                      {step > s
+                        ? <Ionicons name="checkmark" size={12} color="#fff" />
+                        : <Text style={[styles.stepDotNum, step === s && styles.stepDotNumActive]}>{s}</Text>
+                      }
+                    </View>
+                    {i < 3 && <View style={[styles.stepLine, step > s && styles.stepLineActive]} />}
+                  </React.Fragment>
+                ))}
+              </View>
+            </>
+          )}
 
           {/* ─── STEP 1: Account credentials ─────────────────────────────── */}
           {step === 1 && (
@@ -403,12 +530,6 @@ export default function RegisterScreen({ navigation, route }: Props) {
                   </Pressable>
                 </View>
               </View>
-              {accountType === 'lawyer' && (
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Roll of Attorneys No.</Text>
-                  <TextInput placeholder="12345" placeholderTextColor="#94A3B8" keyboardType="numeric" style={styles.input} value={rollNumber} onChangeText={setRollNumber} />
-                </View>
-              )}
               <Pressable
                 style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed, isStartingDidit && styles.primaryButtonDisabled]}
                 onPress={handleStepOne}
@@ -425,100 +546,164 @@ export default function RegisterScreen({ navigation, route }: Props) {
             </>
           )}
 
-          {/* ─── STEP 2: ID Scan instructions ────────────────────────────── */}
+          {/* ─── STEP 2: ID Scan instructions / Upload ────────────────────────────── */}
           {step === 2 && (
             <View style={styles.instructionsContainer}>
-              <Text style={styles.formTitle}>Verify Your Identity</Text>
-              <Text style={styles.formSubtitle}>You'll be redirected to our secure ID verification partner to complete this step.</Text>
+              {accountType === 'citizen' ? (
+                <>
+                  <Text style={styles.formTitle}>Verify Your Identity</Text>
+                  <Text style={styles.formSubtitle}>You'll be redirected to our secure ID verification partner to complete this step.</Text>
+    
+                  <View style={styles.instructionCard}>
+                    <View style={styles.instructionRow}>
+                      <View style={styles.instructionIconBox}>
+                        <Ionicons name="id-card-outline" size={28} color={theme.colors.primary} />
+                      </View>
+                      <View style={styles.instructionTextBox}>
+                        <Text style={styles.instructionTitle}>Government-issued ID</Text>
+                        <Text style={styles.instructionBody}>Have your valid Philippine ID ready. The camera will capture both sides.</Text>
+                      </View>
+                    </View>
+                    <View style={styles.instructionDivider} />
+                    <View style={styles.instructionRow}>
+                      <View style={styles.instructionIconBox}>
+                        <Ionicons name="camera-outline" size={28} color={theme.colors.primary} />
+                      </View>
+                      <View style={styles.instructionTextBox}>
+                        <Text style={styles.instructionTitle}>Selfie / Face Scan</Text>
+                        <Text style={styles.instructionBody}>You'll take a short selfie to match against your ID photo.</Text>
+                      </View>
+                    </View>
+                    <View style={styles.instructionDivider} />
+                    <View style={styles.instructionRow}>
+                      <View style={styles.instructionIconBox}>
+                        <Ionicons name="arrow-back-outline" size={28} color={theme.colors.primary} />
+                      </View>
+                      <View style={styles.instructionTextBox}>
+                        <Text style={styles.instructionTitle}>Return to App</Text>
+                        <Text style={styles.instructionBody}>After completing verification, tap "Return to App" in the browser to continue.</Text>
+                      </View>
+                    </View>
+                  </View>
+    
+                  <Pressable
+                    style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
+                    onPress={handleLaunchDidit}
+                  >
+                    <Ionicons name="scan-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.primaryButtonText}>START ID SCAN</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.formTitle}>Upload Your ID</Text>
+                  <Text style={styles.formSubtitle}>Please provide a clear photo of your professional ID (e.g., IBP ID).</Text>
+                  
+                  {localIdImage ? (
+                     <Image source={{ uri: localIdImage }} style={[styles.previewImage, { marginBottom: 20 }]} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.instructionCard, { alignItems: 'center', paddingVertical: 32 }]}>
+                      <Ionicons name="cloud-upload-outline" size={48} color={theme.colors.primary} />
+                      <Text style={[styles.instructionBody, { textAlign: 'center', marginTop: 12 }]}>Upload a clear image of your ID from your gallery.</Text>
+                    </View>
+                  )}
 
-              <View style={styles.instructionCard}>
-                <View style={styles.instructionRow}>
-                  <View style={styles.instructionIconBox}>
-                    <Ionicons name="id-card-outline" size={28} color={theme.colors.primary} />
-                  </View>
-                  <View style={styles.instructionTextBox}>
-                    <Text style={styles.instructionTitle}>Government-issued ID</Text>
-                    <Text style={styles.instructionBody}>Have your valid Philippine ID ready. The camera will capture both sides.</Text>
-                  </View>
-                </View>
-                <View style={styles.instructionDivider} />
-                <View style={styles.instructionRow}>
-                  <View style={styles.instructionIconBox}>
-                    <Ionicons name="camera-outline" size={28} color={theme.colors.primary} />
-                  </View>
-                  <View style={styles.instructionTextBox}>
-                    <Text style={styles.instructionTitle}>Selfie / Face Scan</Text>
-                    <Text style={styles.instructionBody}>You'll take a short selfie to match against your ID photo.</Text>
-                  </View>
-                </View>
-                <View style={styles.instructionDivider} />
-                <View style={styles.instructionRow}>
-                  <View style={styles.instructionIconBox}>
-                    <Ionicons name="arrow-back-outline" size={28} color={theme.colors.primary} />
-                  </View>
-                  <View style={styles.instructionTextBox}>
-                    <Text style={styles.instructionTitle}>Return to App</Text>
-                    <Text style={styles.instructionBody}>After completing verification, tap "Return to App" in the browser to continue.</Text>
-                  </View>
-                </View>
-              </View>
+                  <Pressable
+                    style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed, isUploading && styles.primaryButtonDisabled]}
+                    onPress={handleLawyerPickId}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                       <ActivityIndicator color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="image-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                        <Text style={styles.primaryButtonText}>{localIdImage ? 'RE-UPLOAD ID' : 'SELECT ID IMAGE'}</Text>
+                      </>
+                    )}
+                  </Pressable>
+                </>
+              )}
 
-              <Pressable
-                style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
-                onPress={handleLaunchDidit}
-              >
-                <Ionicons name="scan-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.primaryButtonText}>START ID SCAN</Text>
-              </Pressable>
-
-              <Pressable style={styles.backButton} onPress={() => setStep(1)}>
+              <Pressable style={styles.backButton} onPress={() => setStep(1)} disabled={isUploading}>
                 <Ionicons name="arrow-back" size={16} color="#64748B" />
                 <Text style={styles.backButtonText}>Go Back</Text>
               </Pressable>
             </View>
           )}
 
-          {/* ─── STEP 3: Didit waiting / polling ─────────────────────────── */}
+          {/* ─── STEP 3: Didit waiting / Selfie ─────────────────────────── */}
           {step === 3 && (
             <View style={styles.diditContainer}>
-              <View style={styles.diditIconBox}>
-                {diditStatus === 'verified' ? (
-                  <Ionicons name="checkmark-circle" size={80} color="#10B981" />
-                ) : diditStatus === 'failed' ? (
-                  <Ionicons name="close-circle" size={80} color="#EF4444" />
-                ) : (
-                  <Ionicons name="scan-circle" size={80} color={theme.colors.primary} />
-                )}
-              </View>
-
-              <Text style={styles.formTitle}>
-                {diditStatus === 'verified' ? 'Identity Verified!' : diditStatus === 'failed' ? 'Verification Failed' : 'Waiting for Verification'}
-              </Text>
-              <Text style={[styles.formSubtitle, { textAlign: 'center', marginTop: 12 }]}>
-                {diditStatus === 'verified'
-                  ? 'Great! We are preparing your review screen...'
-                  : diditStatus === 'failed'
-                  ? 'Verification could not be completed. Please try again.'
-                  : 'Complete the ID scan and selfie in your browser, then tap "Return to App" or come back here.'}
-              </Text>
-
-              {diditStatus === 'pending' && (
+              {accountType === 'citizen' ? (
                 <>
-                  <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 24 }} />
-                  <Pressable
-                    style={[styles.secondaryButton, { marginTop: 24 }]}
-                    onPress={() => attemptId && pollDiditStatus(attemptId, 0)}
-                  >
-                    <Ionicons name="refresh" size={16} color={theme.colors.primary} />
-                    <Text style={styles.secondaryButtonText}>Check Status Now</Text>
-                  </Pressable>
+                  <View style={styles.diditIconBox}>
+                    {diditStatus === 'verified' ? (
+                      <Ionicons name="checkmark-circle" size={80} color="#10B981" />
+                    ) : diditStatus === 'failed' ? (
+                      <Ionicons name="close-circle" size={80} color="#EF4444" />
+                    ) : (
+                      <Ionicons name="scan-circle" size={80} color={theme.colors.primary} />
+                    )}
+                  </View>
+    
+                  <Text style={styles.formTitle}>
+                    {diditStatus === 'verified' ? 'Identity Verified!' : diditStatus === 'failed' ? 'Verification Failed' : 'Waiting for Verification'}
+                  </Text>
+                  <Text style={[styles.formSubtitle, { textAlign: 'center', marginTop: 12 }]}>
+                    {diditStatus === 'verified'
+                      ? 'Great! We are preparing your review screen...'
+                      : diditStatus === 'failed'
+                      ? 'Verification could not be completed. Please try again.'
+                      : 'Complete the ID scan and selfie in your browser, then tap "Return to App" or come back here.'}
+                  </Text>
+    
+                  {diditStatus === 'pending' && (
+                    <>
+                      <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 24 }} />
+                      <Pressable
+                        style={[styles.secondaryButton, { marginTop: 24 }]}
+                        onPress={() => attemptId && pollDiditStatus(attemptId, 0)}
+                      >
+                        <Ionicons name="refresh" size={16} color={theme.colors.primary} />
+                        <Text style={styles.secondaryButtonText}>Check Status Now</Text>
+                      </Pressable>
+                    </>
+                  )}
+    
+                  {diditStatus === 'failed' && (
+                    <Pressable style={[styles.primaryButton, { marginTop: 24 }]} onPress={() => { setStep(1); setDiditStatus('idle'); }}>
+                      <Text style={styles.primaryButtonText}>TRY AGAIN</Text>
+                    </Pressable>
+                  )}
                 </>
-              )}
+              ) : (
+                <View style={{ width: '100%' }}>
+                  <Text style={styles.formTitle}>Take a Selfie</Text>
+                  <Text style={styles.formSubtitle}>We need to match your face with the ID you provided for manual verification.</Text>
+                  
+                  {localSelfieImage ? (
+                     <Image source={{ uri: localSelfieImage }} style={[styles.previewImage, { marginBottom: 20 }]} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.instructionCard, { alignItems: 'center', paddingVertical: 32 }]}>
+                      <Ionicons name="camera-outline" size={48} color={theme.colors.primary} />
+                      <Text style={[styles.instructionBody, { textAlign: 'center', marginTop: 12 }]}>Ensure good lighting and remove glasses or hats.</Text>
+                    </View>
+                  )}
 
-              {diditStatus === 'failed' && (
-                <Pressable style={[styles.primaryButton, { marginTop: 24 }]} onPress={() => { setStep(1); setDiditStatus('idle'); }}>
-                  <Text style={styles.primaryButtonText}>TRY AGAIN</Text>
-                </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed, { width: '100%' }]}
+                    onPress={handleLawyerPickSelfie}
+                  >
+                    <Ionicons name="camera-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.primaryButtonText}>{localSelfieImage ? 'RE-TAKE SELFIE' : 'TAKE A SELFIE'}</Text>
+                  </Pressable>
+                  
+                  <Pressable style={styles.backButton} onPress={() => setStep(2)}>
+                    <Ionicons name="arrow-back" size={16} color="#64748B" />
+                    <Text style={styles.backButtonText}>Go Back</Text>
+                  </Pressable>
+                </View>
               )}
             </View>
           )}
@@ -587,19 +772,26 @@ export default function RegisterScreen({ navigation, route }: Props) {
                   <Ionicons name="card-outline" size={22} color={theme.colors.primary} />
                   <Text style={styles.sectionTitle}>ID Details</Text>
                 </View>
+                
+                {accountType === 'lawyer' && (
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Roll of Attorneys No. *</Text>
+                    <TextInput placeholder="12345" placeholderTextColor="#94A3B8" keyboardType="numeric" style={styles.input} value={rollNumber} onChangeText={setRollNumber} />
+                  </View>
+                )}
 
-                {(imageUrls?.idPictureUrl || imageUrls?.selfieUrl) && (
+                {((imageUrls?.idPictureUrl || imageUrls?.selfieUrl) || (localIdImage || localSelfieImage)) && (
                   <View style={styles.imageRow}>
-                    {imageUrls?.idPictureUrl && (
+                    {(imageUrls?.idPictureUrl || localIdImage) && (
                       <View style={styles.imageBox}>
                         <Text style={styles.inputLabel}>Scanned ID</Text>
-                        <Image source={{ uri: imageUrls.idPictureUrl }} style={styles.previewImage} resizeMode="cover" />
+                        <Image source={{ uri: imageUrls?.idPictureUrl || localIdImage! }} style={styles.previewImage} resizeMode="cover" />
                       </View>
                     )}
-                    {imageUrls?.selfieUrl && (
+                    {(imageUrls?.selfieUrl || localSelfieImage) && (
                       <View style={styles.imageBox}>
                         <Text style={styles.inputLabel}>Selfie</Text>
-                        <Image source={{ uri: imageUrls.selfieUrl }} style={styles.previewImage} resizeMode="cover" />
+                        <Image source={{ uri: imageUrls?.selfieUrl || localSelfieImage! }} style={styles.previewImage} resizeMode="cover" />
                       </View>
                     )}
                   </View>
@@ -641,8 +833,9 @@ export default function RegisterScreen({ navigation, route }: Props) {
               </View>
               <Text style={[styles.formTitle, { textAlign: 'center' }]}>Registration Complete!</Text>
               <Text style={[styles.formSubtitle, { textAlign: 'center', marginTop: 8 }]}>
-                Your account has been successfully created.{'\n\n'}
-                You can now log in with your email and password.
+                {accountType === 'lawyer' 
+                  ? 'Your account is currently under review.\n\nPlease wait until an admin confirms and verifies your credentials before you can log in. This usually takes a few days (maximum of 7 days).' 
+                  : 'Your account has been successfully created.\n\nYou can now log in with your email and password.'}
               </Text>
 
               <Pressable
