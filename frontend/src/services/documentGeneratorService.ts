@@ -103,7 +103,7 @@ export const documentGeneratorService = {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.text('JusticeLink — Generated Legal Draft', marginX, 9.5);
+    doc.text('LAYA — Generated Legal Draft', marginX, 9.5);
 
     // Body text
     doc.setTextColor(30, 30, 30);
@@ -123,7 +123,7 @@ export const documentGeneratorService = {
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.text('JusticeLink — Generated Legal Draft', marginX, 9.5);
+        doc.text('LAYA — Generated Legal Draft', marginX, 9.5);
         doc.setTextColor(30, 30, 30);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10.5);

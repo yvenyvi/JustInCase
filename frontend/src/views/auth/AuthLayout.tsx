@@ -26,8 +26,8 @@ const AuthLayout = ({
         
         <div className={styles.brandContent}>
           <div className={styles.logo}>
-            <img src="/logo.svg" alt="JusticeLink Logo" style={{ width: '40px', height: '40px' }} />
-            <span className={styles.logoText}>JusticeLink - PH</span>
+            <img src="/logo.png" alt="LAYA Logo" style={{ width: '40px', height: '40px' }} />
+            <span className={styles.logoText}>LAYA</span>
           </div>
         </div>
 

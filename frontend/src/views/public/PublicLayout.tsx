@@ -19,7 +19,7 @@ const PublicLayout = ({ user, navigationSections }: PublicLayoutProps) => {
     .flatMap(section => section.items)
     .find(item => location.pathname === item.path || (item.path !== '/public' && location.pathname.startsWith(item.path)));
   
-  const pageTitle = activeItem ? activeItem.label : 'JusticeLink';
+  const pageTitle = activeItem ? activeItem.label : 'LAYA';
   
   // Ensure we check exactly for the messages route
   const isMessagesPage = location.pathname.endsWith('/messages') || location.pathname.includes('/messages/');

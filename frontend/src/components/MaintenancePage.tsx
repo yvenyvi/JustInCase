@@ -36,7 +36,7 @@ export default function MaintenancePage() {
         </button>
       </div>
 
-      <p className={styles.footer}>JusticeLink PH &mdash; Connecting Filipinos to Justice</p>
+      <p className={styles.footer}>LAYA &mdash; Connecting Filipinos to Justice</p>
     </div>
   );
 }

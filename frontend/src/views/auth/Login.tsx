@@ -124,7 +124,7 @@ const Login = () => {
     <AuthLayout>
       <div className={styles.header}>
         <h1 className={styles.title}>Welcome Back</h1>
-        <p className={styles.subtitle}>Sign in to your JusticeLink account</p>
+        <p className={styles.subtitle}>Sign in to your LAYA account</p>
       </div>
 
       {pendingVerification && (

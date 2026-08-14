@@ -82,7 +82,7 @@ const AttorneyVerifications = () => {
         await supabase.from('notifications').insert({
           user_id: id,
           title: 'Account Approved',
-          body: 'Your attorney account has been approved. You can now log in to JusticeLink and start accepting pro-bono cases.',
+          body: 'Your attorney account has been approved. You can now log in to LAYA and start accepting pro-bono cases.',
           link: '/legal/dashboard',
         });
       } else {

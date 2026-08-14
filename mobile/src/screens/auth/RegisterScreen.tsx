@@ -365,7 +365,8 @@ export default function RegisterScreen({ navigation, route }: Props) {
       const baseHandle = `${firstName.trim()}_${lastName.trim()}`
         .toLowerCase()
         .replace(/[^a-z0-9_]/g, '_');
-      const handle = baseHandle || `user_${Math.random().toString(36).slice(2, 8)}`;
+      const randomSuffix = Math.random().toString(36).slice(2, 7);
+      const handle = (baseHandle || 'user') + '_' + randomSuffix;
 
       // We use a temporary client to sign up so it doesn't trigger the app's global onAuthStateChange and auto-login
       const tempSupabase = createClient(
@@ -374,7 +375,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
         { auth: { persistSession: false, autoRefreshToken: false } }
       );
 
-      const { error: signUpError } = await tempSupabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await tempSupabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
         options: {
@@ -389,7 +390,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
             city_municipality: city,
             barangay,
             is_didit_verified: accountType === 'citizen',
-            status_verification: accountType === 'lawyer' ? 'pending' : 'verified',
+            status_verification: accountType === 'lawyer' ? 'unverified' : 'verified',
             role: accountType === 'lawyer' ? 'Volunteer Attorney' : 'Citizen',
             date_of_birth: dob || null,
             id_number: idNumber || null,
@@ -404,6 +405,42 @@ export default function RegisterScreen({ navigation, route }: Props) {
       });
 
       if (signUpError) throw new Error(signUpError.message);
+
+      // Safety net: explicitly upsert the profile via the backend in case the DB trigger
+      // failed silently (e.g. handle conflict, constraint error, or email-confirm timing).
+      if (signUpData?.user?.id) {
+        const profileData: Record<string, any> = {
+          id: signUpData.user.id,
+          email: email.trim().toLowerCase(),
+          handle,
+          first_name: firstName || 'User',
+          middle_name: middleName || null,
+          last_name: lastName || 'Account',
+          phone_number: phone || null,
+          street_address: streetAddress || null,
+          region: region || null,
+          province: province || null,
+          city_municipality: city || null,
+          barangay: barangay || null,
+          is_didit_verified: accountType === 'citizen',
+          status_verification: accountType === 'lawyer' ? 'unverified' : 'verified',
+          role: accountType === 'lawyer' ? 'Volunteer Attorney' : 'Citizen',
+          date_of_birth: dob || null,
+          roll_number: accountType === 'lawyer' ? rollNumber : null,
+          id_picture_url: finalIdUrl || null,
+          selfie_url: finalSelfieUrl || null,
+        };
+
+        try {
+          await fetch(`${apiBaseUrl}/api/registration/upsert-profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profileData),
+          });
+        } catch (_) {
+          // Non-fatal: trigger may have already inserted the profile
+        }
+      }
 
       setStep(5);
     } catch (err: any) {

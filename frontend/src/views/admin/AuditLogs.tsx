@@ -81,7 +81,7 @@ const AuditLogs = () => {
 
     const { data: logRows, error } = await supabase
       .from('audit_logs')
-      .select('id, user_id, action_type, detail, ip_address, created_at')
+      .select('id, user_id, action_type, detail, created_at')
       .order('created_at', { ascending: false })
       .limit(500);
 

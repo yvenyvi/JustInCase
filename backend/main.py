@@ -283,6 +283,92 @@ async def legal_registration_upload_proof(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to upload verification asset right now.") from exc
 
 
+class UpsertProfileBody(BaseModel):
+    id: str
+    email: str
+    handle: str
+    first_name: str = "User"
+    middle_name: Optional[str] = None
+    last_name: str = "Account"
+    phone_number: Optional[str] = None
+    street_address: Optional[str] = None
+    region: Optional[str] = None
+    province: Optional[str] = None
+    city_municipality: Optional[str] = None
+    barangay: Optional[str] = None
+    is_didit_verified: bool = False
+    status_verification: str = "unverified"
+    role: str = "Citizen"
+    date_of_birth: Optional[str] = None
+    roll_number: Optional[str] = None
+    id_picture_url: Optional[str] = None
+    selfie_url: Optional[str] = None
+
+
+@app.post("/api/registration/upsert-profile")
+async def registration_upsert_profile(body: UpsertProfileBody) -> dict[str, Any]:
+    """
+    Safety-net endpoint: explicitly inserts/updates the user profile in public.users.
+    Called by the mobile app after signUp() in case the Postgres trigger silently failed
+    (e.g. handle uniqueness violation caught by EXCEPTION WHEN OTHERS in the trigger).
+    Uses the service role key so it bypasses RLS.
+    """
+    if not config.supabase_url or not config.supabase_service_role_key:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Supabase not configured.")
+
+    headers = {
+        "apikey": config.supabase_service_role_key,
+        "Authorization": f"Bearer {config.supabase_service_role_key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates",
+    }
+
+    profile: dict[str, Any] = {
+        "id": body.id,
+        "email": body.email,
+        "handle": body.handle,
+        "first_name": body.first_name,
+        "middle_name": body.middle_name,
+        "last_name": body.last_name,
+        "phone_number": body.phone_number,
+        "street_address": body.street_address,
+        "region": body.region,
+        "province": body.province,
+        "city_municipality": body.city_municipality,
+        "barangay": body.barangay,
+        "is_didit_verified": body.is_didit_verified,
+        "status_verification": body.status_verification,
+        "role": body.role,
+        "roll_number": body.roll_number,
+        "id_picture_url": body.id_picture_url,
+        "selfie_url": body.selfie_url,
+    }
+    if body.date_of_birth:
+        profile["date_of_birth"] = body.date_of_birth
+
+    try:
+        resp = httpx.post(
+            f"{config.supabase_url}/rest/v1/users",
+            headers=headers,
+            json=profile,
+            timeout=15,
+        )
+        if resp.status_code in (200, 201):
+            return {"ok": True, "action": "inserted"}
+        # If the user row already exists (trigger succeeded), try an update instead
+        if resp.status_code == 409 or "duplicate" in resp.text.lower():
+            patch_resp = httpx.patch(
+                f"{config.supabase_url}/rest/v1/users?id=eq.{body.id}",
+                headers=headers,
+                json={k: v for k, v in profile.items() if k != "id"},
+                timeout=15,
+            )
+            return {"ok": patch_resp.status_code < 300, "action": "updated"}
+        return {"ok": False, "detail": resp.text}
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
 @app.post("/api/legal-registration/ocr")
 async def legal_registration_ocr(
     file: UploadFile = File(...)

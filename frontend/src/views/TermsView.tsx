@@ -14,7 +14,7 @@ const TermsView = () => {
           <div className={styles.badge}>LEGAL</div>
           <h1 className={styles.title}>Terms and Conditions</h1>
           <p className={styles.subtitle}>
-            Review the full terms governing your use of JusticeLink Philippines.
+            Review the full terms governing your use of LAYA Philippines.
           </p>
         </div>
       </div>

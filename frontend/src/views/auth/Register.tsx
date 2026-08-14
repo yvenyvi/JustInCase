@@ -831,7 +831,7 @@ const Register = () => {
             </button>
           )}
           <h1 className={styles.title} style={{ margin: 0 }}>
-            {step === 1 ? 'Join JusticeLink' : step === 2 ? 'Verify Identity' : step === 3 ? 'Personal Details' : 'Verify Your Email'}
+            {step === 1 ? 'Join LAYA' : step === 2 ? 'Verify Identity' : step === 3 ? 'Personal Details' : 'Verify Your Email'}
           </h1>
         </div>
         <p className={styles.subtitle}>

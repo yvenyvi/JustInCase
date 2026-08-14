@@ -77,7 +77,7 @@ const SystemSettings = () => {
 
   const handleBackup = () => {
     const blob = new Blob(
-      [JSON.stringify({ version: '1.0', timestamp: new Date().toISOString(), platform: 'JusticeLink PH', settings }, null, 2)],
+      [JSON.stringify({ version: '1.0', timestamp: new Date().toISOString(), platform: 'LAYA', settings }, null, 2)],
       { type: 'application/json' }
     );
     const url = URL.createObjectURL(blob);

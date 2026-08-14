@@ -45,8 +45,8 @@ const Header = ({
         )}
         {showBrand && (
           <div className={styles.brand}>
-            <img src="/logo.svg" alt="JusticeLink - PH" style={{ width: '28px', height: '28px', marginRight: '0.65rem' }} />
-            <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-primary)', marginRight: '1.25rem', whiteSpace: 'nowrap' }}>JusticeLink - PH</span>
+            <img src="/logo.png" alt="LAYA" style={{ width: '28px', height: '28px', marginRight: '0.65rem' }} />
+            <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-primary)', marginRight: '1.25rem', whiteSpace: 'nowrap' }}>LAYA</span>
           </div>
         )}
         <h2

@@ -160,7 +160,7 @@ const AdminDashboard = () => {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>System Analytics</h1>
-          <p className={styles.subtitle}>Real-time overview of JusticeLink platform activity.</p>
+          <p className={styles.subtitle}>Real-time overview of LAYA platform activity.</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.lastUpdate}>

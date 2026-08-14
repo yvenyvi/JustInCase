@@ -15,7 +15,7 @@ const INCOME_ELIGIBILITY_MESSAGES: Record<string, string> = {
   warning:
     'Ang iyong income bracket ay maaaring hindi ka maging kwalipikado para sa libre na pro-bono legal aid. Maaari ka pa ring magpatuloy, ngunit depende sa discretion ng abogado.',
   blocked:
-    'Batay sa iyong income bracket, hindi ka kwalipikado para sa libre na pro-bono legal aid sa JusticeLink. Ang serbisyong ito ay para lamang sa mga indibidwal na may limitadong kakayahang pinansyal.',
+    'Batay sa iyong income bracket, hindi ka kwalipikado para sa libre na pro-bono legal aid sa LAYA. Ang serbisyong ito ay para lamang sa mga indibidwal na may limitadong kakayahang pinansyal.',
 };
 
 export type IncomeEligibilityResult = {
@@ -303,7 +303,7 @@ const fetchAttorneyCandidates = async (): Promise<{ candidates: AttorneyCandidat
     id: text(row.id),
     firstName: text(row.first_name),
     lastName: text(row.last_name),
-    firmName: text(row.firm_name) || 'JusticeLink Partner Attorney',
+    firmName: text(row.firm_name) || 'LAYA Partner Attorney',
     interests: Array.isArray(row.interests) ? row.interests.map((item: unknown) => text(item)).filter(Boolean) : [],
     language: row.languages || 'Filipino, English',
     province: text(row.province),

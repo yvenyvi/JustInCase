@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * TermsContent — the canonical T&C text for JusticeLink Philippines.
+ * TermsContent — the canonical T&C text for LAYA Philippines.
  * Rendered inside both the first-login gate and the viewable settings page.
  * Accepts an optional `compact` prop to reduce heading size inside a modal.
  */
@@ -34,30 +34,30 @@ const TermsContent: React.FC<{ compact?: boolean }> = ({ compact }) => {
         Effective Date: January 1, 2025 &nbsp;·&nbsp; Version 1.0
       </p>
       <p style={pStyle}>
-        Welcome to <strong>JusticeLink Philippines</strong>. Before using our platform, please read
+        Welcome to <strong>LAYA Philippines</strong>. Before using our platform, please read
         these Terms and Conditions carefully. By clicking "I Agree," you confirm that you have read,
         understood, and agree to be bound by these terms.
       </p>
 
-      <h2 style={h2Style}>1. About JusticeLink</h2>
+      <h2 style={h2Style}>1. About LAYA</h2>
       <p style={pStyle}>
-        JusticeLink is a non-profit digital legal aid facilitation platform that connects Filipino
+        LAYA is a non-profit digital legal aid facilitation platform that connects Filipino
         citizens with volunteer attorneys and provides access to legal resources and information.
-        <strong> JusticeLink is not a law firm</strong> and does not provide legal advice, legal
+        <strong> LAYA is not a law firm</strong> and does not provide legal advice, legal
         representation, or legal opinions.
       </p>
 
       <h2 style={h2Style}>2. No Attorney-Client Relationship</h2>
       <p style={pStyle}>
         Use of this platform does not, by itself, create an attorney-client relationship between you
-        and JusticeLink, its administrators, or any volunteer attorney listed on the platform. An
+        and LAYA, its administrators, or any volunteer attorney listed on the platform. An
         attorney-client relationship is only established when a formal engagement letter or retainer
         agreement has been executed directly between you and the attorney.
       </p>
 
       <h2 style={h2Style}>3. Nature of Information Provided</h2>
       <p style={pStyle}>
-        All information on JusticeLink — including document templates, rights articles, triage
+        All information on LAYA — including document templates, rights articles, triage
         assessments, and AI-assisted responses (Kampi) — is provided for <strong>general
         informational and self-advocacy purposes only</strong>. It is not a substitute for
         professional legal counsel from a licensed attorney admitted to the Philippine Bar.
@@ -65,14 +65,14 @@ const TermsContent: React.FC<{ compact?: boolean }> = ({ compact }) => {
 
       <h2 style={h2Style}>4. Volunteer Attorneys</h2>
       <p style={pStyle}>
-        Attorneys registered on JusticeLink provide services on a <strong>pro bono, voluntary
-        basis</strong>. JusticeLink does not guarantee the availability, response time, quality, or
+        Attorneys registered on LAYA provide services on a <strong>pro bono, voluntary
+        basis</strong>. LAYA does not guarantee the availability, response time, quality, or
         outcome of any attorney engagement. Volunteer attorneys are independent professionals and
-        are not employees, agents, or representatives of JusticeLink.
+        are not employees, agents, or representatives of LAYA.
       </p>
 
       <h2 style={h2Style}>5. User Responsibilities</h2>
-      <p style={{ ...pStyle, marginBottom: '0.25rem' }}>By using JusticeLink, you agree to:</p>
+      <p style={{ ...pStyle, marginBottom: '0.25rem' }}>By using LAYA, you agree to:</p>
       <ul style={{ paddingLeft: '1.5rem', marginBottom: '0.75rem' }}>
         <li style={liStyle}>Provide accurate, truthful, and complete information in all forms and communications</li>
         <li style={liStyle}>Use the platform solely for legitimate legal assistance purposes</li>
@@ -85,7 +85,7 @@ const TermsContent: React.FC<{ compact?: boolean }> = ({ compact }) => {
 
       <h2 style={h2Style}>6. Data Privacy</h2>
       <p style={pStyle}>
-        JusticeLink collects and processes personal data in accordance with{' '}
+        LAYA collects and processes personal data in accordance with{' '}
         <strong>Republic Act No. 10173 (Data Privacy Act of the Philippines)</strong> and its
         implementing rules. Your personal information is used solely to facilitate legal aid
         matching, secure communications, and service delivery. We do not sell, trade, or share
@@ -93,12 +93,12 @@ const TermsContent: React.FC<{ compact?: boolean }> = ({ compact }) => {
       </p>
       <p style={pStyle}>
         You have the right to access, correct, and request deletion of your personal data stored on
-        JusticeLink. To exercise these rights, contact us at{' '}
+        LAYA. To exercise these rights, contact us at{' '}
         <strong>justicelink.ph@gmail.com</strong>.
       </p>
 
       <h2 style={h2Style}>7. Platform Limitations and Disclaimer</h2>
-      <p style={{ ...pStyle, marginBottom: '0.25rem' }}>JusticeLink does not guarantee:</p>
+      <p style={{ ...pStyle, marginBottom: '0.25rem' }}>LAYA does not guarantee:</p>
       <ul style={{ paddingLeft: '1.5rem', marginBottom: '0.75rem' }}>
         <li style={liStyle}>Uninterrupted, error-free, or continuous platform availability</li>
         <li style={liStyle}>A specific attorney match or acceptance for every case submitted</li>
@@ -109,22 +109,22 @@ const TermsContent: React.FC<{ compact?: boolean }> = ({ compact }) => {
 
       <h2 style={h2Style}>8. Intellectual Property</h2>
       <p style={pStyle}>
-        All content on JusticeLink — including but not limited to document templates, rights
-        articles, platform design, and software — is the property of JusticeLink Philippines and
+        All content on LAYA — including but not limited to document templates, rights
+        articles, platform design, and software — is the property of LAYA Philippines and
         its respective authors. Reproduction, distribution, or commercial use of any content without
         prior written permission is strictly prohibited.
       </p>
 
       <h2 style={h2Style}>9. Termination of Access</h2>
       <p style={pStyle}>
-        JusticeLink reserves the right to suspend or permanently revoke access to any account that
+        LAYA reserves the right to suspend or permanently revoke access to any account that
         violates these Terms and Conditions, engages in abusive or fraudulent conduct, or is found
         to be misusing the platform's resources or attorney network.
       </p>
 
       <h2 style={h2Style}>10. Changes to These Terms</h2>
       <p style={pStyle}>
-        JusticeLink may update these Terms and Conditions from time to time. You will be notified of
+        LAYA may update these Terms and Conditions from time to time. You will be notified of
         material changes, and continued use of the platform after such changes constitutes acceptance
         of the revised terms. The effective date at the top of this document reflects the most recent
         revision.

@@ -100,7 +100,7 @@ const Profile = () => {
     firmName: profile?.firm_name || null,
     barNumber: profile?.roll_number ? `Roll No. ${profile.roll_number}` : 'N/A',
     practiceAreas: profile?.interests || [],
-    bio: 'JusticeLink Volunteer Attorney. Dedicated to providing legal assistance to those in need.',
+    bio: 'LAYA Volunteer Attorney. Dedicated to providing legal assistance to those in need.',
     availability: 'Active Member',
     joinedDate: `Member since ${formatDate(profile?.created_at)}`,
     certifications: profile?.ibp_number ? [`IBP No. ${profile.ibp_number}`] : []

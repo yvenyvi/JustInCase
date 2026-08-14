@@ -40,14 +40,14 @@ const TermsAndConditionsGate: React.FC = () => {
         gap: '0.75rem',
         flexShrink: 0,
       }}>
-        <img src="/logo.svg" alt="JusticeLink" style={{ width: 28, height: 28 }} />
+        <img src="/logo.png" alt="LAYA" style={{ width: 28, height: 28 }} />
         <span style={{
           fontFamily: 'var(--font-family-display)',
           fontSize: '1.15rem',
           fontWeight: 600,
           color: 'var(--color-secondary)',
         }}>
-          JusticeLink
+          LAYA
         </span>
       </div>
 
@@ -92,7 +92,7 @@ const TermsAndConditionsGate: React.FC = () => {
               margin: 0,
               lineHeight: 1.5,
             }}>
-              Before you continue, please read and accept the JusticeLink Terms and Conditions.
+              Before you continue, please read and accept the LAYA Terms and Conditions.
               This is required for all users.
             </p>
           </div>
@@ -150,8 +150,8 @@ const TermsAndConditionsGate: React.FC = () => {
               color: 'var(--color-text-main)',
               lineHeight: 1.55,
             }}>
-              I have read and understood the JusticeLink Terms and Conditions, and I agree to
-              be bound by them. I understand that JusticeLink is a facilitation platform, not a
+              I have read and understood the LAYA Terms and Conditions, and I agree to
+              be bound by them. I understand that LAYA is a facilitation platform, not a
               law firm, and that use of this platform does not create an attorney-client relationship.
             </span>
           </label>

@@ -690,7 +690,7 @@ const PublicAllCases = () => {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', padding: '1.5rem 0', textAlign: 'center' }}>
                 <CheckCircle2 size={40} color="var(--color-success)" strokeWidth={1.5} />
                 <h4 style={{ margin: 0, color: 'var(--color-secondary)' }}>Salamat sa iyong feedback!</h4>
-                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Nakatutulong ito sa pagpapabuti ng serbisyo ng JusticeLink.</p>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Nakatutulong ito sa pagpapabuti ng serbisyo ng LAYA.</p>
                 <button onClick={() => setFeedbackCaseId(null)} style={{ marginTop: '0.5rem', padding: '0.6rem 1.5rem', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'none', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' }}>
                   Isara
                 </button>

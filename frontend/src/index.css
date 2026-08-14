@@ -59,6 +59,8 @@
   --color-primary-dark: #1d4ed8;
   --color-text: var(--color-text-main);
   --color-error: var(--color-danger);
+  --text-primary: var(--color-text-main);
+  --text-secondary: var(--color-text-muted);
   --shadow-hover:
     0 10px 25px -5px rgba(37, 99, 235, 0.12),
     0 4px 8px -4px rgba(0, 0, 0, 0.08);

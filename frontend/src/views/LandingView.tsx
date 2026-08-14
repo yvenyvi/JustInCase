@@ -58,8 +58,8 @@ const LandingView = () => {
       <section className={styles.heroSection}>
         <nav className={styles.navbar}>
           <div className={styles.logo}>
-            <img src="/logo.svg" alt="JusticeLink Logo" className={styles.logoIcon} style={{ width: '48px', height: '48px' }} />
-            <span className={styles.logoText}>JusticeLink - PH</span>
+            <img src="/logo.png" alt="LAYA Logo" className={styles.logoIcon} style={{ width: '48px', height: '48px' }} />
+            <span className={styles.logoText}>LAYA</span>
           </div>
           <div className={styles.navLinks}>
             <Link to="/#about">About</Link>
@@ -302,8 +302,8 @@ const LandingView = () => {
           <div className={styles.footerContent}>
             <div className={styles.footerBrand}>
               <div className={styles.logo}>
-                <img src="/logo.svg" alt="JusticeLink Logo" className={styles.logoIcon} style={{ width: '48px', height: '48px' }} />
-                <span className={styles.logoText}>JusticeLink - PH</span>
+                <img src="/logo.png" alt="LAYA Logo" className={styles.logoIcon} style={{ width: '48px', height: '48px' }} />
+                <span className={styles.logoText}>LAYA</span>
               </div>
               <p className={styles.footerDesc}>A secure triage and matching engine that connects marginalized Filipinos directly with volunteer legal professionals.</p>
             </div>
@@ -330,7 +330,7 @@ const LandingView = () => {
             </div>
           </div>
           <div className={styles.footerBottom}>
-            <p>&copy; {new Date().getFullYear()} JusticeLink Philippines. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} LAYA Philippines. All rights reserved.</p>
           </div>
         </FadeIn>
       </footer>

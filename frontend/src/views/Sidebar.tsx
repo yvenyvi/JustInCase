@@ -35,8 +35,8 @@ const Sidebar = ({ sections = [], user, className = '', isOpen = false, onClose 
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''} ${className}`}>
       <div className={styles.logoContainer}>
-        <img src="/logo.svg" alt="JusticeLink Logo" className={styles.logoIcon} />
-        <h1 className={styles.logoText}>JusticeLink - PH</h1>
+        <img src="/logo.png" alt="LAYA Logo" className={styles.logoIcon} />
+        <h1 className={styles.logoText}>LAYA</h1>
         {/* Close button — visible only on mobile */}
         <button className={styles.mobileCloseBtn} onClick={onClose} aria-label="Close menu">
           <X size={20} />

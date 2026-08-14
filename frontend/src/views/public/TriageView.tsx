@@ -223,16 +223,15 @@ const TriageView = () => {
               )}
             </div>
 
-              <div className={styles.fieldBlock}>
-                <label htmlFor="province" className={styles.inputLabel}>4) Saan ang iyong kaso? (Province/City)</label>
-                <input
-                  id="province"
-                  className={styles.textInput}
-                  value={formData.province}
-                  placeholder={profile?.province || 'Halimbawa: Metro Manila'}
-                  onChange={(event) => updateField('province', event.target.value)}
-                />
-              </div>
+            <div className={styles.fieldBlock}>
+              <label htmlFor="province" className={styles.inputLabel}>4) Saan ang iyong kaso? (Province/City)</label>
+              <input
+                id="province"
+                className={styles.textInput}
+                value={formData.province}
+                placeholder={profile?.province || 'Halimbawa: Metro Manila'}
+                onChange={(event) => updateField('province', event.target.value)}
+              />
             </div>
 
             <div className={styles.formActions}>

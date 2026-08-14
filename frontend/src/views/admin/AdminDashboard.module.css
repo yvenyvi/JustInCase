@@ -149,7 +149,7 @@
 
 .bar {
   flex: 1;
-  background-color: #3B82F6;
+  background-color: var(--color-primary);
   border-radius: 2px;
   opacity: 0.8;
 }
@@ -271,7 +271,7 @@
 
 .mainBar {
   width: 100%;
-  background: linear-gradient(to top, #3B82F6, #60A5FA);
+  background: linear-gradient(to top, var(--color-primary), var(--color-primary-hover));
   border-radius: 8px 8px 0 0;
   position: relative;
   transition: opacity 0.2s;
@@ -355,7 +355,7 @@
 .viewAllBtn {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #3B82F6;
+  color: var(--color-primary);
   background: none;
   border: none;
   cursor: pointer;
