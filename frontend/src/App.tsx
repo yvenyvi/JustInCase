@@ -34,6 +34,8 @@ import LegalNotifications from './views/legal/LegalNotifications';
 import Login from './views/auth/Login';
 import Register from './views/auth/Register';
 import ForgotPassword from './views/auth/ForgotPassword';
+import UpdatePassword from './views/auth/UpdatePassword';
+import AuthCallback from './views/auth/AuthCallback';
 
 // Admin Views
 import AccountManagement from './views/admin/AccountManagement';
@@ -139,6 +141,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
         <Route path="/test-supabase" element={<SupabaseTest />} />
 
         {/* Public User Portal Routes */}

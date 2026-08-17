@@ -64,27 +64,36 @@ export default function TriageScreen() {
     try {
       const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
       const token = session?.access_token || '';
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const formData = new FormData();
-      const historyToSend = newMessages.map(m => ({ role: m.role, content: m.content }));
-      formData.append('history', JSON.stringify(historyToSend));
-
+      let response;
       if (currentFile) {
+        const formData = new FormData();
+        const historyToSend = newMessages.map(m => ({ role: m.role, content: m.content }));
+        formData.append('history', JSON.stringify(historyToSend));
         formData.append('files', {
           uri: currentFile.uri,
           name: currentFile.name,
           type: currentFile.mimeType || 'application/pdf',
         } as any);
+
+        response = await fetch(`${baseUrl}/api/triage/interactive`, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+      } else {
+        const historyToSend = newMessages.map(m => ({ role: m.role, content: m.content }));
+        headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        const encodedBody = `history=${encodeURIComponent(JSON.stringify(historyToSend))}`;
+        
+        response = await fetch(`${baseUrl}/api/triage/interactive`, {
+          method: 'POST',
+          headers,
+          body: encodedBody,
+        });
       }
-
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const response = await fetch(`${baseUrl}/api/triage/interactive`, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
 
       if (!response.ok) throw new Error('Network response was not ok');
 

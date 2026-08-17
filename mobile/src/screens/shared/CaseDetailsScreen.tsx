@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndica
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import * as DocumentPicker from 'expo-document-picker';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { theme } from '../../shared/theme';
@@ -18,6 +19,8 @@ type CaseData = {
   clientId: string | null;
   createdAt: string;
   description: string;
+  feedbackRating?: number | null;
+  clientFeedback?: string | null;
   updates: { date: string; activities: any[]; totalHours: number }[];
 };
 
@@ -46,6 +49,15 @@ export default function CaseDetailsScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ visible: false, title: '', message: '', confirmText: '', onConfirm: () => {} });
 
+  const [caseDocuments, setCaseDocuments] = useState<any[]>([]);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [isTimeLogsExpanded, setIsTimeLogsExpanded] = useState(false);
+  
+  // Feedback State
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+
   useEffect(() => {
     fetchCaseDetails();
 
@@ -66,6 +78,13 @@ export default function CaseDetailsScreen() {
           fetchCaseDetails(false);
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'case_documents', filter: `case_id=eq.${caseId}` },
+        () => {
+          fetchDocuments();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -82,7 +101,7 @@ export default function CaseDetailsScreen() {
       const { data: caseData, error: caseError } = await mobileSupabase
         .from('cases')
         .select(`
-          id, title, status, description, created_at, attorney_id, client_id,
+          id, title, status, description, created_at, attorney_id, client_id, feedback_rating, client_feedback,
           attorney:users!cases_attorney_id_fkey(first_name, last_name)
         `)
         .eq('id', caseId)
@@ -149,11 +168,14 @@ export default function CaseDetailsScreen() {
         clientId: caseData.client_id,
         createdAt: new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         description: caseData.description || '',
+        feedbackRating: caseData.feedback_rating,
+        clientFeedback: caseData.client_feedback,
         updates: parsedLogs
       });
 
-      // Fetch Time logs
+      // Fetch Time logs and Docs
       fetchTimeLogs();
+      fetchDocuments();
 
     } catch (err) {
       console.error('Error fetching case details:', err);
@@ -181,6 +203,94 @@ export default function CaseDetailsScreen() {
       }
     } catch (err) {
       console.error('Error fetching time logs:', err);
+    }
+  };
+
+  const fetchDocuments = async () => {
+    try {
+      const { data: docs } = await mobileSupabase
+        .from('case_documents')
+        .select('*')
+        .eq('case_id', caseId)
+        .order('created_at', { ascending: false });
+
+      if (docs) {
+        setCaseDocuments(docs);
+      }
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+    }
+  };
+
+  const handleUploadDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets[0]) return;
+      
+      const file = result.assets[0];
+      if ((file.size || 0) > 10 * 1024 * 1024) { // 10MB limit
+        Toast.show({ type: 'error', text1: 'File too large', text2: 'Please select a file under 10MB.' });
+        return;
+      }
+
+      setIsUploadingDoc(true);
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${caseId}/${Date.now()}.${fileExt}`;
+      
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || 'application/octet-stream',
+      } as any);
+
+      // Upload to Storage
+      const { data: uploadData, error: uploadError } = await mobileSupabase.storage
+        .from('case-documents')
+        .upload(fileName, formData, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get Public URL
+      const { data: urlData } = mobileSupabase.storage
+        .from('case-documents')
+        .getPublicUrl(fileName);
+
+      // Save to database
+      const { error: dbError } = await mobileSupabase
+        .from('case_documents')
+        .insert({
+          case_id: caseId,
+          uploaded_by: currentUser.id,
+          file_name: file.name,
+          file_url: urlData.publicUrl,
+          file_size: file.size || 0,
+        });
+
+      if (dbError) throw dbError;
+
+      // Audit Log
+      await mobileSupabase.from('audit_logs').insert({
+        user_id: currentUser.id,
+        action_type: 'Document Uploaded',
+        detail: `${isAttorney ? 'Attorney' : 'Client'} uploaded document: ${file.name} for this case.`
+      });
+
+      Toast.show({ type: 'success', text1: 'Uploaded', text2: 'Document successfully uploaded.' });
+      fetchDocuments();
+      fetchCaseDetails(false);
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Upload Failed', text2: err.message || 'Could not upload document.' });
+    } finally {
+      setIsUploadingDoc(false);
     }
   };
 
@@ -358,6 +468,37 @@ export default function CaseDetailsScreen() {
     });
   };
 
+  const handleFeedbackSubmit = async () => {
+    if (feedbackRating === 0) {
+      Toast.show({ type: 'error', text1: 'Missing Rating', text2: 'Please select a star rating first.' });
+      return;
+    }
+    setIsSubmittingFeedback(true);
+    try {
+      const trimmedComment = feedbackComment.trim() || null;
+      const { error } = await mobileSupabase.from('cases').update({
+        client_feedback: trimmedComment ? trimmedComment : 'Rated via mobile',
+        feedback_rating: feedbackRating,
+        client_comment: trimmedComment,
+      }).eq('id', c!.id);
+      
+      if (error) throw error;
+      
+      await mobileSupabase.from('audit_logs').insert({
+        user_id: currentUser!.id,
+        action_type: 'Case Feedback Submitted',
+        detail: `Client rated case ${c!.id}: ${feedbackRating}/5 stars`
+      });
+
+      Toast.show({ type: 'success', text1: 'Thank you!', text2: 'Your feedback has been submitted.' });
+      fetchCaseDetails();
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Error', text2: err.message || 'Could not submit feedback.' });
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -457,19 +598,56 @@ export default function CaseDetailsScreen() {
                 <Text style={styles.actionBtnText}>Log Hours</Text>
               </Pressable>
             ) : (
-              <Pressable style={styles.actionBtn}>
-                <Ionicons name="document-attach" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
-                <Text style={styles.actionBtnText}>Upload Doc</Text>
+              <Pressable style={styles.actionBtn} onPress={handleUploadDocument} disabled={isUploadingDoc}>
+                {isUploadingDoc ? (
+                  <ActivityIndicator color={theme.colors.primary} size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="document-attach" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                    <Text style={styles.actionBtnText}>Upload Doc</Text>
+                  </>
+                )}
               </Pressable>
             )}
           </View>
         )}
 
+        {caseDocuments.length > 0 && (
+          <View style={{ marginTop: 32 }}>
+            <Text style={[styles.sectionLabel, { marginLeft: 8 }]}>DOCUMENTS</Text>
+            <View style={styles.card}>
+              {caseDocuments.map((doc, index) => (
+                <View key={doc.id} style={[styles.logItem, index > 0 && styles.logItemBorder]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <View style={styles.docIconBox}>
+                      <Ionicons name="document-text" size={20} color={theme.colors.primary} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.docTitle} numberOfLines={1}>{doc.file_name}</Text>
+                      <Text style={styles.docDate}>{new Date(doc.created_at).toLocaleDateString()}</Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {timeLogs.length > 0 && (
           <View style={{ marginTop: 32 }}>
-            <Text style={[styles.sectionLabel, { marginLeft: 8 }]}>TIME LOGS</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginLeft: 8, marginRight: 8 }}>
+              <Text style={[styles.sectionLabel, { marginBottom: 0, marginLeft: 0 }]}>TIME LOGS</Text>
+              {timeLogs.some(l => l.isVerified) && (
+                <Pressable onPress={() => setIsTimeLogsExpanded(!isTimeLogsExpanded)} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ color: theme.colors.primary, fontSize: 13, fontWeight: '700', marginRight: 4 }}>
+                    {isTimeLogsExpanded ? 'Hide Verified' : 'View All'}
+                  </Text>
+                  <Ionicons name={isTimeLogsExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={theme.colors.primary} />
+                </Pressable>
+              )}
+            </View>
             <View style={styles.card}>
-              {timeLogs.map((log, index) => (
+              {timeLogs.filter(l => isTimeLogsExpanded || !l.isVerified).map((log, index) => (
                 <View key={log.id} style={[styles.logItem, index > 0 && styles.logItemBorder, { flexDirection: 'column', alignItems: 'stretch' }]}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -501,17 +679,73 @@ export default function CaseDetailsScreen() {
                   <Text style={styles.logDesc}>{log.description}</Text>
                 </View>
               ))}
+              {timeLogs.filter(l => isTimeLogsExpanded || !l.isVerified).length === 0 && (
+                <Text style={{ textAlign: 'center', color: theme.colors.textSecondary, paddingVertical: 12 }}>No pending time logs.</Text>
+              )}
             </View>
+          </View>
+        )}
+
+        {isClient && isCaseClosed && (c.feedbackRating === null || c.feedbackRating === undefined) && (
+          <View style={[styles.card, { marginTop: 32, backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+            <Text style={[styles.sectionLabel, { color: '#1E3A8A' }]}>RATE YOUR ATTORNEY</Text>
+            <Text style={{ color: '#1E3A8A', fontSize: 14, marginBottom: 12 }}>How was your experience working with {c.assignedTo || 'your attorney'}?</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Pressable key={s} onPress={() => setFeedbackRating(s)}>
+                  <Ionicons name="star" size={32} color={s <= feedbackRating ? '#F59E0B' : '#CBD5E1'} />
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              style={[styles.textInput, styles.textArea, { backgroundColor: '#FFFFFF', borderColor: '#BFDBFE' }]}
+              placeholder="Leave a comment (optional)"
+              multiline
+              numberOfLines={3}
+              value={feedbackComment}
+              onChangeText={setFeedbackComment}
+            />
+            <Pressable 
+              style={[styles.actionBtn, styles.actionBtnPrimary, { marginTop: 12 }]} 
+              onPress={handleFeedbackSubmit}
+              disabled={isSubmittingFeedback}
+            >
+              {isSubmittingFeedback ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.actionBtnTextPrimary}>Submit Review</Text>}
+            </Pressable>
+          </View>
+        )}
+        
+        {isCaseClosed && c.feedbackRating !== null && c.feedbackRating !== undefined && (
+          <View style={[styles.card, { marginTop: 32 }]}>
+            <Text style={styles.sectionLabel}>CLIENT REVIEW</Text>
+            <View style={{ flexDirection: 'row', gap: 4, marginBottom: 8 }}>
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Ionicons key={s} name="star" size={20} color={s <= c.feedbackRating! ? '#F59E0B' : '#CBD5E1'} />
+              ))}
+            </View>
+            {c.clientFeedback && <Text style={styles.descriptionText}>"{c.clientFeedback}"</Text>}
           </View>
         )}
 
         <Text style={[styles.sectionLabel, { marginTop: 32, marginLeft: 8 }]}>CASE TIMELINE</Text>
         <View style={styles.timeline}>
+          {/* Start Node */}
+          <View style={styles.timelineItem}>
+            <View style={styles.timelineNode}>
+              <View style={[styles.timelineDot, { backgroundColor: '#10B981', width: 14, height: 14, borderRadius: 7 }]} />
+              <View style={styles.timelineLine} />
+            </View>
+            <View style={[styles.timelineContent, { paddingBottom: 16 }]}>
+              <Text style={[styles.timelineDate, { color: '#10B981' }]}>{c.createdAt}</Text>
+              <Text style={[styles.timelineText, { fontWeight: '700' }]}>Case Initiated</Text>
+            </View>
+          </View>
+
           {c.updates.map((dayGroup: any, index: number) => (
             <View key={dayGroup.date} style={styles.timelineItem}>
               <View style={styles.timelineNode}>
                 <View style={styles.timelineDot} />
-                {index < c.updates.length - 1 && <View style={styles.timelineLine} />}
+                {(index < c.updates.length - 1 || isCaseClosed) && <View style={styles.timelineLine} />}
               </View>
               <View style={styles.timelineContent}>
                 <Text style={styles.timelineDate}>
@@ -538,6 +772,19 @@ export default function CaseDetailsScreen() {
               </View>
             </View>
           ))}
+
+          {/* End Node */}
+          {isCaseClosed && (
+             <View style={styles.timelineItem}>
+               <View style={styles.timelineNode}>
+                 <View style={[styles.timelineDot, { backgroundColor: '#64748B', width: 14, height: 14, borderRadius: 7 }]} />
+               </View>
+               <View style={styles.timelineContent}>
+                 <Text style={[styles.timelineDate, { color: '#64748B' }]}>Case Ended</Text>
+                 <Text style={[styles.timelineText, { fontWeight: '700' }]}>Status: {c.status}</Text>
+               </View>
+             </View>
+          )}
         </View>
       </ScrollView>
 
@@ -656,6 +903,10 @@ const styles = StyleSheet.create({
   timelineContent: { flex: 1, paddingBottom: 24, paddingLeft: 8 },
   timelineDate: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: 4 },
   timelineText: { color: theme.colors.textPrimary, fontSize: 15, lineHeight: 22 },
+  
+  docIconBox: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  docTitle: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  docDate: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'center', padding: 24 },
   modalContent: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },

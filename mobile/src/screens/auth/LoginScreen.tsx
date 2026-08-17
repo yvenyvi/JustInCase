@@ -16,6 +16,7 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,6 +33,13 @@ export default function LoginScreen({ navigation }: Props) {
 
 
   const handleLogin = async () => {
+    let newErrors: Record<string, string> = {};
+    if (!email.trim()) newErrors.email = 'Email is required';
+    if (!password) newErrors.password = 'Password is required';
+    
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
     setIsSubmitting(true);
     setErrorMessage(null);
 
@@ -75,7 +83,8 @@ export default function LoginScreen({ navigation }: Props) {
             keyboardType="email-address"
             placeholder="example@email.com"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => { setEmail(text); setErrors(e => ({ ...e, email: '' })); }}
+            error={errors.email}
           />
 
           <InputField
@@ -83,7 +92,8 @@ export default function LoginScreen({ navigation }: Props) {
             placeholder="••••••"
             isPassword
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => { setPassword(text); setErrors(e => ({ ...e, password: '' })); }}
+            error={errors.password}
           />
 
           {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}

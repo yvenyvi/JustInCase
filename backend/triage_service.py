@@ -72,7 +72,7 @@ Provide a qualitative assessment for an attorney. Return ONLY a valid JSON objec
         logger.warning("Gemini API failed, falling back to Groq: %s", e)
         raw_content = call_groq(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-120b",
             temperature=0.2,
             timeout=45.0,
         )
@@ -159,7 +159,7 @@ def generate_interactive_triage(history: list[dict[str, Any]]) -> str:
         logger.warning("Gemini API failed, falling back to Groq: %s", e)
         return call_groq(
             messages=messages,
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-120b",
             temperature=0.3,
             max_tokens=2000,
             timeout=60.0,

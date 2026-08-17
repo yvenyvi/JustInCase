@@ -40,6 +40,7 @@ export default function LegalCaseDetailsScreen() {
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAiCollapsed, setIsAiCollapsed] = useState(true);
+  const [isTimeLogsExpanded, setIsTimeLogsExpanded] = useState(false);
   
   // Modal State
   const [isLogModalVisible, setIsLogModalVisible] = useState(false);
@@ -407,6 +408,7 @@ export default function LegalCaseDetailsScreen() {
   const colors = getStatusColor(c.status);
   const isAssigned = c.attorneyId === currentUser?.id;
   const isAvailable = c.attorneyId === null;
+  const isCaseClosed = c.status.includes('Closed') || c.status === 'Withdrawn' || c.status === 'Dropped';
 
   // Real AI Parsing (Fallback to old logic if not JSON)
   let parsedDesc: any = { concern: c.description, opposing: '', urgency: '', location: '', income: '', deadline: '', evidence: 'None', outcome: '' };
@@ -609,9 +611,19 @@ export default function LegalCaseDetailsScreen() {
 
         {isAssigned && timeLogs.length > 0 && (
           <View style={{ marginTop: 32 }}>
-            <Text style={[styles.sectionLabel, { marginLeft: 8 }]}>SUBMITTED TIME LOGS</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginLeft: 8, marginRight: 8 }}>
+              <Text style={[styles.sectionLabel, { marginBottom: 0, marginLeft: 0 }]}>SUBMITTED TIME LOGS</Text>
+              {timeLogs.some(l => l.isVerified) && (
+                <Pressable onPress={() => setIsTimeLogsExpanded(!isTimeLogsExpanded)} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ color: theme.colors.primary, fontSize: 13, fontWeight: '700', marginRight: 4 }}>
+                    {isTimeLogsExpanded ? 'Hide Verified' : 'View All'}
+                  </Text>
+                  <Ionicons name={isTimeLogsExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={theme.colors.primary} />
+                </Pressable>
+              )}
+            </View>
             <View style={styles.card}>
-              {timeLogs.map((log, index) => (
+              {timeLogs.filter(l => isTimeLogsExpanded || !l.isVerified).map((log, index) => (
                 <View key={log.id} style={[styles.logItem, index > 0 && styles.logItemBorder, { flexDirection: 'column', alignItems: 'stretch' }]}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -634,17 +646,37 @@ export default function LegalCaseDetailsScreen() {
                   <Text style={styles.logDesc}>{log.description}</Text>
                 </View>
               ))}
+              {timeLogs.filter(l => isTimeLogsExpanded || !l.isVerified).length === 0 && (
+                <Text style={{ textAlign: 'center', color: theme.colors.textSecondary, paddingVertical: 12 }}>No pending time logs.</Text>
+              )}
             </View>
           </View>
         )}
 
         <Text style={[styles.sectionLabel, { marginTop: 32, marginLeft: 8 }]}>CASE TIMELINE</Text>
         <View style={styles.timeline}>
+          {/* Start Node */}
+          <View style={styles.timelineItem}>
+            <View style={styles.timelineNode}>
+              <View style={[styles.timelineDot, { backgroundColor: '#10B981', width: 14, height: 14, borderRadius: 7 }]} />
+              <View style={styles.timelineLine} />
+            </View>
+            <View style={[styles.timelineContent, { paddingBottom: 16 }]}>
+              <Text style={[styles.timelineDate, { color: '#10B981' }]}>{c.createdAt}</Text>
+              <View style={{ flexDirection: 'row', marginTop: 8, alignItems: 'flex-start' }}>
+                <View style={{ marginTop: 2, marginRight: 8 }}>
+                  <Ionicons name="shield-checkmark" size={16} color="#10B981" />
+                </View>
+                <Text style={[styles.timelineText, { flex: 1 }]}>Case officially submitted</Text>
+              </View>
+            </View>
+          </View>
+
           {c.updates.map((dayGroup: any, index: number) => (
             <View key={dayGroup.date} style={styles.timelineItem}>
               <View style={styles.timelineNode}>
                 <View style={styles.timelineDot} />
-                {index < c.updates.length - 1 && <View style={styles.timelineLine} />}
+                {(index < c.updates.length - 1 || isCaseClosed) && <View style={styles.timelineLine} />}
               </View>
               <View style={styles.timelineContent}>
                 <Text style={styles.timelineDate}>
@@ -671,6 +703,24 @@ export default function LegalCaseDetailsScreen() {
               </View>
             </View>
           ))}
+
+          {/* End Node */}
+          {isCaseClosed && (
+             <View style={styles.timelineItem}>
+               <View style={styles.timelineNode}>
+                 <View style={[styles.timelineDot, { backgroundColor: '#64748B', width: 14, height: 14, borderRadius: 7 }]} />
+               </View>
+               <View style={styles.timelineContent}>
+                 <Text style={[styles.timelineDate, { color: '#64748B' }]}>Case Ended</Text>
+                 <View style={{ flexDirection: 'row', marginTop: 8, alignItems: 'flex-start' }}>
+                   <View style={{ marginTop: 2, marginRight: 8 }}>
+                     <Ionicons name="folder-open" size={16} color="#64748B" />
+                   </View>
+                   <Text style={[styles.timelineText, { flex: 1 }]}>This case has been officially closed.</Text>
+                 </View>
+               </View>
+             </View>
+          )}
         </View>
       </ScrollView>
 

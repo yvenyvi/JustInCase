@@ -154,6 +154,30 @@ export default function LegalDashboardScreen() {
     }, [])
   );
 
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'in progress':
+      case 'in_progress':
+      case 'accepted':
+        return { bg: '#F0FDF4', border: '#BBF7D0', dot: '#16A34A', text: '#16A34A', label: 'Active' };
+      case 'demand sent':
+      case 'hearing scheduled':
+        return { bg: '#EFF6FF', border: '#BFDBFE', dot: '#3B82F6', text: '#2563EB', label: status };
+      case 'pending triage':
+      case 'pending':
+        return { bg: '#FFF7ED', border: '#FED7AA', dot: '#EA580C', text: '#EA580C', label: 'Pending' };
+      case 'closed':
+      case 'resolved':
+      case 'closed - won':
+      case 'closed - lost':
+      case 'withdrawn':
+      case 'dropped':
+        return { bg: theme.colors.secondary, border: '#CBD5E1', dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: 'Closed' };
+      default:
+        return { bg: theme.colors.background, border: theme.colors.border, dot: theme.colors.textSecondary, text: theme.colors.textSecondary, label: status || 'Unknown' };
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Ambient Background Glows */}
@@ -232,9 +256,9 @@ export default function LegalDashboardScreen() {
               return (
                 <View key={c.id} style={styles.caseCard}>
                   <View style={styles.caseHeader}>
-                    <View style={[styles.statusBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-                      <View style={[styles.statusDot, { backgroundColor: '#16A34A' }]} />
-                      <Text style={[styles.statusText, { color: '#16A34A' }]}>Active</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(c.status).bg, borderColor: getStatusColor(c.status).border }]}>
+                      <View style={[styles.statusDot, { backgroundColor: getStatusColor(c.status).dot }]} />
+                      <Text style={[styles.statusText, { color: getStatusColor(c.status).text }]}>{getStatusColor(c.status).label}</Text>
                     </View>
                     <View style={[styles.typeBadge, c.lawyer_preference === 'Private' ? styles.privateBadge : styles.proBonoBadge]}>
                       <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : theme.colors.primary} />
@@ -287,9 +311,9 @@ export default function LegalDashboardScreen() {
               return (
                 <View key={c.id} style={styles.caseCard}>
                   <View style={styles.caseHeader}>
-                    <View style={styles.statusBadge}>
-                      <View style={styles.statusDot} />
-                      <Text style={styles.statusText}>{c.status}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(c.status).bg, borderColor: getStatusColor(c.status).border }]}>
+                      <View style={[styles.statusDot, { backgroundColor: getStatusColor(c.status).dot }]} />
+                      <Text style={[styles.statusText, { color: getStatusColor(c.status).text }]}>{getStatusColor(c.status).label}</Text>
                     </View>
                     <View style={[styles.typeBadge, c.lawyer_preference === 'Private' ? styles.privateBadge : styles.proBonoBadge]}>
                       <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : theme.colors.primary} />
@@ -345,9 +369,9 @@ export default function LegalDashboardScreen() {
               return (
                 <View key={c.id} style={styles.caseCard}>
                   <View style={styles.caseHeader}>
-                    <View style={styles.statusBadge}>
-                      <View style={styles.statusDot} />
-                      <Text style={styles.statusText}>{c.status}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(c.status).bg, borderColor: getStatusColor(c.status).border }]}>
+                      <View style={[styles.statusDot, { backgroundColor: getStatusColor(c.status).dot }]} />
+                      <Text style={[styles.statusText, { color: getStatusColor(c.status).text }]}>{getStatusColor(c.status).label}</Text>
                     </View>
                     <View style={[styles.typeBadge, c.lawyer_preference === 'Private' ? styles.privateBadge : styles.proBonoBadge]}>
                       <Ionicons name={c.lawyer_preference === 'Private' ? "cash-outline" : "heart-outline"} size={12} color={c.lawyer_preference === 'Private' ? "#9333EA" : theme.colors.primary} />

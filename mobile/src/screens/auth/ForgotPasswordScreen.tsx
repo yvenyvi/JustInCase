@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Platform, Image } from 'react-native';
+import { StyleSheet, Text, View, Platform, Image, Alert } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,11 +7,43 @@ import { Button } from '../../components/ui/Button';
 import { InputField } from '../../components/ui/InputField';
 import { Card } from '../../components/ui/Card';
 import { theme } from '../../shared/theme';
+import { mobileSupabase } from '../../shared/supabase';
 
 type Props = NativeStackScreenProps<any>;
 
 export default function ForgotPasswordScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Direct them to the web app to reset the password.
+      // This is simpler and more robust than deep linking.
+      const webUrl = 'http://localhost:5173/update-password';
+      
+      const { error } = await mobileSupabase.auth.resetPasswordForEmail(email, {
+        redirectTo: webUrl
+      });
+
+      if (error) throw error;
+
+      Alert.alert(
+        'Email Sent',
+        'Check your inbox for a password reset link. The link will open our website where you can set your new password.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to send reset link.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <KeyboardAwareScrollView 
@@ -45,12 +77,14 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
           placeholder="example@email.com"
           value={email}
           onChangeText={setEmail}
+          editable={!isLoading}
         />
 
         <Button 
-          title="SEND RESET LINK"
-          onPress={() => {}}
+          title={isLoading ? "SENDING..." : "SEND RESET LINK"}
+          onPress={handleSubmit}
           style={{ marginTop: 8, marginBottom: 24 }}
+          disabled={isLoading}
         />
 
         <Button 

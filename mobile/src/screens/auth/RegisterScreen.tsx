@@ -64,6 +64,9 @@ export default function RegisterScreen({ navigation, route }: Props) {
   const [localSelfieImage, setLocalSelfieImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // ── Validation State ───────────────────────────────────────────────────────
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   // ── Resume logic (if app crashed and restarted during verification) ────────
   useEffect(() => {
     const resumeState = route.params?.resumeState as any;
@@ -107,18 +110,24 @@ export default function RegisterScreen({ navigation, route }: Props) {
 
   // ── Step 1 → 2: Start session, navigate to Scan Instructions ──────────────
   const handleStepOne = async () => {
-    if (!email.trim() || !password) {
-      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Please fill out all fields.' });
+    let newErrors: Record<string, string> = {};
+    if (!email.trim()) newErrors.email = 'Email is required';
+    else if (!/^\S+@\S+\.\S+$/.test(email)) newErrors.email = 'Invalid email format';
+    
+    if (!password) newErrors.password = 'Password is required';
+    else if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    
+    setErrors(newErrors);
+    
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
+
     if (accountType === 'lawyer') {
       setStep(2);
       return;
     }
-    if (!email.trim() || !password) {
-      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Please fill out all fields.' });
-      return;
-    }
+
     setIsStartingDidit(true);
     try {
       const returnUrl = Linking.createURL('register');
@@ -302,20 +311,20 @@ export default function RegisterScreen({ navigation, route }: Props) {
 
   // ── Step 4: Finalize ───────────────────────────────────────────────────────
   const finalizeRegistration = async () => {
+    let newErrors: Record<string, string> = {};
+    if (!firstName.trim()) newErrors.firstName = 'First Name is required.';
+    if (!lastName.trim()) newErrors.lastName = 'Last Name is required.';
+    if (!phone.trim()) newErrors.phone = 'Mobile number is required.';
+    if (accountType === 'lawyer' && !rollNumber.trim()) newErrors.rollNumber = 'Roll Number is required.';
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Please check the highlighted fields.' });
+      return;
+    }
+
     if (accountType === 'citizen' && !attemptId) {
       Toast.show({ type: 'error', text1: 'Error', text2: 'Verification session not found. Please restart.' });
-      return;
-    }
-    if (!firstName.trim() || !lastName.trim()) {
-      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'First Name and Last Name are required.' });
-      return;
-    }
-    if (!phone.trim()) {
-      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Mobile number is required.' });
-      return;
-    }
-    if (accountType === 'lawyer' && !rollNumber.trim()) {
-      Toast.show({ type: 'error', text1: 'Missing fields', text2: 'Roll Number is required.' });
       return;
     }
 
@@ -546,7 +555,8 @@ export default function RegisterScreen({ navigation, route }: Props) {
 
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Email</Text>
-                <TextInput autoCapitalize="none" keyboardType="email-address" placeholder="example@email.com" placeholderTextColor="#94A3B8" style={styles.input} value={email} onChangeText={setEmail} />
+                <TextInput autoCapitalize="none" keyboardType="email-address" placeholder="example@email.com" placeholderTextColor="#94A3B8" style={[styles.input, errors.email ? styles.inputError : null]} value={email} onChangeText={(text) => { setEmail(text); setErrors(e => ({ ...e, email: '' })); }} />
+                {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
               </View>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Password</Text>
@@ -555,9 +565,9 @@ export default function RegisterScreen({ navigation, route }: Props) {
                     placeholder="••••••••" 
                     placeholderTextColor="#94A3B8" 
                     secureTextEntry={!showPassword} 
-                    style={[styles.input, { paddingRight: 50 }]} 
+                    style={[styles.input, { paddingRight: 50 }, errors.password ? styles.inputError : null]} 
                     value={password} 
-                    onChangeText={setPassword} 
+                    onChangeText={(text) => { setPassword(text); setErrors(e => ({ ...e, password: '' })); }} 
                   />
                   <Pressable
                     onPress={() => setShowPassword(!showPassword)}
@@ -566,6 +576,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
                     <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={24} color="#94A3B8" />
                   </Pressable>
                 </View>
+                {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
               </View>
               <Pressable
                 style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed, isStartingDidit && styles.primaryButtonDisabled]}
@@ -759,7 +770,8 @@ export default function RegisterScreen({ navigation, route }: Props) {
                 </View>
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>First Name *</Text>
-                  <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder="e.g. Juan" placeholderTextColor="#94A3B8" />
+                  <TextInput style={[styles.input, errors.firstName ? styles.inputError : null]} value={firstName} onChangeText={(t) => { setFirstName(t); setErrors(e => ({ ...e, firstName: '' })); }} placeholder="e.g. Juan" placeholderTextColor="#94A3B8" />
+                  {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
                 </View>
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Middle Name</Text>
@@ -767,7 +779,8 @@ export default function RegisterScreen({ navigation, route }: Props) {
                 </View>
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Last Name *</Text>
-                  <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="e.g. Cruz" placeholderTextColor="#94A3B8" />
+                  <TextInput style={[styles.input, errors.lastName ? styles.inputError : null]} value={lastName} onChangeText={(t) => { setLastName(t); setErrors(e => ({ ...e, lastName: '' })); }} placeholder="e.g. Cruz" placeholderTextColor="#94A3B8" />
+                  {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
                 </View>
                 <View style={styles.row}>
                   <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
@@ -781,7 +794,8 @@ export default function RegisterScreen({ navigation, route }: Props) {
                 </View>
                 <View style={[styles.inputContainer, { marginBottom: 0 }]}>
                   <Text style={styles.inputLabel}>Mobile Number *</Text>
-                  <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="09XXXXXXXXX" placeholderTextColor="#94A3B8" />
+                  <TextInput style={[styles.input, errors.phone ? styles.inputError : null]} value={phone} onChangeText={(t) => { setPhone(t); setErrors(e => ({ ...e, phone: '' })); }} keyboardType="phone-pad" placeholder="09XXXXXXXXX" placeholderTextColor="#94A3B8" />
+                  {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
                 </View>
               </View>
 
@@ -813,7 +827,8 @@ export default function RegisterScreen({ navigation, route }: Props) {
                 {accountType === 'lawyer' && (
                   <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Roll of Attorneys No. *</Text>
-                    <TextInput placeholder="12345" placeholderTextColor="#94A3B8" keyboardType="numeric" style={styles.input} value={rollNumber} onChangeText={setRollNumber} />
+                    <TextInput placeholder="12345" placeholderTextColor="#94A3B8" keyboardType="numeric" style={[styles.input, errors.rollNumber ? styles.inputError : null]} value={rollNumber} onChangeText={(t) => { setRollNumber(t); setErrors(e => ({ ...e, rollNumber: '' })); }} />
+                    {errors.rollNumber && <Text style={styles.errorText}>{errors.rollNumber}</Text>}
                   </View>
                 )}
 
@@ -930,6 +945,8 @@ const styles = StyleSheet.create({
   inputContainer: { marginBottom: 20 },
   inputLabel: { color: theme.colors.textSecondary, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 },
   input: { backgroundColor: theme.colors.secondary, color: theme.colors.textPrimary, borderRadius: theme.borderRadius.md, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 16, paddingVertical: 16, fontSize: 15 },
+  inputError: { borderColor: theme.colors.error, backgroundColor: '#FEF2F2' },
+  errorText: { color: theme.colors.error, fontSize: 12, marginTop: 4, marginLeft: 4 },
   row: { flexDirection: 'row' },
 
   // ── Buttons ────────────────────────────────────────────────────────────────
