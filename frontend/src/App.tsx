@@ -35,7 +35,6 @@ import Login from './views/auth/Login';
 import Register from './views/auth/Register';
 import ForgotPassword from './views/auth/ForgotPassword';
 import UpdatePassword from './views/auth/UpdatePassword';
-import AuthCallback from './views/auth/AuthCallback';
 
 // Admin Views
 import AccountManagement from './views/admin/AccountManagement';
