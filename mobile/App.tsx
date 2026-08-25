@@ -35,7 +35,16 @@ const toastConfig = {
     </View>
   ),
 };
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -51,14 +60,16 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <MobileAuthProvider>
-        <NavigationContainer>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </NavigationContainer>
-      </MobileAuthProvider>
-      <Toast config={toastConfig} position="bottom" bottomOffset={60} />
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <MobileAuthProvider>
+          <NavigationContainer>
+            <StatusBar style="light" />
+            <RootNavigator />
+          </NavigationContainer>
+        </MobileAuthProvider>
+        <Toast config={toastConfig} position="bottom" bottomOffset={60} />
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }

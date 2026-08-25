@@ -7,6 +7,7 @@ import { mobileSupabase } from '../../shared/supabase';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 type ChatThreadRouteProp = RouteProp<RootStackParamList, 'ChatThread'>;
 
@@ -25,41 +26,122 @@ export default function ChatThreadScreen() {
   const insets = useSafeAreaInsets();
 
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<MessageItem[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
-  const [resolvedThreadId, setResolvedThreadId] = useState<string>(threadId);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const keyboardHeightRef = useRef(300);
+  
+  const queryClient = useQueryClient();
+
+  const { data: queryData, isLoading, isError, error } = useQuery({
+    queryKey: ['chat', threadId],
+    queryFn: async () => {
+      const { data: { user } } = await mobileSupabase.auth.getUser();
+      if (!user) throw new Error('NOT_LOGGED_IN');
+
+      let resThreadId = threadId;
+
+      const { data: directThread } = await mobileSupabase
+        .from('message_threads')
+        .select('id')
+        .eq('id', threadId)
+        .maybeSingle();
+
+      if (!directThread) {
+        const { data: existingThread } = await mobileSupabase
+          .from('message_threads')
+          .select('id')
+          .eq('case_id', threadId)
+          .maybeSingle();
+
+        if (existingThread) {
+          resThreadId = existingThread.id;
+        } else {
+          const { data: newThread, error: threadErr } = await mobileSupabase
+            .from('message_threads')
+            .insert({ case_id: threadId })
+            .select('id')
+            .single();
+            
+          if (threadErr) {
+            if (threadErr.code === '23503') throw new Error('NOT_FOUND');
+            throw threadErr;
+          }
+          resThreadId = newThread.id;
+        }
+      }
+
+      await mobileSupabase
+        .from('thread_participants')
+        .upsert({ thread_id: resThreadId, user_id: user.id }, { onConflict: 'thread_id,user_id', ignoreDuplicates: true });
+
+      const { data, error } = await mobileSupabase
+        .from('messages')
+        .select('*')
+        .eq('thread_id', resThreadId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const mappedMessages = (data || []).map((msg: any) => ({
+        id: msg.id,
+        text: msg.content,
+        sender: (msg.sender_id === user.id ? 'me' : 'other') as 'me' | 'other',
+        time: new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        created_at: msg.created_at
+      }));
+
+      return {
+        messages: mappedMessages,
+        resolvedThreadId: resThreadId,
+        userId: user.id
+      };
+    }
+  });
+
+  const messages = queryData?.messages || [];
+  const resolvedThreadId = queryData?.resolvedThreadId || '';
+  const userId = queryData?.userId || null;
 
   useEffect(() => {
-    fetchMessages();
-  }, [threadId]);
+    if (isError && error?.message === 'NOT_FOUND') {
+      Toast.show({
+        type: 'error',
+        text1: 'Hindi na available',
+        text2: 'Ang case o thread na ito ay nabura na.',
+      });
+      navigation.goBack();
+    }
+  }, [isError, error]);
 
   useEffect(() => {
-    if (!resolvedThreadId) return;
+    if (!isLoading && messages.length > 0) {
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: false }), 200);
+    }
+  }, [isLoading, messages.length]);
+
+  useEffect(() => {
+    if (!resolvedThreadId || !userId) return;
     
     const channel = mobileSupabase.channel(`room:${resolvedThreadId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `thread_id=eq.${resolvedThreadId}` }, payload => {
         const newMsg = payload.new;
         if (newMsg) {
-          mobileSupabase.auth.getUser().then(({ data: { user } }) => {
-            if (user) {
-              setMessages(prev => {
-                // Check if we already have it to avoid duplicates
-                if (prev.find(m => m.id === newMsg.id)) return prev;
-                return [...prev, {
-                  id: newMsg.id,
-                  text: newMsg.content,
-                  sender: (newMsg.sender_id === user.id ? 'me' : 'other') as 'me' | 'other',
-                  time: new Date(newMsg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-                  created_at: newMsg.created_at
-                }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-              });
-              setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
-            }
+          queryClient.setQueryData(['chat', threadId], (oldData: any) => {
+            if (!oldData) return oldData;
+            if (oldData.messages.find((m: any) => m.id === newMsg.id)) return oldData;
+            
+            const newMapped = {
+              id: newMsg.id,
+              text: newMsg.content,
+              sender: (newMsg.sender_id === userId ? 'me' : 'other') as 'me' | 'other',
+              time: new Date(newMsg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+              created_at: newMsg.created_at
+            };
+            
+            const updatedMessages = [...oldData.messages, newMapped].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            return { ...oldData, messages: updatedMessages };
           });
+          setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
         }
       })
       .subscribe();
@@ -67,7 +149,7 @@ export default function ChatThreadScreen() {
     return () => {
       mobileSupabase.removeChannel(channel);
     };
-  }, [resolvedThreadId]);
+  }, [resolvedThreadId, userId, threadId, queryClient]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -83,91 +165,6 @@ export default function ChatThreadScreen() {
   }, []);
 
   const handleInputFocus = () => setKeyboardHeight(keyboardHeightRef.current);
-
-  const fetchMessages = async () => {
-    setIsLoading(true);
-    try {
-      const { data: { user } } = await mobileSupabase.auth.getUser();
-      if (!user) return;
-      setUserId(user.id);
-
-      // threadId from navigation may be a case_id — find or create the real message_thread
-      let resolvedThreadId = threadId;
-
-      // Check if threadId is a direct message_thread id
-      const { data: directThread } = await mobileSupabase
-        .from('message_threads')
-        .select('id')
-        .eq('id', threadId)
-        .maybeSingle();
-
-      if (!directThread) {
-        // threadId is assumed to be a case_id — look up or create the message thread
-        const { data: existingThread } = await mobileSupabase
-          .from('message_threads')
-          .select('id')
-          .eq('case_id', threadId)
-          .maybeSingle();
-
-        if (existingThread) {
-          resolvedThreadId = existingThread.id;
-        } else {
-          // Create new thread for this case
-          const { data: newThread, error: threadErr } = await mobileSupabase
-            .from('message_threads')
-            .insert({ case_id: threadId })
-            .select('id')
-            .single();
-            
-          if (threadErr) {
-            if (threadErr.code === '23503') {
-              // Foreign key violation: The case was deleted or the threadId was actually a deleted thread's ID
-              Toast.show({
-                type: 'error',
-                text1: 'Hindi na available',
-                text2: 'Ang case o thread na ito ay nabura na.',
-              });
-              navigation.goBack();
-              return;
-            }
-            throw threadErr;
-          }
-          resolvedThreadId = newThread.id;
-        }
-      }
-
-      // Ensure current user is a thread participant (upsert)
-      await mobileSupabase
-        .from('thread_participants')
-        .upsert({ thread_id: resolvedThreadId, user_id: user.id }, { onConflict: 'thread_id,user_id', ignoreDuplicates: true });
-
-      const { data, error } = await mobileSupabase
-        .from('messages')
-        .select('*')
-        .eq('thread_id', resolvedThreadId)
-        .order('created_at', { ascending: true });
-
-      if (!error && data) {
-        const mapped = data.map((msg: any) => ({
-          id: msg.id,
-          text: msg.content,
-          sender: (msg.sender_id === user.id ? 'me' : 'other') as 'me' | 'other',
-          time: new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-          created_at: msg.created_at
-        }));
-        setMessages(mapped);
-      }
-
-      // Store resolved thread id so handleSend uses the right one
-      setResolvedThreadId(resolvedThreadId);
-
-    } catch (err) {
-      console.error('Error fetching messages:', err);
-    } finally {
-      setIsLoading(false);
-      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: false }), 200);
-    }
-  };
 
   const handleSend = async () => {
     if (message.trim() && userId) {
