@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -20,21 +21,13 @@ type ThreadItem = {
 
 export default function LegalMessagesScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const isFocused = useIsFocused();
-  const [threads, setThreads] = useState<ThreadItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (isFocused) {
-      fetchThreads();
-    }
-  }, [isFocused]);
-
-  const fetchThreads = async () => {
-    setIsLoading(true);
-    try {
+  const { data: threads = [], isLoading } = useQuery({
+    queryKey: ['legalMessageThreads'],
+    queryFn: async () => {
       const { data: { user } } = await mobileSupabase.auth.getUser();
-      if (!user) return;
+      if (!user) throw new Error("Not logged in");
 
       const { data: threadsData, error: threadsError } = await mobileSupabase
         .from('message_threads')
@@ -60,7 +53,7 @@ export default function LegalMessagesScreen() {
             .eq('thread_id', t.id)
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           const client = t.cases.client;
           const name = client ? `${client.first_name} ${client.last_name}`.trim() : 'Unknown Client';
@@ -71,21 +64,33 @@ export default function LegalMessagesScreen() {
             caseTitle: t.cases.title,
             preview: lastMsg ? lastMsg.content : 'No messages yet.',
             time: lastMsg ? new Date(lastMsg.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '',
-            unread: 0 // Simplification for now
+            unread: 0
           };
         })
       );
 
-      setThreads(enrichedThreads);
-    } catch (err) {
-      console.error('Error fetching legal threads:', err);
-    } finally {
-      setIsLoading(false);
+      return enrichedThreads;
     }
-  };
+  });
+
+  useEffect(() => {
+    const subscription = mobileSupabase
+      .channel('legal-messages-list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['legalMessageThreads'] });
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [queryClient]);
 
   return (
     <View style={styles.container}>
+      {/* Ambient Background Glows */}
+      <View style={styles.ambientGlow1} />
+      <View style={styles.ambientGlow2} />
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Messages</Text>
@@ -135,7 +140,9 @@ export default function LegalMessagesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(20, 184, 166, 0.08)', transform: [{ scaleX: 1.5 }] },
+  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
+  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
   headerTitle: { color: theme.colors.textPrimary, fontSize: 28, fontWeight: '800', marginBottom: 4 },
   headerSubtitle: { color: theme.colors.textSecondary, fontSize: 15 },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },

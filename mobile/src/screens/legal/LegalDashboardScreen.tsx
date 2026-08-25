@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 import { NotificationBell } from '../../components/ui/NotificationBell';
 
@@ -12,147 +13,134 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function LegalDashboardScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [firstName, setFirstName] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeCasesCount, setActiveCasesCount] = useState(0);
-  const [activeCases, setActiveCases] = useState<any[]>([]);
-  const [proBonoHours, setProBonoHours] = useState(0);
-  const [privateHours, setPrivateHours] = useState(0);
-  const [directRequests, setDirectRequests] = useState<any[]>([]);
-  const [unassignedCases, setUnassignedCases] = useState<any[]>([]);
+  const queryClient = useQueryClient();
 
-  useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-      const fetchData = async () => {
-        if (!isMounted) return;
-        setIsLoading(true);
-        try {
-          const { data: { user } } = await mobileSupabase.auth.getUser();
-          if (!user) return;
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ['legalDashboard'],
+    queryFn: async () => {
+      const { data: { user } } = await mobileSupabase.auth.getUser();
+      if (!user) throw new Error("Not logged in");
 
-          // Fetch user name
-          const { data: userData } = await mobileSupabase
-            .from('users')
-            .select('first_name')
-            .eq('id', user.id)
-            .single();
-          
-          setFirstName(userData?.first_name || 'Attorney');
+      // Fetch user name
+      const { data: userData } = await mobileSupabase
+        .from('users')
+        .select('first_name')
+        .eq('id', user.id)
+        .single();
+      
+      const firstName = userData?.first_name || 'Attorney';
 
-          // Fetch active cases for this attorney
-          const { data: activeData, count, error: activeError } = await mobileSupabase
-            .from('cases')
-            .select(`
-              id, 
-              title, 
-              status, 
-              lawyer_preference,
-              updated_at,
-              created_at,
-              description
-            `, { count: 'exact' })
-            .eq('attorney_id', user.id)
-            .in('status', ['Pending Acceptance', 'In Progress', 'Hearing Scheduled', 'Demand Sent'])
-            .order('updated_at', { ascending: false });
-          
-          if (activeError) {
-            console.error('Error fetching active cases:', activeError);
-            setActiveCases([]);
-            setActiveCasesCount(0);
-          } else {
-            setActiveCasesCount(count || 0);
-            setActiveCases(activeData || []);
-          }
+      // Fetch active cases for this attorney
+      const { data: activeData, count, error: activeError } = await mobileSupabase
+        .from('cases')
+        .select(`
+          id, 
+          title, 
+          status, 
+          lawyer_preference,
+          updated_at,
+          created_at,
+          description
+        `, { count: 'exact' })
+        .eq('attorney_id', user.id)
+        .in('status', ['Pending Acceptance', 'In Progress', 'Hearing Scheduled', 'Demand Sent'])
+        .order('updated_at', { ascending: false });
+      
+      const activeCasesCount = activeError ? 0 : (count || 0);
+      const activeCases = activeError ? [] : (activeData || []);
 
-          // Fetch Direct Requests (cases assigned to attorney but still pending)
-          const { data: directData, error: directError } = await mobileSupabase
-            .from('cases')
-            .select(`
-              id, 
-              title, 
-              status, 
-              lawyer_preference,
-              updated_at,
-              created_at,
-              description
-            `)
-            .eq('attorney_id', user.id)
-            .eq('status', 'Pending Triage')
-            .order('created_at', { ascending: false })
-            .limit(3);
-          
-          if (directError) console.error('Error fetching direct requests:', directError);
-          setDirectRequests(directData || []);
+      // Fetch Direct Requests
+      const { data: directData } = await mobileSupabase
+        .from('cases')
+        .select(`
+          id, 
+          title, 
+          status, 
+          lawyer_preference,
+          updated_at,
+          created_at,
+          description
+        `)
+        .eq('attorney_id', user.id)
+        .eq('status', 'Pending Triage')
+        .order('created_at', { ascending: false })
+        .limit(3);
 
-          // Fetch Unassigned Cases (Open Pool)
-          const { data: unassignedData, error: unassignedError } = await mobileSupabase
-            .from('cases')
-            .select(`
-              id, 
-              title, 
-              status, 
-              lawyer_preference,
-              updated_at,
-              created_at,
-              description
-            `)
-            .is('attorney_id', null)
-            .eq('status', 'Pending Triage')
-            .order('created_at', { ascending: false })
-            .limit(3);
-          
-          if (unassignedError) console.error('Error fetching unassigned cases:', unassignedError);
-          setUnassignedCases(unassignedData || []);
+      // Fetch Unassigned Cases
+      const { data: unassignedData } = await mobileSupabase
+        .from('cases')
+        .select(`
+          id, 
+          title, 
+          status, 
+          lawyer_preference,
+          updated_at,
+          created_at,
+          description
+        `)
+        .is('attorney_id', null)
+        .eq('status', 'Pending Triage')
+        .order('created_at', { ascending: false })
+        .limit(3);
 
-          // Fetch time logs for hours
-          try {
-            const { data: logsData } = await mobileSupabase
-              .from('pro_bono_logs')
-              .select('hours, case_id, cases!inner(lawyer_preference)')
-              .eq('attorney_id', user.id)
-              .eq('is_verified', true);
-            
-            let pBono = 0;
-            let pPrivate = 0;
-            
-            if (logsData) {
-              logsData.forEach((log: any) => {
-                const preference = log.cases?.lawyer_preference;
-                if (preference === 'Private') {
-                  pPrivate += (log.hours || 0);
-                } else {
-                  pBono += (log.hours || 0);
-                }
-              });
+      // Fetch time logs for hours
+      let pBono = 0;
+      let pPrivate = 0;
+      try {
+        const { data: logsData } = await mobileSupabase
+          .from('pro_bono_logs')
+          .select('hours, case_id, cases!inner(lawyer_preference)')
+          .eq('attorney_id', user.id)
+          .eq('is_verified', true);
+        
+        if (logsData) {
+          logsData.forEach((log: any) => {
+            const preference = log.cases?.lawyer_preference;
+            if (preference === 'Private') {
+              pPrivate += (log.hours || 0);
+            } else {
+              pBono += (log.hours || 0);
             }
-            setProBonoHours(pBono);
-            setPrivateHours(pPrivate);
-          } catch (logErr) {
-            console.error('Error fetching pro bono logs:', logErr);
-          }
-
-        } catch (err) {
-          console.error('Error fetching legal dashboard data:', err);
-        } finally {
-          if (isMounted) setIsLoading(false);
+          });
         }
-      };
-      fetchData();
+      } catch (logErr) {
+        console.error('Error fetching pro bono logs:', logErr);
+      }
 
-      const subscription = mobileSupabase
-        .channel('legal-dashboard-cases')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
-          if (isMounted) fetchData();
-        })
-        .subscribe();
-
-      return () => {
-        isMounted = false;
-        subscription.unsubscribe();
+      return {
+        firstName,
+        activeCasesCount,
+        activeCases,
+        directRequests: directData || [],
+        unassignedCases: unassignedData || [],
+        proBonoHours: pBono,
+        privateHours: pPrivate
       };
-    }, [])
-  );
+    }
+  });
+
+  const {
+    firstName = '',
+    activeCasesCount = 0,
+    activeCases = [],
+    directRequests = [],
+    unassignedCases = [],
+    proBonoHours = 0,
+    privateHours = 0
+  } = dashboardData || {};
+
+  useEffect(() => {
+    const subscription = mobileSupabase
+      .channel('legal-dashboard-cases')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['legalDashboard'] });
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [queryClient]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {

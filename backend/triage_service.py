@@ -59,6 +59,14 @@ Provide a qualitative assessment for an attorney. Return ONLY a valid JSON objec
 }}"""
 
     try:
+        raw_content = call_groq(
+            messages=[{"role": "user", "content": prompt}],
+            model="openai/gpt-oss-20b",
+            temperature=0.2,
+            timeout=45.0,
+        )
+    except Exception as e:
+        logger.warning("Groq API failed, falling back to Gemini: %s", e)
         if config.gemini_api_keys:
             raw_content = call_gemini(
                 messages=[{"role": "user", "content": prompt}],
@@ -67,15 +75,7 @@ Provide a qualitative assessment for an attorney. Return ONLY a valid JSON objec
                 timeout=45.0,
             )
         else:
-            raise ValueError("Gemini key not configured")
-    except Exception as e:
-        logger.warning("Gemini API failed, falling back to Groq: %s", e)
-        raw_content = call_groq(
-            messages=[{"role": "user", "content": prompt}],
-            model="openai/gpt-oss-120b",
-            temperature=0.2,
-            timeout=45.0,
-        )
+            raise ValueError("Gemini key not configured and Groq failed")
 
     # Clean markdown backticks if present
     if raw_content.startswith("```"):
@@ -146,6 +146,15 @@ def generate_interactive_triage(history: list[dict[str, Any]]) -> str:
     messages.extend(_normalize_chat_history(history))
 
     try:
+        return call_groq(
+            messages=messages,
+            model="openai/gpt-oss-20b",
+            temperature=0.3,
+            max_tokens=2000,
+            timeout=60.0,
+        )
+    except Exception as e:
+        logger.warning("Groq API failed, falling back to Gemini: %s", e)
         if config.gemini_api_keys:
             return call_gemini(
                 messages=messages,
@@ -154,13 +163,4 @@ def generate_interactive_triage(history: list[dict[str, Any]]) -> str:
                 timeout=60.0,
             )
         else:
-            raise ValueError("Gemini key not configured")
-    except Exception as e:
-        logger.warning("Gemini API failed, falling back to Groq: %s", e)
-        return call_groq(
-            messages=messages,
-            model="openai/gpt-oss-120b",
-            temperature=0.3,
-            max_tokens=2000,
-            timeout=60.0,
-        )
+            raise ValueError("Gemini key not configured and Groq failed")

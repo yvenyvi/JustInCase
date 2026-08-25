@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '../../components/ui/Card';
 import { theme } from '../../shared/theme';
 import { NotificationBell } from '../../components/ui/NotificationBell';
@@ -13,10 +14,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function PublicDashboardScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [firstName, setFirstName] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [randomTip, setRandomTip] = useState<string>('');
-  const [activeCase, setActiveCase] = useState<any>(null);
+  const queryClient = useQueryClient();
 
   const TIPS = [
     "Did you know? You have the right to a safe working environment under the Labor Code.",
@@ -26,65 +24,60 @@ export default function PublicDashboardScreen() {
     "Did you know? You have the right to seek legal counsel of your own choice."
   ];
 
+  const [randomTip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)]);
+
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ['publicDashboard'],
+    queryFn: async () => {
+      const { data: { user } } = await mobileSupabase.auth.getUser();
+      if (!user) throw new Error("Not logged in");
+
+      // Fetch user name
+      const { data: userData } = await mobileSupabase
+        .from('users')
+        .select('first_name')
+        .eq('id', user.id)
+        .single();
+      
+      const firstName = userData?.first_name || 'Citizen';
+
+      // Fetch most recent active case for this user
+      const { data: caseData } = await mobileSupabase
+        .from('cases')
+        .select(`
+          id, 
+          title, 
+          status, 
+          updated_at, 
+          attorney:users!cases_attorney_id_fkey(first_name, last_name)
+        `)
+        .eq('client_id', user.id)
+        .in('status', ['Pending Triage', 'Pending Acceptance', 'In Progress', 'Hearing Scheduled', 'Demand Sent'])
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      return {
+        firstName,
+        activeCase: caseData || null
+      };
+    }
+  });
+
+  const { firstName = 'Citizen', activeCase = null } = dashboardData || {};
+
   useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!isMounted) return;
-      try {
-        const { data: { user } } = await mobileSupabase.auth.getUser();
-        if (!user) return;
-
-        // Fetch user name
-        const { data: userData } = await mobileSupabase
-          .from('users')
-          .select('first_name')
-          .eq('id', user.id)
-          .single();
-        
-        setFirstName(userData?.first_name || 'Citizen');
-
-        // Fetch most recent active case for this user
-        const { data: caseData } = await mobileSupabase
-          .from('cases')
-          .select(`
-            id, 
-            title, 
-            status, 
-            updated_at, 
-            attorney:users!cases_attorney_id_fkey(first_name, last_name)
-          `)
-          .eq('client_id', user.id)
-          .in('status', ['Pending Triage', 'Pending Acceptance', 'In Progress', 'Hearing Scheduled', 'Demand Sent'])
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (isMounted) {
-          if (caseData) setActiveCase(caseData);
-          else setActiveCase(null);
-        }
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setFirstName('Citizen');
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-    fetchData();
-    setRandomTip(TIPS[Math.floor(Math.random() * TIPS.length)]);
-
     const subscription = mobileSupabase
       .channel('public-dashboard-cases')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
-        if (isMounted) fetchData();
+        queryClient.invalidateQueries({ queryKey: ['publicDashboard'] });
       })
       .subscribe();
 
     return () => {
-      isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -197,7 +190,10 @@ export default function PublicDashboardScreen() {
                 <View style={styles.caseAtty}>
                   <Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />
                   <Text style={styles.attyName}>
-                    {activeCase.attorney ? `Atty. ${activeCase.attorney.first_name} ${activeCase.attorney.last_name}`.trim() : 'Pending Assignment'}
+                    {(() => {
+                      const atty = Array.isArray(activeCase.attorney) ? activeCase.attorney[0] : activeCase.attorney;
+                      return atty ? `Atty. ${atty.first_name} ${atty.last_name}`.trim() : 'Pending Assignment';
+                    })()}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={theme.colors.border} />

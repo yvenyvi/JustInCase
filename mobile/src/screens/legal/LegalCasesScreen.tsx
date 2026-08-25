@@ -1,29 +1,28 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Platform, RefreshControl } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function LegalCasesScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const queryClient = useQueryClient();
+  
   const [activeTab, setActiveTab] = useState<'my_cases' | 'available'>('my_cases');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [myCases, setMyCases] = useState<any[]>([]);
-  const [availableCases, setAvailableCases] = useState<any[]>([]);
   const [myCasesFilter, setMyCasesFilter] = useState<'Active' | 'Completed' | 'Withdrawn'>('Active');
 
-  const fetchCases = async () => {
-    try {
+  const { data: myCases = [], isLoading: isLoadingMy, isRefetching: isRefetchingMy } = useQuery({
+    queryKey: ['legalMyCases'],
+    queryFn: async () => {
       const { data: { user } } = await mobileSupabase.auth.getUser();
-      if (!user) return;
+      if (!user) throw new Error("Not logged in");
 
-      // Fetch My Cases (attorney_id = user.id)
       const { data: myData } = await mobileSupabase
         .from('cases')
         .select(`
@@ -33,9 +32,13 @@ export default function LegalCasesScreen() {
         .eq('attorney_id', user.id)
         .order('updated_at', { ascending: false });
 
-      if (myData) setMyCases(myData);
+      return myData || [];
+    }
+  });
 
-      // Fetch Available Cases (attorney_id is null)
+  const { data: availableCases = [], isLoading: isLoadingAvail, isRefetching: isRefetchingAvail } = useQuery({
+    queryKey: ['legalAvailableCases'],
+    queryFn: async () => {
       const { data: availData } = await mobileSupabase
         .from('cases')
         .select(`
@@ -45,49 +48,33 @@ export default function LegalCasesScreen() {
         .is('attorney_id', null)
         .order('created_at', { ascending: false });
 
-      if (availData) setAvailableCases(availData);
-
-    } catch (err) {
-      console.error('Error fetching legal cases:', err);
+      return availData || [];
     }
-  };
+  });
 
-  const loadData = async () => {
-    setIsLoading(true);
-    await fetchCases();
-    setIsLoading(false);
-  };
+  const isLoading = isLoadingMy || isLoadingAvail;
+  const isRefreshing = isRefetchingMy || isRefetchingAvail;
 
   const onRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchCases();
-    setIsRefreshing(false);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['legalMyCases'] }),
+      queryClient.invalidateQueries({ queryKey: ['legalAvailableCases'] })
+    ]);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-      const loadDataAsync = async () => {
-        if (!isMounted) return;
-        setIsLoading(true);
-        await fetchCases();
-        if (isMounted) setIsLoading(false);
-      };
-      loadDataAsync();
+  useEffect(() => {
+    const subscription = mobileSupabase
+      .channel('legal-cases-list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['legalMyCases'] });
+        queryClient.invalidateQueries({ queryKey: ['legalAvailableCases'] });
+      })
+      .subscribe();
 
-      const subscription = mobileSupabase
-        .channel('legal-cases-list')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
-          if (isMounted) fetchCases();
-        })
-        .subscribe();
-
-      return () => {
-        isMounted = false;
-        subscription.unsubscribe();
-      };
-    }, [])
-  );
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [queryClient]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -123,6 +110,10 @@ export default function LegalCasesScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Ambient Background Glows */}
+      <View style={styles.ambientGlow1} />
+      <View style={styles.ambientGlow2} />
+
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Text style={styles.headerTitle}>Case Management</Text>
@@ -183,9 +174,11 @@ export default function LegalCasesScreen() {
               </View>
 
               {displayedMyCases.length > 0 ? (
-                displayedMyCases.map(c => (
+                displayedMyCases.map(c => {
+                  const clientObj: any = Array.isArray(c.client) ? c.client[0] : c.client;
+                  return (
                   <Pressable 
-                    key={c.id}
+                    key={c.id} 
                     style={styles.caseWidget}
                     onPress={() => navigation.navigate('LegalCaseDetails', { caseId: c.id })}
                   >
@@ -203,13 +196,14 @@ export default function LegalCasesScreen() {
                       <View style={styles.caseAtty}>
                         <Ionicons name="person-circle-outline" size={20} color="#64748B" />
                         <Text style={styles.attyName}>
-                          Client: {c.client?.first_name} {c.client?.last_name}
+                          Client: {clientObj?.first_name} {clientObj?.last_name}
                         </Text>
                       </View>
                       <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
                     </View>
                   </Pressable>
-                ))
+                  );
+                })
               ) : (
                 <View style={styles.emptyState}>
                   <Ionicons name="briefcase-outline" size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
@@ -232,6 +226,7 @@ export default function LegalCasesScreen() {
                 availableCases.map(c => {
                   let parsedDesc: any = null;
                   try { parsedDesc = JSON.parse(c.description || '{}'); } catch(e) {}
+                  const clientObj: any = Array.isArray(c.client) ? c.client[0] : c.client;
                   
                   return (
                   <View key={c.id} style={styles.caseWidget}>
@@ -267,7 +262,7 @@ export default function LegalCasesScreen() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
                         <Ionicons name="location-outline" size={16} color="#64748B" />
                         <Text style={styles.attyName}>
-                          {parsedDesc?.location || parsedDesc?.rawInput?.province || c.client?.city_municipality || 'Location not provided'}
+                          {parsedDesc?.location || parsedDesc?.rawInput?.province || clientObj?.city_municipality || 'Location not provided'}
                         </Text>
                       </View>
                       
@@ -296,7 +291,9 @@ export default function LegalCasesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { backgroundColor: theme.colors.surface, paddingTop: Platform.OS === 'ios' ? 60 : 40, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(20, 184, 166, 0.08)', transform: [{ scaleX: 1.5 }] },
+  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
+  header: { backgroundColor: 'transparent', paddingTop: 60 },
   headerTop: { paddingHorizontal: 24, paddingBottom: 16 },
   headerTitle: { color: theme.colors.textPrimary, fontSize: 24, fontWeight: '800' },
   

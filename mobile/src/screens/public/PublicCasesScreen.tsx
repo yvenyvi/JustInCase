@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -19,36 +20,14 @@ type CaseItem = {
 
 export default function PublicCasesScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [cases, setCases] = useState<CaseItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<'Active' | 'Completed' | 'Withdrawn'>('Active');
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      if (!isMounted) return;
-      await fetchCases();
-    };
-    loadData();
-
-    const subscription = mobileSupabase
-      .channel('public-cases-list')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
-        if (isMounted) fetchCases();
-      })
-      .subscribe();
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchCases = async () => {
-    setIsLoading(true);
-    try {
+  const { data: cases = [], isLoading } = useQuery({
+    queryKey: ['publicAllCases'],
+    queryFn: async () => {
       const { data: { user } } = await mobileSupabase.auth.getUser();
-      if (!user) return;
+      if (!user) throw new Error("Not logged in");
 
       const { data, error } = await mobileSupabase
         .from('cases')
@@ -62,22 +41,30 @@ export default function PublicCasesScreen() {
         .eq('client_id', user.id)
         .order('updated_at', { ascending: false });
 
-      if (!error && data) {
-        const mappedCases = data.map((c: any) => ({
-          id: c.id,
-          title: c.title,
-          status: c.status,
-          assignedTo: c.attorney ? `Atty. ${c.attorney.first_name} ${c.attorney.last_name}`.trim() : null,
-          updatedAt: new Date(c.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        }));
-        setCases(mappedCases);
-      }
-    } catch (err) {
-      console.error('Error fetching cases:', err);
-    } finally {
-      setIsLoading(false);
+      if (error) throw error;
+      
+      return (data || []).map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        status: c.status,
+        assignedTo: c.attorney ? `Atty. ${c.attorney.first_name} ${c.attorney.last_name}`.trim() : null,
+        updatedAt: new Date(c.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      }));
     }
-  };
+  });
+
+  useEffect(() => {
+    const subscription = mobileSupabase
+      .channel('public-cases-list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['publicAllCases'] });
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [queryClient]);
 
   const handleLogout = async () => {
     await mobileSupabase.auth.signOut();
@@ -117,6 +104,9 @@ export default function PublicCasesScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Ambient Background Glows */}
+      <View style={styles.ambientGlow1} />
+      <View style={styles.ambientGlow2} />
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Mga Kaso Ko</Text>
@@ -208,7 +198,9 @@ export default function PublicCasesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(20, 184, 166, 0.08)', transform: [{ scaleX: 1.5 }] },
+  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
+  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
   headerTitle: { color: theme.colors.textPrimary, fontSize: 28, fontWeight: '800', marginBottom: 4 },
   headerSubtitle: { color: theme.colors.textSecondary, fontSize: 15 },
   headerActions: { flexDirection: 'row', gap: 12 },

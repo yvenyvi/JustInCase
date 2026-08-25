@@ -6,6 +6,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 
 type CaseDetailsRouteProp = RouteProp<RootStackParamList, 'CaseDetails'>;
@@ -37,10 +38,7 @@ export default function CaseDetailsScreen() {
   const route = useRoute<CaseDetailsRouteProp>();
   const { caseId } = route.params;
 
-  const [c, setC] = useState<CaseData | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
   
   // Modal State
   const [isLogModalVisible, setIsLogModalVisible] = useState(false);
@@ -49,7 +47,6 @@ export default function CaseDetailsScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ visible: false, title: '', message: '', confirmText: '', onConfirm: () => {} });
 
-  const [caseDocuments, setCaseDocuments] = useState<any[]>([]);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [isTimeLogsExpanded, setIsTimeLogsExpanded] = useState(false);
   
@@ -58,46 +55,20 @@ export default function CaseDetailsScreen() {
   const [feedbackComment, setFeedbackComment] = useState('');
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
-  useEffect(() => {
-    fetchCaseDetails();
+  const queryClient = useQueryClient();
 
-    const channel = mobileSupabase
-      .channel(`public_case_updates_${caseId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pro_bono_logs', filter: `case_id=eq.${caseId}` },
-        () => {
-          fetchTimeLogs();
-          fetchCaseDetails(false);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'cases', filter: `id=eq.${caseId}` },
-        () => {
-          fetchCaseDetails(false);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'case_documents', filter: `case_id=eq.${caseId}` },
-        () => {
-          fetchDocuments();
-        }
-      )
-      .subscribe();
+  const { data: sessionData } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const { data } = await mobileSupabase.auth.getUser();
+      return data.user;
+    }
+  });
+  const currentUser = sessionData;
 
-    return () => {
-      mobileSupabase.removeChannel(channel);
-    };
-  }, [caseId]);
-
-  const fetchCaseDetails = async (showLoader = true) => {
-    if (showLoader) setIsLoading(true);
-    try {
-      const { data: { user } } = await mobileSupabase.auth.getUser();
-      setCurrentUser(user);
-
+  const { data: c, isLoading: isLoadingCase } = useQuery({
+    queryKey: ['caseDetails', caseId],
+    queryFn: async () => {
       const { data: caseData, error: caseError } = await mobileSupabase
         .from('cases')
         .select(`
@@ -109,8 +80,7 @@ export default function CaseDetailsScreen() {
 
       if (caseError) {
         if (caseError.code === 'PGRST116') {
-          setC(null);
-          return;
+          return null;
         }
         throw caseError;
       }
@@ -159,7 +129,7 @@ export default function CaseDetailsScreen() {
 
       const attorneyObj = Array.isArray(caseData.attorney) ? caseData.attorney[0] : caseData.attorney;
 
-      setC({
+      return {
         id: caseData.id,
         title: caseData.title,
         status: caseData.status,
@@ -171,21 +141,14 @@ export default function CaseDetailsScreen() {
         feedbackRating: caseData.feedback_rating,
         clientFeedback: caseData.client_feedback,
         updates: parsedLogs
-      });
+      } as CaseData;
+    },
+    enabled: !!caseId
+  });
 
-      // Fetch Time logs and Docs
-      fetchTimeLogs();
-      fetchDocuments();
-
-    } catch (err) {
-      console.error('Error fetching case details:', err);
-    } finally {
-      if (showLoader) setIsLoading(false);
-    }
-  };
-
-  const fetchTimeLogs = async () => {
-    try {
+  const { data: timeLogs = [], isLoading: isLoadingLogs } = useQuery({
+    queryKey: ['caseTimeLogs', caseId],
+    queryFn: async () => {
       const { data: tLogs } = await mobileSupabase
         .from('pro_bono_logs')
         .select('id, hours, description, created_at, is_verified')
@@ -193,34 +156,70 @@ export default function CaseDetailsScreen() {
         .order('created_at', { ascending: false });
 
       if (tLogs) {
-        setTimeLogs(tLogs.map(l => ({
+        return tLogs.map((l: any) => ({
           id: l.id,
           hours: l.hours,
           description: l.description,
           date: new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           isVerified: l.is_verified
-        })));
+        })) as TimeLog[];
       }
-    } catch (err) {
-      console.error('Error fetching time logs:', err);
-    }
-  };
+      return [];
+    },
+    enabled: !!caseId
+  });
 
-  const fetchDocuments = async () => {
-    try {
+  const { data: caseDocuments = [], isLoading: isLoadingDocs } = useQuery({
+    queryKey: ['caseDocuments', caseId],
+    queryFn: async () => {
       const { data: docs } = await mobileSupabase
         .from('case_documents')
         .select('*')
         .eq('case_id', caseId)
         .order('created_at', { ascending: false });
+      return docs || [];
+    },
+    enabled: !!caseId
+  });
 
-      if (docs) {
-        setCaseDocuments(docs);
-      }
-    } catch (err) {
-      console.error('Error fetching documents:', err);
-    }
-  };
+  const isLoading = isLoadingCase || isLoadingLogs || isLoadingDocs;
+
+  // Stubs to support existing mutations without refactoring all handlers
+  const fetchCaseDetails = () => queryClient.invalidateQueries({ queryKey: ['caseDetails', caseId] });
+  const fetchTimeLogs = () => queryClient.invalidateQueries({ queryKey: ['caseTimeLogs', caseId] });
+  const fetchDocuments = () => queryClient.invalidateQueries({ queryKey: ['caseDocuments', caseId] });
+
+  useEffect(() => {
+    const channel = mobileSupabase
+      .channel(`public_case_updates_${caseId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pro_bono_logs', filter: `case_id=eq.${caseId}` },
+        () => {
+          fetchTimeLogs();
+          fetchCaseDetails();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cases', filter: `id=eq.${caseId}` },
+        () => {
+          fetchCaseDetails();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'case_documents', filter: `case_id=eq.${caseId}` },
+        () => {
+          fetchDocuments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mobileSupabase.removeChannel(channel);
+    };
+  }, [caseId, queryClient]);
 
   const handleUploadDocument = async () => {
     try {
@@ -229,7 +228,7 @@ export default function CaseDetailsScreen() {
         copyToCacheDirectory: true,
       });
 
-      if (result.canceled || !result.assets[0]) return;
+      if (result.canceled || !result.assets[0] || !currentUser) return;
       
       const file = result.assets[0];
       if ((file.size || 0) > 10 * 1024 * 1024) { // 10MB limit
@@ -286,7 +285,7 @@ export default function CaseDetailsScreen() {
 
       Toast.show({ type: 'success', text1: 'Uploaded', text2: 'Document successfully uploaded.' });
       fetchDocuments();
-      fetchCaseDetails(false);
+      fetchCaseDetails();
     } catch (err: any) {
       Toast.show({ type: 'error', text1: 'Upload Failed', text2: err.message || 'Could not upload document.' });
     } finally {
@@ -501,6 +500,9 @@ export default function CaseDetailsScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Ambient Background Glows */}
+      <View style={styles.ambientGlow1} />
+      <View style={styles.ambientGlow2} />
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#64748B" />
@@ -858,7 +860,9 @@ export default function CaseDetailsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  ambientGlow1: { position: 'absolute', top: -100, left: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(20, 184, 166, 0.08)', transform: [{ scaleX: 1.5 }] },
+  ambientGlow2: { position: 'absolute', top: 200, right: -150, width: 400, height: 400, borderRadius: 200, backgroundColor: 'rgba(99, 102, 241, 0.05)' },
+  header: { paddingHorizontal: 16, paddingTop: 60, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
   backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },

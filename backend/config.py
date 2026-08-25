@@ -88,7 +88,7 @@ config = Config(
         _get_env("GROQ_API_KEY_2", "").strip(),
         _get_env("GROQ_API_KEY_3", "").strip(),
     ])),
-    groq_model=_get_env("GROQ_MODEL", "openai/gpt-oss-120b").strip(),
+    groq_model=_get_env("GROQ_MODEL", "openai/gpt-oss-20b").strip(),
     didit_api_key=_get_env("DIDIT_API_KEY", ""),
     didit_webhook_secret=_get_env("DIDIT_WEBHOOK_SECRET", ""),
     didit_workflow_id=_get_env("DIDIT_WORKFLOW_ID", ""),
