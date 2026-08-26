@@ -61,7 +61,7 @@ Provide a qualitative assessment for an attorney. Return ONLY a valid JSON objec
     try:
         raw_content = call_groq(
             messages=[{"role": "user", "content": prompt}],
-            model="openai/gpt-oss-20b",
+            model=config.groq_model,
             temperature=0.2,
             timeout=45.0,
         )
@@ -76,7 +76,6 @@ Provide a qualitative assessment for an attorney. Return ONLY a valid JSON objec
             )
         else:
             raise ValueError("Gemini key not configured and Groq failed")
-
     # Clean markdown backticks if present
     if raw_content.startswith("```"):
         raw_content = raw_content.lstrip("`").strip()
@@ -148,7 +147,7 @@ def generate_interactive_triage(history: list[dict[str, Any]]) -> str:
     try:
         return call_groq(
             messages=messages,
-            model="openai/gpt-oss-20b",
+            model=config.groq_model,
             temperature=0.3,
             max_tokens=2000,
             timeout=60.0,
