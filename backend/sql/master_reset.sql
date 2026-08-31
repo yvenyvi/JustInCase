@@ -87,9 +87,11 @@ CREATE TABLE public.cases (
     attorney_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
     closing_notes TEXT,
     closed_at TIMESTAMP WITH TIME ZONE,
+    ai_summary TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- TRIAGE ASSESSMENTS
 CREATE TABLE public.triage_assessments (

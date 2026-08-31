@@ -1,8 +1,9 @@
 # JusticeLink Dev Manager
 # Usage:
-#   .\dev.ps1 start    - Start backend + expo
-#   .\dev.ps1 stop     - Stop both
-#   .\dev.ps1 restart  - Restart both
+#   .\dev.ps1 start      - Start backend + expo
+#   .\dev.ps1 stop       - Stop both
+#   .\dev.ps1 restart    - Restart both
+#   .\dev.ps1 emulators  - Start Pixel 10 Pro & Pixel 9 Pro emulators
 
 param([string]$Command = "help")
 
@@ -99,8 +100,9 @@ function Start-DevEnvironment {
     Write-Host "  Backend PID : $($backend.Id)" -ForegroundColor DarkGray
     Write-Host "  Expo    PID : $($expo.Id)" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host "  .\dev.ps1 stop     -> stop both" -ForegroundColor Yellow
-    Write-Host "  .\dev.ps1 restart  -> restart both" -ForegroundColor Yellow
+    Write-Host "  .\dev.ps1 stop      -> stop both" -ForegroundColor Yellow
+    Write-Host "  .\dev.ps1 restart   -> restart both" -ForegroundColor Yellow
+    Write-Host "  .\dev.ps1 emulators -> start android emulators" -ForegroundColor Yellow
     Write-Host ""
 }
 
@@ -112,13 +114,35 @@ function Restart-DevEnvironment {
     Start-DevEnvironment
 }
 
+function Start-Emulators {
+    Show-Banner
+    Write-Host "  Starting Android Emulators..." -ForegroundColor Green
+    
+    $emulatorExe = Join-Path $env:LOCALAPPDATA "Android\Sdk\emulator\emulator.exe"
+    
+    if (-not (Test-Path $emulatorExe)) {
+        Write-Host "  Error: Could not find emulator.exe at $emulatorExe" -ForegroundColor Red
+        return
+    }
+
+    Write-Host "  Launching Pixel_10_Pro..." -ForegroundColor Cyan
+    Start-Process $emulatorExe -ArgumentList "-avd Pixel_10_Pro" -WindowStyle Hidden
+
+    Write-Host "  Launching Pixel_9_Pro..." -ForegroundColor Cyan
+    Start-Process $emulatorExe -ArgumentList "-avd Pixel_9_Pro" -WindowStyle Hidden
+
+    Write-Host "  Emulators are booting up!" -ForegroundColor Green
+    Write-Host ""
+}
+
 switch ($Command.ToLower()) {
-    "start"   { Start-DevEnvironment }
-    "stop"    { Show-Banner; Stop-DevEnvironment }
-    "restart" { Restart-DevEnvironment }
+    "start"     { Start-DevEnvironment }
+    "stop"      { Show-Banner; Stop-DevEnvironment }
+    "restart"   { Restart-DevEnvironment }
+    "emulators" { Start-Emulators }
     default {
         Show-Banner
-        Write-Host "  Usage: .\dev.ps1 [start|stop|restart]" -ForegroundColor Yellow
+        Write-Host "  Usage: .\dev.ps1 [start|stop|restart|emulators]" -ForegroundColor Yellow
         Write-Host ""
     }
 }

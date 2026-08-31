@@ -39,6 +39,8 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 describe('ChatThreadScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -104,7 +106,14 @@ describe('ChatThreadScreen', () => {
       return chain;
     });
 
-    const { getByText, getByPlaceholderText } = await render(<ChatThreadScreen />);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { getByText, getByPlaceholderText } = await render(
+      <QueryClientProvider client={queryClient}>
+        <ChatThreadScreen />
+      </QueryClientProvider>
+    );
 
     // Wait for the mock messages to load
     await waitFor(() => {

@@ -587,7 +587,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
               </Pressable>
               <View style={styles.loginContainer}>
                 <Text style={styles.loginText}>Already have an account? </Text>
-                <Pressable onPress={() => navigation.goBack()}>
+                <Pressable testID="login-link" onPress={() => navigation.goBack()}>
                   <Text style={styles.loginLink}>Login</Text>
                 </Pressable>
               </View>

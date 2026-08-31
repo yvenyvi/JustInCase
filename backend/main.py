@@ -705,5 +705,19 @@ def triage_interactive(
         return {"response": reply}
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+@app.post("/api/cases/{case_id}/summarize")
+def summarize_case_journey(
+    case_id: str,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    try:
+        from case_summary_service import generate_case_journey_summary
+        summary = generate_case_journey_summary(case_id)
+        return {"ok": True, "summary": summary}
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to perform AI triage analysis right now.") from exc
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+

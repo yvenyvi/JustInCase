@@ -19,8 +19,10 @@ type CaseData = {
   clientName: string | null;
   createdAt: string;
   description: string;
+  aiSummary?: string | null;
   updates: { date: string; activities: any[]; totalHours: number }[];
 };
+
 
 type TimeLog = {
   id: string;
@@ -97,7 +99,7 @@ export default function LegalCaseDetailsScreen() {
       const { data: caseData, error: caseError } = await mobileSupabase
         .from('cases')
         .select(`
-          id, title, status, description, created_at, attorney_id, client_id,
+          id, title, status, description, created_at, attorney_id, client_id, ai_summary,
           attorney:users!cases_attorney_id_fkey(first_name, last_name),
           client:users!cases_client_id_fkey(first_name, last_name)
         `)
@@ -107,6 +109,7 @@ export default function LegalCaseDetailsScreen() {
       if (caseError) throw caseError;
 
       // Fetch audit logs
+
       const { data: logsData } = await mobileSupabase
         .from('audit_logs')
         .select('id, action_type, detail, created_at')
@@ -161,8 +164,10 @@ export default function LegalCaseDetailsScreen() {
         clientName: clientObj ? `${clientObj.first_name} ${clientObj.last_name}`.trim() : 'Unknown Client',
         createdAt: new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         description: caseData.description || '',
+        aiSummary: caseData.ai_summary,
         updates: parsedLogs
       });
+
 
       // Fetch Time logs
       fetchTimeLogs();
@@ -314,6 +319,25 @@ export default function LegalCaseDetailsScreen() {
         detail: `Attorney ${isPending ? 'declined' : 'withdrew from'} case ${c.id}. Ground: ${withdrawGround}`
       });
 
+      // Generate AI summary if case ended (withdrawn)
+      if (newStatus === 'Withdrawn') {
+        try {
+          const { data: { session } } = await mobileSupabase.auth.getSession();
+          const token = session?.access_token;
+          const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.164.56.97:8000';
+          
+          await fetch(`${apiBaseUrl}/api/cases/${c.id}/summarize`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        } catch (sumErr) {
+          console.error('Failed to generate AI summary:', sumErr);
+        }
+      }
+
       setIsWithdrawModalVisible(false);
       Toast.show({ type: 'success', text1: 'Success', text2: isPending ? 'Case returned to open network.' : 'You have successfully withdrawn from this case.' });
       navigation.goBack();
@@ -345,6 +369,23 @@ export default function LegalCaseDetailsScreen() {
         detail: `Attorney successfully closed case ${c.id} with outcome: ${closeOutcome}.`
       });
 
+      // Generate AI summary
+      try {
+        const { data: { session } } = await mobileSupabase.auth.getSession();
+        const token = session?.access_token;
+        const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.164.56.97:8000';
+        
+        await fetch(`${apiBaseUrl}/api/cases/${c.id}/summarize`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      } catch (sumErr) {
+        console.error('Failed to generate AI summary:', sumErr);
+      }
+
       setIsCloseModalVisible(false);
       Toast.show({ type: 'success', text1: 'Success', text2: 'Case closed successfully.' });
       fetchCaseDetails();
@@ -353,6 +394,7 @@ export default function LegalCaseDetailsScreen() {
     } finally {
       setIsSubmitting(false);
     }
+
   };
 
   const handleUpdateStatus = async () => {
@@ -507,8 +549,27 @@ export default function LegalCaseDetailsScreen() {
           )}
         </View>
 
+        {/* AI Case Journey Summary */}
+        {isCaseClosed && c.aiSummary && (
+
+          <View style={[styles.aiCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0', shadowColor: '#10B981' }]}>
+            <View style={styles.aiHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="sparkles" size={18} color="#16A34A" />
+                <Text style={[styles.aiTitle, { color: '#16A34A' }]}>AI Case Journey Summary</Text>
+              </View>
+            </View>
+            <View style={styles.aiContent}>
+              <Text style={{ fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 }}>
+                {c.aiSummary}
+              </Text>
+            </View>
+          </View>
+        )}
+
         <View style={styles.card}>
           <Text style={styles.sectionLabel}>CLIENT INTAKE DATA</Text>
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Client Name</Text>
             <Text style={styles.infoValue}>{c.clientName}</Text>

@@ -64,9 +64,11 @@ CREATE TABLE cases (
     status case_status DEFAULT 'Pending Triage',
     client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     attorney_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    ai_summary TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- 3. TRIAGE ASSESSMENTS
 -- AI-generated or manual initial assessment for a case.

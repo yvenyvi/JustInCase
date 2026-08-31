@@ -99,7 +99,7 @@ export default function LoginScreen({ navigation }: Props) {
           {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
 
           <View style={styles.forgotPasswordContainer}>
-            <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
+            <Pressable testID="forgot-password-link" onPress={() => navigation.navigate('ForgotPassword')}>
               <Text style={styles.forgotPasswordText}>Forgot password?</Text>
             </Pressable>
           </View>
@@ -109,6 +109,7 @@ export default function LoginScreen({ navigation }: Props) {
             onPress={handleLogin} 
             disabled={isSubmitting}
             style={{ marginBottom: 16 }}
+            testID="login-button"
           />
 
           <Button 
@@ -116,6 +117,7 @@ export default function LoginScreen({ navigation }: Props) {
             variant="outline"
             onPress={() => navigation.navigate('Register')}
             style={{ marginBottom: 32 }}
+            testID="signup-button"
           />
 
         </Card>

@@ -22,8 +22,10 @@ type CaseData = {
   description: string;
   feedbackRating?: number | null;
   clientFeedback?: string | null;
+  aiSummary?: string | null;
   updates: { date: string; activities: any[]; totalHours: number }[];
 };
+
 
 type TimeLog = {
   id: string;
@@ -72,11 +74,12 @@ export default function CaseDetailsScreen() {
       const { data: caseData, error: caseError } = await mobileSupabase
         .from('cases')
         .select(`
-          id, title, status, description, created_at, attorney_id, client_id, feedback_rating, client_feedback,
+          id, title, status, description, created_at, attorney_id, client_id, feedback_rating, client_feedback, ai_summary,
           attorney:users!cases_attorney_id_fkey(first_name, last_name)
         `)
         .eq('id', caseId)
         .single();
+
 
       if (caseError) {
         if (caseError.code === 'PGRST116') {
@@ -140,8 +143,10 @@ export default function CaseDetailsScreen() {
         description: caseData.description || '',
         feedbackRating: caseData.feedback_rating,
         clientFeedback: caseData.client_feedback,
+        aiSummary: caseData.ai_summary,
         updates: parsedLogs
       } as CaseData;
+
     },
     enabled: !!caseId
   });
@@ -456,6 +461,24 @@ export default function CaseDetailsScreen() {
             .update({ status: 'Withdrawn' })
             .eq('id', c.id);
           if (error) throw error;
+
+          // Generate AI summary
+          try {
+            const { data: { session } } = await mobileSupabase.auth.getSession();
+            const token = session?.access_token;
+            const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.164.56.97:8000';
+            
+            await fetch(`${apiBaseUrl}/api/cases/${c.id}/summarize`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              }
+            });
+          } catch (sumErr) {
+            console.error('Failed to generate AI summary:', sumErr);
+          }
+
           Toast.show({ type: 'success', text1: 'Success', text2: 'Nakansela na ang iyong kaso.' });
           fetchCaseDetails();
         } catch (err: any) {
@@ -464,6 +487,7 @@ export default function CaseDetailsScreen() {
           setIsSubmitting(false);
         }
       }
+
     });
   };
 
@@ -518,9 +542,26 @@ export default function CaseDetailsScreen() {
             <Text style={[styles.statusText, { color: colors.text }]}>{c.status}</Text>
           </View>
         </View>
+        {/* AI Case Journey Summary */}
+        {isCaseClosed && c.aiSummary && (
+          <View style={[styles.aiCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0', shadowColor: '#10B981' }]}>
+            <View style={styles.aiHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="sparkles" size={18} color="#16A34A" />
+                <Text style={[styles.aiTitle, { color: '#16A34A' }]}>AI Case Journey Summary</Text>
+              </View>
+            </View>
+            <View style={styles.aiContent}>
+              <Text style={{ fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 }}>
+                {c.aiSummary}
+              </Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.card}>
           <Text style={styles.sectionLabel}>OVERVIEW</Text>
+
           <View style={styles.gridContainer}>
             <View style={styles.gridItem}>
               <Text style={styles.infoLabel}>Assigned Attorney</Text>
@@ -922,4 +963,9 @@ const styles = StyleSheet.create({
   textArea: { height: 100 },
   modalSubmitBtn: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.lg, padding: 16, alignItems: 'center', marginTop: 8 },
   modalSubmitText: { color: theme.colors.surface, fontSize: 16, fontWeight: '700' },
+  aiCard: { backgroundColor: '#F5F3FF', borderRadius: theme.borderRadius.xl, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#DDD6FE', shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+  aiHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  aiTitle: { color: '#7C3AED', fontSize: 16, fontWeight: '800', marginLeft: 8 },
+  aiContent: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, padding: 16, borderWidth: 1, borderColor: '#EDE9FE' },
 });
+

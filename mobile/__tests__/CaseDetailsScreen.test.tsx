@@ -33,6 +33,8 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 describe('CaseDetailsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -106,7 +108,14 @@ describe('CaseDetailsScreen', () => {
       return chain;
     });
 
-    const { getByText, queryByText } = await render(<CaseDetailsScreen />);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { getByText, queryByText } = await render(
+      <QueryClientProvider client={queryClient}>
+        <CaseDetailsScreen />
+      </QueryClientProvider>
+    );
 
     // Wait for the mock data to load
     await waitFor(() => {

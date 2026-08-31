@@ -37,9 +37,16 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 describe('PublicDashboardScreen', () => {
+  let queryClient: QueryClient;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
   });
 
   it('renders correctly and handles clicks without errors', async () => {
@@ -76,7 +83,11 @@ describe('PublicDashboardScreen', () => {
       return { select: mockSelect, eq: mockEq, in: mockIn, maybeSingle: mockMaybeSingle };
     });
 
-    const { getByText, findByText } = await render(<PublicDashboardScreen />);
+    const { getByText, findByText } = await render(
+      <QueryClientProvider client={queryClient}>
+        <PublicDashboardScreen />
+      </QueryClientProvider>
+    );
 
     // Wait for the mock data to load
     await waitFor(() => {

@@ -238,7 +238,7 @@ export default function TriageScreen() {
             multiline
             maxLength={1000}
           />
-          <Pressable style={[styles.sendBtn, (!inputText.trim() && !selectedFile) && { opacity: 0.5 }]} onPress={sendMessage} disabled={(!inputText.trim() && !selectedFile) || isLoading}>
+          <Pressable testID="send-button" style={[styles.sendBtn, (!inputText.trim() && !selectedFile) && { opacity: 0.5 }]} onPress={sendMessage} disabled={(!inputText.trim() && !selectedFile) || isLoading}>
             <Ionicons name="send" size={20} color="#FFFFFF" />
           </Pressable>
         </View>

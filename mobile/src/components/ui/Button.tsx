@@ -10,6 +10,7 @@ interface ButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   icon?: React.ReactNode;
+  testID?: string;
 }
 
 export function Button({ 
@@ -19,7 +20,8 @@ export function Button({
   disabled = false, 
   style, 
   textStyle,
-  icon 
+  icon,
+  testID 
 }: ButtonProps) {
   const getContainerStyle = (): ViewStyle => {
     switch (variant) {
@@ -52,6 +54,7 @@ export function Button({
 
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [
