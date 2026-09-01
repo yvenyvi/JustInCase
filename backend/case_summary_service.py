@@ -135,13 +135,14 @@ def generate_case_journey_summary(case_id: str) -> str:
 
     # AI Prompt Construction
     prompt = f"""You are an expert legal case analyst for JusticeLink Philippines.
-Write a detailed, clear, and easily understandable AI summarization of this legal case's entire journey from start to finish.
-The summary should describe:
-1. The initial case filing, the client's concern, and details of the case.
-2. The milestones of the case (when it was accepted, how status progressed).
-3. The specific work done by the attorney (referencing hours logged and descriptions).
-4. The key consultation and communication points between the attorney and client.
-5. The final outcome, closing notes, and the ending.
+Write a concise, professional, and easily understandable summary of this legal case's journey.
+Keep the summary short (maximum 3-4 short paragraphs or bulleted sections). DO NOT write a long essay.
+
+Structure your response using plain text formatting (this will be displayed in a basic text view without markdown parsing). Use line breaks and bullet points (•) to make it easy to read.
+Include only the most important highlights:
+THE CONCERN: A brief 1-2 sentence summary of the client's initial issue.
+THE ACTION: A bulleted list of the most critical milestones, attorney work done, and key consultation points.
+THE OUTCOME: The final case outcome and closing notes.
 
 Case Details:
 - Title: {case.get('title')}
@@ -162,10 +163,9 @@ Attorney Logs:
 Consultation Summary:
 {chat_desc}
 
-Provide a detailed summary that is easy for both the client and the attorney to read.
-Use appropriate formatting, friendly and professional tone, and write it in natural conversational Taglish (or English, whichever fits the context best, but lean towards clear Taglish/English mix as commonly spoken in Philippine legal clinics).
-Avoid deep legal jargon; keep it clear, empathetic, and professional.
-Respond ONLY with the summary text, no conversational filler or markdown wrapper around the entire response.
+Write in a professional, empathetic, and clear Taglish (or English). Avoid legal jargon.
+CRITICAL: Do not use markdown bolding (**text**) or markdown headers (# Header). Use plain ALL CAPS for section headers, and standard bullet points (•).
+Respond ONLY with the summary text itself, with no conversational filler.
 """
 
     # 6. Call LLM

@@ -282,31 +282,7 @@ CREATE POLICY "allow_public_read_articles"   ON public.rights_articles    FOR SE
 -- The password is: TestPassword123!
 
 -- Clean up existing test users first to ensure credentials are fresh
-DELETE FROM auth.users WHERE email IN ('lance_citizen@example.com', 'lance_admin@example.com', 'lance_attorney@example.com');
-
-INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, aud, role)
-VALUES (
-    uuid_generate_v4(), 'lance_citizen@example.com', crypt('TestPassword123!', gen_salt('bf', 10)), now(),
-    '{"provider":"email","providers":["email"]}', 
-    '{"handle":"lance_citizen", "first_name":"Lance Jefferson", "middle_name":"Ramos", "last_name":"Uy", "date_of_birth":"2005-02-18", "phone_number":"+639690516959", "region":"Region III", "province":"Bulacan", "city_municipality":"Bulacan", "barangay":"Pungo", "street_address":"371 Purok 3", "status_verification":"verified", "role":"Citizen"}',
-    'authenticated', 'authenticated'
-);
-
-INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, aud, role)
-VALUES (
-    uuid_generate_v4(), 'lance_admin@example.com', crypt('TestPassword123!', gen_salt('bf', 10)), now(),
-    '{"provider":"email","providers":["email"]}', 
-    '{"handle":"lance_admin", "first_name":"Lance Jefferson", "middle_name":"Ramos", "last_name":"Uy", "date_of_birth":"2005-02-18", "phone_number":"+639690516959", "region":"Region III", "province":"Bulacan", "city_municipality":"Bulacan", "barangay":"Pungo", "street_address":"371 Purok 3", "status_verification":"verified", "role":"Super Administrator"}',
-    'authenticated', 'authenticated'
-);
-
-INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, aud, role)
-VALUES (
-    uuid_generate_v4(), 'lance_attorney@example.com', crypt('TestPassword123!', gen_salt('bf', 10)), now(),
-    '{"provider":"email","providers":["email"]}', 
-    '{"handle":"lance_attorney", "first_name":"Lance Jefferson", "middle_name":"Ramos", "last_name":"Uy", "date_of_birth":"2005-02-18", "phone_number":"+639690516959", "region":"Region III", "province":"Bulacan", "city_municipality":"Bulacan", "barangay":"Pungo", "street_address":"371 Purok 3", "status_verification":"verified", "role":"Volunteer Attorney"}',
-    'authenticated', 'authenticated'
-);
+-- DELETE FROM auth.users WHERE email IN ('lance_citizen@example.com', 'lance_admin@example.com', 'lance_attorney@example.com');
 
 -- 6. TRIGGERS & FUNCTIONS
 -- This is a super-safe version of the trigger that will NOT block user creation even if profile sync fails
@@ -389,3 +365,23 @@ FROM auth.users
 ON CONFLICT (id) DO NOTHING;
 
 COMMIT;
+
+-- ==========================================
+-- ENABLE REALTIME FOR TABLES
+-- ==========================================
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE public.cases;
+EXCEPTION WHEN OTHERS THEN END $$;
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE public.messages;
+EXCEPTION WHEN OTHERS THEN END $$;
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE public.pro_bono_logs;
+EXCEPTION WHEN OTHERS THEN END $$;
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.cases;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.pro_bono_logs;

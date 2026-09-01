@@ -158,6 +158,12 @@ CREATE POLICY "threads_participant_read" ON public.message_threads
       SELECT 1 FROM public.thread_participants
       WHERE thread_id = message_threads.id AND user_id = auth.uid()
     )
+    OR
+    EXISTS (
+      SELECT 1 FROM public.cases
+      WHERE cases.id = message_threads.case_id
+      AND (cases.client_id = auth.uid() OR cases.attorney_id = auth.uid())
+    )
   );
 
 CREATE POLICY "threads_create" ON public.message_threads
@@ -239,6 +245,37 @@ CREATE POLICY "ai_messages_own" ON public.ai_messages
       AND ai_conversations.user_id = auth.uid()
     )
   );
+
+-- ==========================================
+-- PRO BONO LOGS TABLE
+-- ==========================================
+ALTER TABLE public.pro_bono_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "pro_bono_logs_read" ON public.pro_bono_logs;
+CREATE POLICY "pro_bono_logs_read" ON public.pro_bono_logs
+  FOR SELECT TO authenticated
+  USING ( true );
+
+DROP POLICY IF EXISTS "pro_bono_logs_insert" ON public.pro_bono_logs;
+CREATE POLICY "pro_bono_logs_insert" ON public.pro_bono_logs
+  FOR INSERT TO authenticated
+  WITH CHECK ( attorney_id = auth.uid() );
+
+DROP POLICY IF EXISTS "pro_bono_logs_update" ON public.pro_bono_logs;
+CREATE POLICY "pro_bono_logs_update" ON public.pro_bono_logs
+  FOR UPDATE TO authenticated
+  USING (
+    attorney_id = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM public.cases
+      WHERE cases.id = pro_bono_logs.case_id AND cases.client_id = auth.uid()
+    )
+  );
+  
+DROP POLICY IF EXISTS "pro_bono_logs_delete" ON public.pro_bono_logs;
+CREATE POLICY "pro_bono_logs_delete" ON public.pro_bono_logs
+  FOR DELETE TO authenticated
+  USING ( attorney_id = auth.uid() );
 
 -- ==========================================
 -- DOCUMENT TABLES

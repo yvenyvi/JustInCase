@@ -46,6 +46,7 @@ export default function LegalCasesScreen() {
           client:users!cases_client_id_fkey(first_name, last_name, city_municipality)
         `)
         .is('attorney_id', null)
+        .eq('status', 'Pending Triage')
         .order('created_at', { ascending: false });
 
       return availData || [];

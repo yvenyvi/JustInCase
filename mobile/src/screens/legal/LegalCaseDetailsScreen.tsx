@@ -291,9 +291,12 @@ export default function LegalCaseDetailsScreen() {
       const newStatus = isPending ? 'Pending Triage' : 'Withdrawn';
       const closingNotes = `Ground: ${withdrawGround}\nExplanation: ${withdrawExplanation}`;
       
+      const updateData: any = { status: newStatus, closing_notes: closingNotes };
+      if (isPending) updateData.attorney_id = null;
+
       const { error } = await mobileSupabase
         .from('cases')
-        .update({ status: newStatus, closing_notes: closingNotes, attorney_id: null })
+        .update(updateData)
         .eq('id', c.id);
       
       if (error) throw error;

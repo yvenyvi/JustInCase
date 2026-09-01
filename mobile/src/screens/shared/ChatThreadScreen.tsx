@@ -138,7 +138,19 @@ export default function ChatThreadScreen() {
               created_at: newMsg.created_at
             };
             
-            const updatedMessages = [...oldData.messages, newMapped].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            const isMe = newMsg.sender_id === userId;
+            const duplicateTempIndex = oldData.messages.findIndex((m: any) => 
+               m.id.startsWith('temp-') && m.text === newMsg.content && (isMe ? m.sender === 'me' : m.sender === 'other')
+            );
+            
+            let updatedMessages = [...oldData.messages];
+            if (duplicateTempIndex !== -1) {
+              updatedMessages[duplicateTempIndex] = newMapped;
+            } else {
+              updatedMessages.push(newMapped);
+            }
+            updatedMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
             return { ...oldData, messages: updatedMessages };
           });
           setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
@@ -171,6 +183,23 @@ export default function ChatThreadScreen() {
       const msgText = message.trim();
       setMessage('');
       try {
+        const optimisticMsg = {
+          id: 'temp-' + Date.now().toString(),
+          text: msgText,
+          sender: 'me',
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          created_at: new Date().toISOString()
+        };
+
+        queryClient.setQueryData(['chat', threadId], (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            messages: [...oldData.messages, optimisticMsg]
+          };
+        });
+        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+
         // User message — use resolvedThreadId (the real message_thread id)
         const { error: sendError } = await mobileSupabase.from('messages').insert({
           thread_id: resolvedThreadId,

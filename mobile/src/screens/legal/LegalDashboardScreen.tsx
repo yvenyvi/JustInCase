@@ -130,15 +130,23 @@ export default function LegalDashboardScreen() {
   } = dashboardData || {};
 
   useEffect(() => {
-    const subscription = mobileSupabase
+    const casesSub = mobileSupabase
       .channel('legal-dashboard-cases')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => {
         queryClient.invalidateQueries({ queryKey: ['legalDashboard'] });
       })
       .subscribe();
+      
+    const logsSub = mobileSupabase
+      .channel('legal-dashboard-logs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pro_bono_logs' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['legalDashboard'] });
+      })
+      .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      casesSub.unsubscribe();
+      logsSub.unsubscribe();
     };
   }, [queryClient]);
 
