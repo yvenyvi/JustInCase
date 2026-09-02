@@ -172,8 +172,9 @@ export default function LegalProfileScreen() {
                 <View style={styles.flex1}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <Text style={styles.infoLabel}>Areas of Expertise</Text>
-                    <Pressable onPress={openExpertiseModal}>
-                      <Text style={styles.editLink}>Edit</Text>
+                    <Pressable style={styles.editBtn} onPress={openExpertiseModal}>
+                      <Ionicons name="pencil" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
+                      <Text style={styles.editBtnText}>Edit</Text>
                     </Pressable>
                   </View>
                   {profile.expertise && profile.expertise.length > 0 ? (
@@ -225,7 +226,8 @@ export default function LegalProfileScreen() {
           <Modal visible={isEditExpertiseVisible} animationType="slide" transparent>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Select Expertise</Text>
+                <Text style={styles.modalTitle}>Select Your Expertise</Text>
+                <Text style={styles.modalSubtitle}>Tap to select the areas of law you specialize in. This helps us match you with the right clients.</Text>
                 
                 <View style={styles.modalExpertiseContainer}>
                   {EXPERTISE_OPTIONS.map(opt => {
@@ -239,6 +241,7 @@ export default function LegalProfileScreen() {
                           else setEditingExpertise([...editingExpertise, opt]);
                         }}
                       >
+                        {isSelected && <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />}
                         <Text style={[styles.modalExpertiseChipText, isSelected && styles.modalExpertiseChipTextSelected]}>{opt}</Text>
                       </Pressable>
                     )
@@ -310,22 +313,24 @@ const styles = StyleSheet.create({
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF2F2', paddingVertical: 18, borderRadius: theme.borderRadius.lg, borderWidth: 1, borderColor: '#FECACA', gap: 12, marginTop: 8 },
   logoutText: { color: theme.colors.error, fontSize: 16, fontWeight: '700' },
   
-  editLink: { color: theme.colors.primary, fontSize: 13, fontWeight: '600' },
+  editBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  editBtnText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
   expertiseContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
   expertiseBadge: { backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
   expertiseBadgeText: { color: '#475569', fontSize: 12, fontWeight: '600' },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: '#0F172A', marginBottom: 16 },
-  modalExpertiseContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
-  modalExpertiseChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
-  modalExpertiseChipSelected: { backgroundColor: '#4F46E5', borderColor: '#4F46E5' },
-  modalExpertiseChipText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalContent: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 28, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
+  modalTitle: { fontSize: 22, fontWeight: '800', color: '#0F172A', marginBottom: 6 },
+  modalSubtitle: { fontSize: 14, color: '#64748B', lineHeight: 20, marginBottom: 20 },
+  modalExpertiseContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 32 },
+  modalExpertiseChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, backgroundColor: '#F8FAFC', borderWidth: 1.5, borderColor: '#E2E8F0' },
+  modalExpertiseChipSelected: { backgroundColor: '#4F46E5', borderColor: '#4F46E5', shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  modalExpertiseChipText: { color: '#475569', fontSize: 14, fontWeight: '700' },
   modalExpertiseChipTextSelected: { color: '#FFFFFF' },
-  modalFooter: { flexDirection: 'row', gap: 12, justifyContent: 'flex-end' },
-  modalBtnCancel: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 16, backgroundColor: '#F1F5F9' },
-  modalBtnCancelText: { color: '#475569', fontWeight: '700' },
-  modalBtnSave: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 16, backgroundColor: '#4F46E5', minWidth: 100, alignItems: 'center' },
-  modalBtnSaveText: { color: '#FFFFFF', fontWeight: '700' },
+  modalFooter: { flexDirection: 'row', gap: 12, justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 20 },
+  modalBtnCancel: { flex: 1, paddingVertical: 16, borderRadius: 20, backgroundColor: '#F1F5F9', alignItems: 'center' },
+  modalBtnCancelText: { color: '#475569', fontWeight: '700', fontSize: 15 },
+  modalBtnSave: { flex: 1, paddingVertical: 16, borderRadius: 20, backgroundColor: '#4F46E5', alignItems: 'center', shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  modalBtnSaveText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 },
 });
