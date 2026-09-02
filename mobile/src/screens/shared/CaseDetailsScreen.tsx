@@ -758,7 +758,7 @@ export default function CaseDetailsScreen() {
 
       {/* Log Hours Modal */}
       <Modal visible={isLogModalVisible} transparent animationType="slide" statusBarTranslucent>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Log Attorney Hours</Text>
