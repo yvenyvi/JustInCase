@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Image, Modal, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Image, Modal, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
@@ -54,7 +54,7 @@ export default function LegalProfileScreen() {
   const [editingExpertise, setEditingExpertise] = useState<string[]>([]);
   const [isSavingExpertise, setIsSavingExpertise] = useState(false);
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, refetch } = useQuery({
     queryKey: ['legalProfile'],
     queryFn: async () => {
       const { data: { user } } = await mobileSupabase.auth.getUser();
@@ -83,6 +83,19 @@ export default function LegalProfileScreen() {
       return { ...data, email: user.email || data.email, rating, review_count } as UserProfile;
     }
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   const handleLogout = async () => {
     await mobileSupabase.auth.signOut();
@@ -156,7 +169,13 @@ export default function LegalProfileScreen() {
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : profile ? (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          }
+        >
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <View style={styles.avatar}>
