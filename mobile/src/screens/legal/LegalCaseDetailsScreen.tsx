@@ -715,7 +715,7 @@ export default function LegalCaseDetailsScreen() {
       </ScrollView>
 
       {/* Log Hours Modal */}
-      <Modal visible={isLogModalVisible} transparent animationType="fade">
+      <Modal visible={isLogModalVisible} transparent animationType="slide">
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -761,7 +761,7 @@ export default function LegalCaseDetailsScreen() {
       </Modal>
 
       {/* Withdraw Modal */}
-      <Modal visible={isWithdrawModalVisible} transparent animationType="fade">
+      <Modal visible={isWithdrawModalVisible} transparent animationType="slide">
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -820,7 +820,7 @@ export default function LegalCaseDetailsScreen() {
       </Modal>
 
       {/* Close Case Modal */}
-      <Modal visible={isCloseModalVisible} transparent animationType="fade">
+      <Modal visible={isCloseModalVisible} transparent animationType="slide">
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -879,7 +879,7 @@ export default function LegalCaseDetailsScreen() {
       </Modal>
 
       {/* Confirmation Modal */}
-      <Modal visible={confirmConfig.visible} transparent animationType="fade">
+      <Modal visible={confirmConfig.visible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { maxWidth: 320, alignSelf: 'center', width: '100%' }]}>
             <Text style={[styles.modalTitle, { marginBottom: 12 }]}>{confirmConfig.title}</Text>
@@ -1003,8 +1003,8 @@ const styles = StyleSheet.create({
   timelineDate: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: 4 },
   timelineText: { color: theme.colors.textPrimary, fontSize: 15, lineHeight: 22 },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'center', padding: 24 },
-  modalContent: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: theme.colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40, shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 10 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   modalBody: { maxHeight: 350 },
   modalTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '800' },

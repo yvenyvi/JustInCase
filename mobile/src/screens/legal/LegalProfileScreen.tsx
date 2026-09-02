@@ -319,8 +319,8 @@ const styles = StyleSheet.create({
   expertiseBadge: { backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
   expertiseBadgeText: { color: '#475569', fontSize: 12, fontWeight: '600' },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modalContent: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 28, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40, shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
   modalTitle: { fontSize: 22, fontWeight: '800', color: '#0F172A', marginBottom: 6 },
   modalSubtitle: { fontSize: 14, color: '#64748B', lineHeight: 20, marginBottom: 20 },
   modalExpertiseContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 32 },
