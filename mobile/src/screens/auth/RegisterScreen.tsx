@@ -33,7 +33,13 @@ export default function RegisterScreen({ navigation, route }: Props) {
   const [accountType, setAccountType] = useState<'citizen' | 'lawyer'>('citizen');
   const [rollNumber, setRollNumber] = useState('');
   const [expertise, setExpertise] = useState<string[]>([]);
-  const EXPERTISE_OPTIONS = ['Labor Law', 'Family Law', 'Criminal Defense', 'Civil Law', 'Property Law', 'Corporate Law'];
+  const EXPERTISE_OPTIONS = [
+    'Criminal Law', 'Civil Law', 'Family Law', 'Labor Law', 
+    'Corporate Law', 'Taxation Law', 'Property Law', 
+    'Intellectual Property', 'Immigration Law', 'Environmental Law', 
+    'Constitutional Law', 'Election Law', 'Maritime Law', 
+    'Banking Law', 'Cyber Law'
+  ];
 
   // ── Didit / flow state ─────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>(1);

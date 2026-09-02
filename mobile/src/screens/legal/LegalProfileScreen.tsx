@@ -41,7 +41,13 @@ interface UserProfile {
 export default function LegalProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
-  const EXPERTISE_OPTIONS = ['Labor Law', 'Family Law', 'Criminal Defense', 'Civil Law', 'Property Law', 'Corporate Law'];
+  const EXPERTISE_OPTIONS = [
+    'Criminal Law', 'Civil Law', 'Family Law', 'Labor Law', 
+    'Corporate Law', 'Taxation Law', 'Property Law', 
+    'Intellectual Property', 'Immigration Law', 'Environmental Law', 
+    'Constitutional Law', 'Election Law', 'Maritime Law', 
+    'Banking Law', 'Cyber Law'
+  ];
   const [isEditExpertiseVisible, setIsEditExpertiseVisible] = useState(false);
   const [editingExpertise, setEditingExpertise] = useState<string[]>([]);
   const [isSavingExpertise, setIsSavingExpertise] = useState(false);
