@@ -5,6 +5,8 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import Toast from 'react-native-toast-message';
+import * as DocumentPicker from 'expo-document-picker';
+import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +19,9 @@ type MessageItem = {
   sender: 'me' | 'other';
   time: string;
   created_at: string;
+  attachment_url?: string;
+  attachment_name?: string;
+  attachment_type?: string;
 };
 
 export default function ChatThreadScreen() {
@@ -29,6 +34,7 @@ export default function ChatThreadScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const keyboardHeightRef = useRef(300);
+  const [isUploading, setIsUploading] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -87,7 +93,10 @@ export default function ChatThreadScreen() {
         text: msg.content,
         sender: (msg.sender_id === user.id ? 'me' : 'other') as 'me' | 'other',
         time: new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-        created_at: msg.created_at
+        created_at: msg.created_at,
+        attachment_url: msg.attachment_url,
+        attachment_name: msg.attachment_name,
+        attachment_type: msg.attachment_type
       }));
 
       return {
@@ -135,7 +144,10 @@ export default function ChatThreadScreen() {
               text: newMsg.content,
               sender: (newMsg.sender_id === userId ? 'me' : 'other') as 'me' | 'other',
               time: new Date(newMsg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-              created_at: newMsg.created_at
+              created_at: newMsg.created_at,
+              attachment_url: newMsg.attachment_url,
+              attachment_name: newMsg.attachment_name,
+              attachment_type: newMsg.attachment_type
             };
             
             const isMe = newMsg.sender_id === userId;
@@ -177,6 +189,68 @@ export default function ChatThreadScreen() {
   }, []);
 
   const handleInputFocus = () => setKeyboardHeight(keyboardHeightRef.current);
+
+  const handleAttach = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets[0] || !userId) return;
+      
+      const file = result.assets[0];
+      if ((file.size || 0) > 10 * 1024 * 1024) { // 10MB limit
+        Toast.show({ type: 'error', text1: 'File too large', text2: 'Please select a file under 10MB.' });
+        return;
+      }
+
+      setIsUploading(true);
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${threadId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || 'application/octet-stream',
+      } as any);
+
+      // Upload to Storage
+      const { data: uploadData, error: uploadError } = await mobileSupabase.storage
+        .from('message-attachments')
+        .upload(fileName, formData, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get Public URL
+      const { data: urlData } = mobileSupabase.storage
+        .from('message-attachments')
+        .getPublicUrl(fileName);
+
+      // Insert message with attachment
+      const { error: sendError } = await mobileSupabase.from('messages').insert({
+        thread_id: resolvedThreadId,
+        sender_id: userId,
+        content: `Sent an attachment: ${file.name}`,
+        attachment_url: urlData.publicUrl,
+        attachment_name: file.name,
+        attachment_type: file.mimeType || 'application/octet-stream'
+      });
+
+      if (sendError) throw sendError;
+
+    } catch (err: any) {
+      console.error('Error uploading:', err);
+      Toast.show({ type: 'error', text1: 'Upload Failed', text2: err.message || 'Could not upload document.' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSend = async () => {
     if (message.trim() && userId) {
@@ -259,6 +333,17 @@ export default function ChatThreadScreen() {
                   </View>
                 )}
                 <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleOther]}>
+                  {msg.attachment_url && (
+                    <Pressable 
+                      style={[styles.attachmentBox, { marginBottom: 6 }]}
+                      onPress={() => WebBrowser.openBrowserAsync(msg.attachment_url!)}
+                    >
+                      <Ionicons name="document-text" size={24} color={isMe ? theme.colors.surface : theme.colors.primary} />
+                      <Text style={[styles.attachmentText, isMe ? styles.messageTextMe : styles.messageTextOther]} numberOfLines={1} ellipsizeMode="middle">
+                        {msg.attachment_name || 'Attachment'}
+                      </Text>
+                    </Pressable>
+                  )}
                   <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther]}>{msg.text}</Text>
                   <Text style={[styles.messageTime, isMe ? styles.messageTimeMe : styles.messageTimeOther]}>{msg.time}</Text>
                 </View>
@@ -269,8 +354,12 @@ export default function ChatThreadScreen() {
       )}
 
       <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <Pressable style={styles.attachBtn}>
-          <Ionicons name="attach" size={24} color="#64748B" />
+        <Pressable style={styles.attachBtn} onPress={handleAttach} disabled={isUploading}>
+          {isUploading ? (
+            <ActivityIndicator size="small" color="#64748B" />
+          ) : (
+            <Ionicons name="attach" size={24} color="#64748B" />
+          )}
         </Pressable>
         <TextInput 
           style={styles.textInput}
@@ -318,4 +407,6 @@ const styles = StyleSheet.create({
   textInput: { flex: 1, backgroundColor: theme.colors.background, color: theme.colors.textPrimary, borderRadius: theme.borderRadius.xl, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, maxHeight: 120, fontSize: 16, borderWidth: 1, borderColor: theme.colors.border },
   sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center', marginLeft: 12, borderWidth: 1, borderColor: theme.colors.border },
   sendBtnActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  attachmentBox: { flexDirection: 'row', alignItems: 'center', padding: 8, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.1)' },
+  attachmentText: { marginLeft: 8, fontSize: 14, flex: 1 },
 });

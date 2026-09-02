@@ -72,6 +72,7 @@ CREATE TABLE public.users (
     pro_bono_period_start DATE,
     role public.user_role NOT NULL DEFAULT 'Citizen',
     status public.user_status DEFAULT 'offline',
+    expertise TEXT[],
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

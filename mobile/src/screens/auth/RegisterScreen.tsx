@@ -32,6 +32,8 @@ export default function RegisterScreen({ navigation, route }: Props) {
   const [password, setPassword] = useState('');
   const [accountType, setAccountType] = useState<'citizen' | 'lawyer'>('citizen');
   const [rollNumber, setRollNumber] = useState('');
+  const [expertise, setExpertise] = useState<string[]>([]);
+  const EXPERTISE_OPTIONS = ['Labor Law', 'Family Law', 'Criminal Defense', 'Civil Law', 'Property Law', 'Corporate Law'];
 
   // ── Didit / flow state ─────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>(1);
@@ -76,6 +78,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
       setPassword(resumeState.password);
       setAccountType(resumeState.accountType);
       setRollNumber(resumeState.rollNumber || '');
+      setExpertise(resumeState.expertise || []);
       setVerificationUrl(resumeState.verificationUrl || '');
       setStep(resumeState.step || 3);
       setDiditStatus('pending');
@@ -153,7 +156,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
     if (!verificationUrl || !attemptId) return;
     try {
       await SecureStore.setItemAsync('didit_registration_state', JSON.stringify({
-        attemptId, email, password, accountType, rollNumber, step: 3, verificationUrl
+        attemptId, email, password, accountType, rollNumber, expertise, step: 3, verificationUrl
       }));
       await Linking.openURL(verificationUrl);
       setDiditStatus('pending');
@@ -407,6 +410,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
             sex: sex || null,
             handle,
             roll_number: accountType === 'lawyer' ? rollNumber : null,
+            expertise: accountType === 'lawyer' ? expertise : null,
             id_picture_url: finalIdUrl,
             selfie_url: finalSelfieUrl,
           },
@@ -436,6 +440,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
           role: accountType === 'lawyer' ? 'Volunteer Attorney' : 'Citizen',
           date_of_birth: dob || null,
           roll_number: accountType === 'lawyer' ? rollNumber : null,
+          expertise: accountType === 'lawyer' ? expertise : null,
           id_picture_url: finalIdUrl || null,
           selfie_url: finalSelfieUrl || null,
         };
@@ -825,11 +830,33 @@ export default function RegisterScreen({ navigation, route }: Props) {
                 </View>
                 
                 {accountType === 'lawyer' && (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Roll of Attorneys No. *</Text>
-                    <TextInput placeholder="12345" placeholderTextColor="#94A3B8" keyboardType="numeric" style={[styles.input, errors.rollNumber ? styles.inputError : null]} value={rollNumber} onChangeText={(t) => { setRollNumber(t); setErrors(e => ({ ...e, rollNumber: '' })); }} />
-                    {errors.rollNumber && <Text style={styles.errorText}>{errors.rollNumber}</Text>}
-                  </View>
+                  <>
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Roll of Attorneys No. *</Text>
+                      <TextInput placeholder="12345" placeholderTextColor="#94A3B8" keyboardType="numeric" style={[styles.input, errors.rollNumber ? styles.inputError : null]} value={rollNumber} onChangeText={(t) => { setRollNumber(t); setErrors(e => ({ ...e, rollNumber: '' })); }} />
+                      {errors.rollNumber && <Text style={styles.errorText}>{errors.rollNumber}</Text>}
+                    </View>
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Areas of Expertise</Text>
+                      <View style={styles.expertiseContainer}>
+                        {EXPERTISE_OPTIONS.map(opt => {
+                          const isSelected = expertise.includes(opt);
+                          return (
+                            <Pressable
+                              key={opt}
+                              style={[styles.expertiseChip, isSelected && styles.expertiseChipSelected]}
+                              onPress={() => {
+                                if (isSelected) setExpertise(expertise.filter(e => e !== opt));
+                                else setExpertise([...expertise, opt]);
+                              }}
+                            >
+                              <Text style={[styles.expertiseChipText, isSelected && styles.expertiseChipTextSelected]}>{opt}</Text>
+                            </Pressable>
+                          )
+                        })}
+                      </View>
+                    </View>
+                  </>
                 )}
 
                 {((imageUrls?.idPictureUrl || imageUrls?.selfieUrl) || (localIdImage || localSelfieImage)) && (
@@ -969,6 +996,12 @@ const styles = StyleSheet.create({
   // ── Login link ─────────────────────────────────────────────────────────────
   loginContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   loginText: { color: theme.colors.textSecondary, fontSize: 14 },
+  dobPickerBtnText: { color: theme.colors.textPrimary, fontSize: 16 },
+  expertiseContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  expertiseChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
+  expertiseChipSelected: { backgroundColor: '#4F46E5', borderColor: '#4F46E5' },
+  expertiseChipText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
+  expertiseChipTextSelected: { color: '#FFFFFF' },
   loginLink: { color: theme.colors.primary, fontSize: 14, fontWeight: '800', textDecorationLine: 'underline' },
 
   // ── Instructions (Step 2) ──────────────────────────────────────────────────

@@ -595,12 +595,6 @@ export default function LegalCaseDetailsScreen() {
             <Text style={styles.infoLabel}>Desired Outcome</Text>
             <Text style={styles.infoValue}>{parsedDesc.outcome || 'N/A'}</Text>
           </View>
-          {parsedDesc.income ? (
-            <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-              <Text style={styles.infoLabel}>Reported Income</Text>
-              <Text style={styles.infoValue}>{parsedDesc.income}</Text>
-            </View>
-          ) : null}
         </View>
 
         {/* Attorney Actions */}
@@ -717,75 +711,7 @@ export default function LegalCaseDetailsScreen() {
           </View>
         )}
 
-        <Text style={[styles.sectionLabel, { marginTop: 32, marginLeft: 8 }]}>CASE TIMELINE</Text>
-        <View style={styles.timeline}>
-          {/* Start Node */}
-          <View style={styles.timelineItem}>
-            <View style={styles.timelineNode}>
-              <View style={[styles.timelineDot, { backgroundColor: '#10B981', width: 14, height: 14, borderRadius: 7 }]} />
-              <View style={styles.timelineLine} />
-            </View>
-            <View style={[styles.timelineContent, { paddingBottom: 16 }]}>
-              <Text style={[styles.timelineDate, { color: '#10B981' }]}>{c.createdAt}</Text>
-              <View style={{ flexDirection: 'row', marginTop: 8, alignItems: 'flex-start' }}>
-                <View style={{ marginTop: 2, marginRight: 8 }}>
-                  <Ionicons name="shield-checkmark" size={16} color="#10B981" />
-                </View>
-                <Text style={[styles.timelineText, { flex: 1 }]}>Case officially submitted</Text>
-              </View>
-            </View>
-          </View>
 
-          {c.updates.map((dayGroup: any, index: number) => (
-            <View key={dayGroup.date} style={styles.timelineItem}>
-              <View style={styles.timelineNode}>
-                <View style={styles.timelineDot} />
-                {(index < c.updates.length - 1 || isCaseClosed) && <View style={styles.timelineLine} />}
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={styles.timelineDate}>
-                  {dayGroup.date} {dayGroup.totalHours > 0 ? ` • ${dayGroup.totalHours} Hours Logged` : ''}
-                </Text>
-                {dayGroup.activities.map((act: any, i: number) => (
-                  <View key={act.id} style={{ flexDirection: 'row', marginTop: i === 0 ? 8 : 12, alignItems: 'flex-start' }}>
-                    <View style={{ marginTop: 2, marginRight: 8 }}>
-                      <Ionicons 
-                        name={
-                          act.action.includes('Hours') ? 'time' : 
-                          act.action.includes('Accepted') ? 'person' : 
-                          act.action.includes('Closed') || act.action.includes('Resolved') ? 'checkmark-circle' : 
-                          act.action.includes('Withdrawn') || act.action.includes('Declined') || act.action.includes('Rejected') ? 'close-circle' : 
-                          'document-text'
-                        } 
-                        size={16} 
-                        color={theme.colors.primary} 
-                      />
-                    </View>
-                    <Text style={[styles.timelineText, { flex: 1 }]}>{act.text}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ))}
-
-          {/* End Node */}
-          {isCaseClosed && (
-             <View style={styles.timelineItem}>
-               <View style={styles.timelineNode}>
-                 <View style={[styles.timelineDot, { backgroundColor: '#64748B', width: 14, height: 14, borderRadius: 7 }]} />
-               </View>
-               <View style={styles.timelineContent}>
-                 <Text style={[styles.timelineDate, { color: '#64748B' }]}>Case Ended</Text>
-                 <View style={{ flexDirection: 'row', marginTop: 8, alignItems: 'flex-start' }}>
-                   <View style={{ marginTop: 2, marginRight: 8 }}>
-                     <Ionicons name="folder-open" size={16} color="#64748B" />
-                   </View>
-                   <Text style={[styles.timelineText, { flex: 1 }]}>This case has been officially closed.</Text>
-                 </View>
-               </View>
-             </View>
-          )}
-        </View>
       </ScrollView>
 
       {/* Log Hours Modal */}

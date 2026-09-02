@@ -583,12 +583,6 @@ export default function CaseDetailsScreen() {
                 <Text style={styles.infoValueCompact}>{parsedDesc.location}</Text>
               </View>
             ) : null}
-            {parsedDesc.income ? (
-              <View style={styles.gridItem}>
-                <Text style={styles.infoLabel}>Income Bracket</Text>
-                <Text style={styles.infoValueCompact}>{parsedDesc.income}</Text>
-              </View>
-            ) : null}
             {parsedDesc.opposing ? (
               <View style={[styles.gridItem, { width: '100%' }]}>
                 <Text style={styles.infoLabel}>Opposing Party</Text>
@@ -635,21 +629,10 @@ export default function CaseDetailsScreen() {
               <Text style={styles.actionBtnTextPrimary}>Message {isAttorney ? 'Client' : 'Attorney'}</Text>
             </Pressable>
             
-            {isAttorney ? (
+            {isAttorney && (
               <Pressable style={styles.actionBtn} onPress={() => setIsLogModalVisible(true)}>
                 <Ionicons name="time" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                 <Text style={styles.actionBtnText}>Log Hours</Text>
-              </Pressable>
-            ) : (
-              <Pressable style={styles.actionBtn} onPress={handleUploadDocument} disabled={isUploadingDoc}>
-                {isUploadingDoc ? (
-                  <ActivityIndicator color={theme.colors.primary} size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="document-attach" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
-                    <Text style={styles.actionBtnText}>Upload Doc</Text>
-                  </>
-                )}
               </Pressable>
             )}
           </View>
@@ -770,65 +753,7 @@ export default function CaseDetailsScreen() {
           </View>
         )}
 
-        <Text style={[styles.sectionLabel, { marginTop: 32, marginLeft: 8 }]}>CASE TIMELINE</Text>
-        <View style={styles.timeline}>
-          {/* Start Node */}
-          <View style={styles.timelineItem}>
-            <View style={styles.timelineNode}>
-              <View style={[styles.timelineDot, { backgroundColor: '#10B981', width: 14, height: 14, borderRadius: 7 }]} />
-              <View style={styles.timelineLine} />
-            </View>
-            <View style={[styles.timelineContent, { paddingBottom: 16 }]}>
-              <Text style={[styles.timelineDate, { color: '#10B981' }]}>{c.createdAt}</Text>
-              <Text style={[styles.timelineText, { fontWeight: '700' }]}>Case Initiated</Text>
-            </View>
-          </View>
 
-          {c.updates.map((dayGroup: any, index: number) => (
-            <View key={dayGroup.date} style={styles.timelineItem}>
-              <View style={styles.timelineNode}>
-                <View style={styles.timelineDot} />
-                {(index < c.updates.length - 1 || isCaseClosed) && <View style={styles.timelineLine} />}
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={styles.timelineDate}>
-                  {dayGroup.date} {dayGroup.totalHours > 0 ? ` • ${dayGroup.totalHours} Hours Logged` : ''}
-                </Text>
-                {dayGroup.activities.map((act: any, i: number) => (
-                  <View key={act.id} style={{ flexDirection: 'row', marginTop: i === 0 ? 8 : 12, alignItems: 'flex-start' }}>
-                    <View style={{ marginTop: 2, marginRight: 8 }}>
-                      <Ionicons 
-                        name={
-                          act.action.includes('Hours') ? 'time' : 
-                          act.action.includes('Accepted') ? 'person' : 
-                          act.action.includes('Closed') || act.action.includes('Resolved') ? 'checkmark-circle' : 
-                          act.action.includes('Withdrawn') || act.action.includes('Declined') || act.action.includes('Rejected') ? 'close-circle' : 
-                          'document-text'
-                        } 
-                        size={16} 
-                        color={theme.colors.primary} 
-                      />
-                    </View>
-                    <Text style={[styles.timelineText, { flex: 1 }]}>{act.text}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ))}
-
-          {/* End Node */}
-          {isCaseClosed && (
-             <View style={styles.timelineItem}>
-               <View style={styles.timelineNode}>
-                 <View style={[styles.timelineDot, { backgroundColor: '#64748B', width: 14, height: 14, borderRadius: 7 }]} />
-               </View>
-               <View style={styles.timelineContent}>
-                 <Text style={[styles.timelineDate, { color: '#64748B' }]}>Case Ended</Text>
-                 <Text style={[styles.timelineText, { fontWeight: '700' }]}>Status: {c.status}</Text>
-               </View>
-             </View>
-          )}
-        </View>
       </ScrollView>
 
       {/* Log Hours Modal */}

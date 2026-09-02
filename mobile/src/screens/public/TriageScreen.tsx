@@ -20,7 +20,7 @@ export default function TriageScreen() {
   const { session } = useMobileAuth();
   
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Magandang araw! Ako ay isang AI legal intake assistant. Ilarawan ang iyong legal na problema at tutulungan kitang i-assess ito at ihanap ng angkop na abogado.' }
+    { role: 'assistant', content: 'Magandang araw po! Nandito po ako para makinig at tumulong sa inyo. Kung may legal na problema po kayo, huwag kayong mag-atubiling mag-kwento — ligtas po kayo dito. Ano po ang maitutulong ko sa inyo?' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);

@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Image, Modal, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -34,12 +34,17 @@ interface UserProfile {
   roll_number?: string;
   pro_bono_period_start?: string;
   role?: string;
+  expertise?: string[];
   created_at?: string;
 }
 
 export default function LegalProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
+  const EXPERTISE_OPTIONS = ['Labor Law', 'Family Law', 'Criminal Defense', 'Civil Law', 'Property Law', 'Corporate Law'];
+  const [isEditExpertiseVisible, setIsEditExpertiseVisible] = useState(false);
+  const [editingExpertise, setEditingExpertise] = useState<string[]>([]);
+  const [isSavingExpertise, setIsSavingExpertise] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['legalProfile'],
@@ -61,6 +66,35 @@ export default function LegalProfileScreen() {
 
   const handleLogout = async () => {
     await mobileSupabase.auth.signOut();
+  };
+
+  const openExpertiseModal = () => {
+    setEditingExpertise(profile?.expertise || []);
+    setIsEditExpertiseVisible(true);
+  };
+
+  const saveExpertise = async () => {
+    if (!profile) return;
+    setIsSavingExpertise(true);
+    try {
+      const { data: { user } } = await mobileSupabase.auth.getUser();
+      if (!user) throw new Error("Not logged in");
+      
+      const { error } = await mobileSupabase
+        .from('users')
+        .update({ expertise: editingExpertise })
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['legalProfile'] });
+      setIsEditExpertiseVisible(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save expertise');
+    } finally {
+      setIsSavingExpertise(false);
+    }
   };
 
   const isVerified = profile?.is_didit_verified || profile?.status_verification === 'verified';
@@ -131,6 +165,30 @@ export default function LegalProfileScreen() {
               <InfoRow icon="card-outline" label="IBP Number" value={profile.ibp_number || 'Not specified'} />
               <View style={styles.divider} />
               <InfoRow icon="time-outline" label="Pro-Bono Period Start" value={formatDate(profile.pro_bono_period_start)} />
+              <View style={styles.divider} />
+              
+              <View style={styles.infoRow}>
+                <Ionicons name="school-outline" size={20} color="#64748B" style={styles.infoIcon} />
+                <View style={styles.flex1}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <Text style={styles.infoLabel}>Areas of Expertise</Text>
+                    <Pressable onPress={openExpertiseModal}>
+                      <Text style={styles.editLink}>Edit</Text>
+                    </Pressable>
+                  </View>
+                  {profile.expertise && profile.expertise.length > 0 ? (
+                    <View style={styles.expertiseContainer}>
+                      {profile.expertise.map(exp => (
+                        <View key={exp} style={styles.expertiseBadge}>
+                          <Text style={styles.expertiseBadgeText}>{exp}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.infoValue}>Not specified</Text>
+                  )}
+                </View>
+              </View>
             </View>
           </View>
 
@@ -162,6 +220,43 @@ export default function LegalProfileScreen() {
             <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             <Text style={styles.logoutText}>Log Out</Text>
           </Pressable>
+
+          {/* Edit Expertise Modal */}
+          <Modal visible={isEditExpertiseVisible} animationType="slide" transparent>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Select Expertise</Text>
+                
+                <View style={styles.modalExpertiseContainer}>
+                  {EXPERTISE_OPTIONS.map(opt => {
+                    const isSelected = editingExpertise.includes(opt);
+                    return (
+                      <Pressable
+                        key={opt}
+                        style={[styles.modalExpertiseChip, isSelected && styles.modalExpertiseChipSelected]}
+                        onPress={() => {
+                          if (isSelected) setEditingExpertise(editingExpertise.filter(e => e !== opt));
+                          else setEditingExpertise([...editingExpertise, opt]);
+                        }}
+                      >
+                        <Text style={[styles.modalExpertiseChipText, isSelected && styles.modalExpertiseChipTextSelected]}>{opt}</Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
+
+                <View style={styles.modalFooter}>
+                  <Pressable style={styles.modalBtnCancel} onPress={() => setIsEditExpertiseVisible(false)}>
+                    <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.modalBtnSave} onPress={saveExpertise} disabled={isSavingExpertise}>
+                    {isSavingExpertise ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.modalBtnSaveText}>Save</Text>}
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
         </ScrollView>
       ) : (
         <View style={styles.centerBox}>
@@ -214,4 +309,23 @@ const styles = StyleSheet.create({
   
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF2F2', paddingVertical: 18, borderRadius: theme.borderRadius.lg, borderWidth: 1, borderColor: '#FECACA', gap: 12, marginTop: 8 },
   logoutText: { color: theme.colors.error, fontSize: 16, fontWeight: '700' },
+  
+  editLink: { color: theme.colors.primary, fontSize: 13, fontWeight: '600' },
+  expertiseContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  expertiseBadge: { backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  expertiseBadgeText: { color: '#475569', fontSize: 12, fontWeight: '600' },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#0F172A', marginBottom: 16 },
+  modalExpertiseContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
+  modalExpertiseChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
+  modalExpertiseChipSelected: { backgroundColor: '#4F46E5', borderColor: '#4F46E5' },
+  modalExpertiseChipText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
+  modalExpertiseChipTextSelected: { color: '#FFFFFF' },
+  modalFooter: { flexDirection: 'row', gap: 12, justifyContent: 'flex-end' },
+  modalBtnCancel: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 16, backgroundColor: '#F1F5F9' },
+  modalBtnCancelText: { color: '#475569', fontWeight: '700' },
+  modalBtnSave: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 16, backgroundColor: '#4F46E5', minWidth: 100, alignItems: 'center' },
+  modalBtnSaveText: { color: '#FFFFFF', fontWeight: '700' },
 });

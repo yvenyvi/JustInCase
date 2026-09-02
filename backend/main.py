@@ -618,7 +618,7 @@ def document_generate(
 def get_lawyers() -> dict[str, Any]:
     try:
         resp = httpx.get(
-            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,selfie_url,pro_bono_logs!pro_bono_logs_attorney_id_fkey(hours,is_verified)",
+            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,selfie_url,expertise,pro_bono_logs!pro_bono_logs_attorney_id_fkey(hours,is_verified)",
             headers={
                 "apikey": config.supabase_service_role_key,
                 "Authorization": f"Bearer {config.supabase_service_role_key}",
