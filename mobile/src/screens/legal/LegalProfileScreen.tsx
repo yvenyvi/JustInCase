@@ -38,6 +38,7 @@ interface UserProfile {
   created_at?: string;
   rating?: string | null;
   review_count?: number;
+  reviews?: any[];
 }
 
 export default function LegalProfileScreen() {
@@ -68,19 +69,22 @@ export default function LegalProfileScreen() {
       
       const { data: casesData } = await mobileSupabase
         .from('cases')
-        .select('feedback_rating')
+        .select('feedback_rating, client_feedback, title, created_at')
         .eq('attorney_id', user.id)
-        .not('feedback_rating', 'is', null);
+        .not('feedback_rating', 'is', null)
+        .order('created_at', { ascending: false });
 
       let rating = null;
       let review_count = 0;
+      let reviews: any[] = [];
       if (casesData && casesData.length > 0) {
         review_count = casesData.length;
         const sum = casesData.reduce((acc, curr) => acc + (curr.feedback_rating || 0), 0);
         rating = (sum / review_count).toFixed(1);
+        reviews = casesData;
       }
 
-      return { ...data, email: user.email || data.email, rating, review_count } as UserProfile;
+      return { ...data, email: user.email || data.email, rating, review_count, reviews } as UserProfile;
     }
   });
 
@@ -257,6 +261,29 @@ export default function LegalProfileScreen() {
               <InfoRow icon="location-outline" label="Office Location" value={`${profile.city_municipality || ''}, ${profile.province || ''}`.replace(/^, | , $/g, '') || 'Not specified'} />
             </View>
           </View>
+
+          {/* Client Reviews */}
+          {profile.reviews && profile.reviews.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>CLIENT REVIEWS</Text>
+              <View style={styles.card}>
+                {profile.reviews.map((rev, index) => (
+                  <View key={index} style={{ marginBottom: index === profile.reviews!.length - 1 ? 0 : 16 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#1E293B', flex: 1, marginRight: 8 }} numberOfLines={1}>{rev.title}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                        <Ionicons name="star" size={12} color="#D97706" />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#92400E', marginLeft: 4 }}>{rev.feedback_rating}</Text>
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 8 }}>{formatDate(rev.created_at)}</Text>
+                    {rev.client_feedback && <Text style={{ fontSize: 14, color: '#334155', lineHeight: 20 }}>"{rev.client_feedback}"</Text>}
+                    {index !== profile.reviews!.length - 1 && <View style={[styles.divider, { marginTop: 16 }]} />}
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
           {/* Settings */}
           <View style={styles.section}>
