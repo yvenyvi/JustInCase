@@ -757,7 +757,7 @@ export default function CaseDetailsScreen() {
       </ScrollView>
 
       {/* Log Hours Modal */}
-      <Modal visible={isLogModalVisible} transparent animationType="slide">
+      <Modal visible={isLogModalVisible} transparent animationType="slide" statusBarTranslucent>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -803,7 +803,7 @@ export default function CaseDetailsScreen() {
       </Modal>
 
       {/* Confirmation Modal */}
-      <Modal visible={confirmConfig.visible} transparent animationType="slide">
+      <Modal visible={confirmConfig.visible} transparent animationType="slide" statusBarTranslucent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { maxWidth: 320, alignSelf: 'center', width: '100%' }]}>
             <Text style={[styles.modalTitle, { marginBottom: 12 }]}>{confirmConfig.title}</Text>

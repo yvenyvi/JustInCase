@@ -223,7 +223,7 @@ export default function LegalProfileScreen() {
           </Pressable>
 
           {/* Edit Expertise Modal */}
-          <Modal visible={isEditExpertiseVisible} animationType="slide" transparent>
+          <Modal visible={isEditExpertiseVisible} animationType="slide" transparent statusBarTranslucent>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Select Your Expertise</Text>

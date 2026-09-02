@@ -715,7 +715,7 @@ export default function LegalCaseDetailsScreen() {
       </ScrollView>
 
       {/* Log Hours Modal */}
-      <Modal visible={isLogModalVisible} transparent animationType="slide">
+      <Modal visible={isLogModalVisible} transparent animationType="slide" statusBarTranslucent>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -761,7 +761,7 @@ export default function LegalCaseDetailsScreen() {
       </Modal>
 
       {/* Withdraw Modal */}
-      <Modal visible={isWithdrawModalVisible} transparent animationType="slide">
+      <Modal visible={isWithdrawModalVisible} transparent animationType="slide" statusBarTranslucent>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -820,7 +820,7 @@ export default function LegalCaseDetailsScreen() {
       </Modal>
 
       {/* Close Case Modal */}
-      <Modal visible={isCloseModalVisible} transparent animationType="slide">
+      <Modal visible={isCloseModalVisible} transparent animationType="slide" statusBarTranslucent>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -879,7 +879,7 @@ export default function LegalCaseDetailsScreen() {
       </Modal>
 
       {/* Confirmation Modal */}
-      <Modal visible={confirmConfig.visible} transparent animationType="slide">
+      <Modal visible={confirmConfig.visible} transparent animationType="slide" statusBarTranslucent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { maxWidth: 320, alignSelf: 'center', width: '100%' }]}>
             <Text style={[styles.modalTitle, { marginBottom: 12 }]}>{confirmConfig.title}</Text>
@@ -897,7 +897,7 @@ export default function LegalCaseDetailsScreen() {
       </Modal>
 
       {/* Update Status Modal */}
-      <Modal visible={isUpdateStatusModalVisible} transparent animationType="slide" onRequestClose={() => setIsUpdateStatusModalVisible(false)}>
+      <Modal visible={isUpdateStatusModalVisible} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setIsUpdateStatusModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
