@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
@@ -39,6 +39,7 @@ export default function CaseDetailsScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<CaseDetailsRouteProp>();
   const { caseId } = route.params;
+  const isFocused = useIsFocused();
 
 
   
@@ -56,6 +57,7 @@ export default function CaseDetailsScreen() {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -383,6 +385,19 @@ export default function CaseDetailsScreen() {
     });
   };
 
+  useEffect(() => {
+    if (isFocused) {
+      fetchCaseDetails();
+    }
+  }, [isFocused, caseId]);
+
+  useEffect(() => {
+    const isCaseClosed = c?.status === 'Closed' || c?.status === 'Resolved';
+    if (c && isClient && isCaseClosed && (c.feedbackRating === null || c.feedbackRating === undefined)) {
+      setIsReviewModalVisible(true);
+    }
+  }, [c?.status, c?.feedbackRating]);
+
   const getStatusColor = (status: string) => {
     if (status.includes('Closed') || status === 'Withdrawn' || status === 'Dropped') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
     if (status === 'Demand Sent' || status === 'Hearing Scheduled') return { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' };
@@ -565,7 +580,13 @@ export default function CaseDetailsScreen() {
           <View style={styles.gridContainer}>
             <View style={styles.gridItem}>
               <Text style={styles.infoLabel}>Assigned Attorney</Text>
-              <Text style={styles.infoValueCompact}>{c.assignedTo || 'Unassigned'}</Text>
+              {c.attorneyId ? (
+                <Pressable onPress={() => navigation.navigate('PublicAttorneyProfile' as any, { attorneyId: c.attorneyId })}>
+                  <Text style={[styles.infoValueCompact, { color: theme.colors.primary, textDecorationLine: 'underline' }]}>{c.assignedTo}</Text>
+                </Pressable>
+              ) : (
+                <Text style={styles.infoValueCompact}>Unassigned</Text>
+              )}
             </View>
             <View style={styles.gridItem}>
               <Text style={styles.infoLabel}>Date Created</Text>
@@ -711,35 +732,6 @@ export default function CaseDetailsScreen() {
             </View>
           </View>
         )}
-
-        {isClient && isCaseClosed && (c.feedbackRating === null || c.feedbackRating === undefined) && (
-          <View style={[styles.card, { marginTop: 32, backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-            <Text style={[styles.sectionLabel, { color: '#1E3A8A' }]}>RATE YOUR ATTORNEY</Text>
-            <Text style={{ color: '#1E3A8A', fontSize: 14, marginBottom: 12 }}>How was your experience working with {c.assignedTo || 'your attorney'}?</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Pressable key={s} onPress={() => setFeedbackRating(s)}>
-                  <Ionicons name="star" size={32} color={s <= feedbackRating ? '#F59E0B' : '#CBD5E1'} />
-                </Pressable>
-              ))}
-            </View>
-            <TextInput
-              style={[styles.textInput, styles.textArea, { backgroundColor: '#FFFFFF', borderColor: '#BFDBFE' }]}
-              placeholder="Leave a comment (optional)"
-              multiline
-              numberOfLines={3}
-              value={feedbackComment}
-              onChangeText={setFeedbackComment}
-            />
-            <Pressable 
-              style={[styles.actionBtn, styles.actionBtnPrimary, { marginTop: 12 }]} 
-              onPress={handleFeedbackSubmit}
-              disabled={isSubmittingFeedback}
-            >
-              {isSubmittingFeedback ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.actionBtnTextPrimary}>Submit Review</Text>}
-            </Pressable>
-          </View>
-        )}
         
         {isCaseClosed && c.feedbackRating !== null && c.feedbackRating !== undefined && (
           <View style={[styles.card, { marginTop: 32 }]}>
@@ -818,6 +810,55 @@ export default function CaseDetailsScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Client Review Modal */}
+      <Modal visible={isReviewModalVisible} transparent animationType="slide" statusBarTranslucent>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Rate Your Attorney</Text>
+              <Pressable onPress={() => setIsReviewModalVisible(false)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={24} color="#64748B" />
+              </Pressable>
+            </View>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 15, marginBottom: 24, textAlign: 'center' }}>How was your experience working with {c?.assignedTo || 'your attorney'}?</Text>
+            
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 32, justifyContent: 'center' }}>
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Pressable key={s} onPress={() => setFeedbackRating(s)}>
+                  <Ionicons name="star" size={48} color={s <= feedbackRating ? '#F59E0B' : '#E2E8F0'} />
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.inputLabel}>Leave a Comment (Optional)</Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea]}
+              placeholder="Tell us what you think about your attorney..."
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              value={feedbackComment}
+              onChangeText={setFeedbackComment}
+            />
+
+            <Pressable 
+              style={[styles.modalSubmitBtn, isSubmittingFeedback && { opacity: 0.7 }]} 
+              onPress={async () => {
+                await handleFeedbackSubmit();
+                setIsReviewModalVisible(false);
+              }}
+              disabled={isSubmittingFeedback || feedbackRating === 0}
+            >
+              {isSubmittingFeedback ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.modalSubmitText}>Submit Review</Text>
+              )}
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
     </View>

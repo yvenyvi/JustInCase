@@ -15,6 +15,7 @@ type NotificationItem = {
   read: boolean;
   type?: string;
   reference_id?: string;
+  rawDate: string;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -51,7 +52,8 @@ export default function NotificationsScreen() {
           time: new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
           read: n.is_read,
           type: n.type,
-          reference_id: n.reference_id
+          reference_id: n.reference_id,
+          rawDate: n.created_at
         }));
         setNotifications(mapped);
       }
@@ -81,6 +83,62 @@ export default function NotificationsScreen() {
     }
   };
 
+  const markAllAsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    try {
+      const { data: { user } } = await mobileSupabase.auth.getUser();
+      if (user) {
+        await mobileSupabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+      }
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
+  };
+
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const isSameDay = (d1: Date, d2: Date) => d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
+
+  const groupedNotifications = {
+    today: notifications.filter(n => isSameDay(new Date(n.rawDate), today)),
+    yesterday: notifications.filter(n => isSameDay(new Date(n.rawDate), yesterday)),
+    older: notifications.filter(n => !isSameDay(new Date(n.rawDate), today) && !isSameDay(new Date(n.rawDate), yesterday))
+  };
+
+  const renderNotificationGroup = (title: string, data: NotificationItem[]) => {
+    if (data.length === 0) return null;
+    return (
+      <View style={{ marginBottom: 24 }}>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.textSecondary, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>{title}</Text>
+        {data.map(notif => {
+          let iconName = "notifications";
+          if (notif.type === 'message') iconName = "chatbubble";
+          if (notif.type === 'verify_hours') iconName = "time";
+          if (notif.type === 'case_accepted') iconName = "briefcase";
+          
+          return (
+            <Pressable key={notif.id} style={[styles.notifCard, !notif.read && styles.notifCardUnread]} onPress={() => handleNotificationPress(notif)}>
+              <View style={styles.iconCol}>
+                <View style={[styles.iconContainer, !notif.read && styles.iconContainerUnread]}>
+                  <Ionicons name={iconName as any} size={20} color={notif.read ? theme.colors.textSecondary : theme.colors.primary} />
+                </View>
+              </View>
+              <View style={styles.contentCol}>
+                <View style={styles.notifHeader}>
+                  <Text style={[styles.notifTitle, !notif.read && styles.notifTitleUnread]} numberOfLines={1}>{notif.title}</Text>
+                  <Text style={styles.notifTime}>{notif.time}</Text>
+                </View>
+                <Text style={styles.notifDesc}>{notif.desc}</Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -88,7 +146,9 @@ export default function NotificationsScreen() {
           <Ionicons name="arrow-back" size={24} color="#64748B" />
         </Pressable>
         <Text style={styles.headerTitle}>Mga Notification</Text>
-        <View style={{ width: 44 }} />
+        <Pressable onPress={markAllAsRead} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="checkmark-done" size={24} color={theme.colors.primary} />
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -103,29 +163,9 @@ export default function NotificationsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {notifications.map((notif) => {
-            let iconName = "notifications";
-            if (notif.type === 'message') iconName = "chatbubble";
-            if (notif.type === 'verify_hours') iconName = "time";
-            if (notif.type === 'case_accepted') iconName = "briefcase";
-            
-            return (
-              <Pressable key={notif.id} style={[styles.notifCard, !notif.read && styles.notifCardUnread]} onPress={() => handleNotificationPress(notif)}>
-                <View style={styles.iconCol}>
-                  <View style={[styles.iconContainer, !notif.read && styles.iconContainerUnread]}>
-                    <Ionicons name={iconName as any} size={20} color={notif.read ? theme.colors.textSecondary : theme.colors.primary} />
-                  </View>
-                </View>
-                <View style={styles.contentCol}>
-                  <View style={styles.notifHeader}>
-                    <Text style={[styles.notifTitle, !notif.read && styles.notifTitleUnread]} numberOfLines={1}>{notif.title}</Text>
-                    <Text style={styles.notifTime}>{notif.time}</Text>
-                  </View>
-                  <Text style={styles.notifDesc}>{notif.desc}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
+          {renderNotificationGroup('Today', groupedNotifications.today)}
+          {renderNotificationGroup('Yesterday', groupedNotifications.yesterday)}
+          {renderNotificationGroup('Older', groupedNotifications.older)}
         </ScrollView>
       )}
     </View>

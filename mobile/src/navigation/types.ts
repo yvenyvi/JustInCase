@@ -4,6 +4,7 @@ export type RootStackParamList = {
   PublicCases: undefined;
   PublicMessages: undefined;
   PublicProfile: undefined;
+  PublicAttorneyProfile: { attorneyId: string };
   PublicTriage: undefined;
   PublicTriageResult: { result: any };
   PublicTriageLawyerSelection: { result: any };

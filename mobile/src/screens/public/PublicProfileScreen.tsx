@@ -7,6 +7,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
+import * as ImagePicker from 'expo-image-picker';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -39,7 +40,7 @@ export default function PublicProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
 
-  const { data: profileData, isLoading } = useQuery({
+  const { data: profileData, isLoading, refetch } = useQuery({
     queryKey: ['publicProfile'],
     queryFn: async () => {
       const { data: { user } } = await mobileSupabase.auth.getUser();
@@ -82,6 +83,68 @@ export default function PublicProfileScreen() {
   const fullName = [profile?.first_name, profile?.middle_name, profile?.last_name, profile?.suffix]
     .filter(Boolean).join(' ');
 
+  const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
+
+  const changeAvatar = async () => {
+    if (!profile) return;
+    
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('We need gallery access to upload your avatar.');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0].uri) {
+      setIsUploadingAvatar(true);
+      try {
+        const { data: { user } } = await mobileSupabase.auth.getUser();
+        if (!user) throw new Error("Not logged in");
+
+        const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
+        const formData = new FormData();
+        formData.append('email', profile.email);
+        formData.append('kind', 'selfie');
+        formData.append('file', {
+          uri: result.assets[0].uri,
+          name: 'avatar.jpg',
+          type: 'image/jpeg',
+        } as any);
+
+        const response = await fetch(`${API_BASE_URL}/api/legal-registration/upload-proof`, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        const payload = await response.json();
+        if (!response.ok) {
+           throw new Error(payload?.detail || 'Upload Failed');
+        }
+
+        const newAvatarUrl = payload.url;
+        
+        const { error } = await mobileSupabase
+          .from('users')
+          .update({ selfie_url: newAvatarUrl })
+          .eq('id', user.id);
+          
+        if (error) throw error;
+        
+        await refetch();
+      } catch (err: any) {
+        console.error(err);
+        alert(err.message || 'Failed to update profile picture');
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    }
+  };
+
   const fullAddress = [
     profile?.street_address,
     profile?.barangay,
@@ -123,9 +186,22 @@ export default function PublicProfileScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Profile Header */}
           <View style={styles.profileHeader}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{profile.first_name?.[0]}{profile.last_name?.[0]}</Text>
-            </View>
+            <Pressable style={styles.avatar} onPress={changeAvatar} disabled={isUploadingAvatar}>
+              {profile.selfie_url ? (
+                <Image source={{ uri: profile.selfie_url }} style={{ width: '100%', height: '100%', borderRadius: 999 }} />
+              ) : (
+                <Text style={styles.avatarText}>{profile.first_name?.[0]}{profile.last_name?.[0]}</Text>
+              )}
+              {isUploadingAvatar ? (
+                <View style={{ position: 'absolute', backgroundColor: 'rgba(0,0,0,0.5)', width: '100%', height: '100%', borderRadius: 999, justifyContent: 'center', alignItems: 'center' }}>
+                  <ActivityIndicator color="#FFF" />
+                </View>
+              ) : (
+                <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: theme.colors.primary, borderRadius: 12, padding: 4, borderWidth: 2, borderColor: '#FFFFFF' }}>
+                  <Ionicons name="camera" size={12} color="#FFFFFF" />
+                </View>
+              )}
+            </Pressable>
             <Text style={styles.name}>{fullName}</Text>
             <Text style={styles.email}>{profile.email}</Text>
             <Text style={styles.handle}>@{profile.handle}</Text>
