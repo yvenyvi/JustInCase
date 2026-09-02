@@ -38,7 +38,10 @@ export default function RegisterScreen({ navigation, route }: Props) {
     'Corporate Law', 'Taxation Law', 'Property Law', 
     'Intellectual Property', 'Immigration Law', 'Environmental Law', 
     'Constitutional Law', 'Election Law', 'Maritime Law', 
-    'Banking Law', 'Cyber Law'
+    'Banking Law', 'Cyber Law', 'Agrarian Reform Law',
+    'Local Government Law', 'Alternative Dispute Resolution',
+    'Customs Law', 'Mining Law', 'Insurance Law', 
+    'Medical Malpractice', 'Aviation Law'
   ];
 
   // ── Didit / flow state ─────────────────────────────────────────────────────
