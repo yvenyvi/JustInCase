@@ -34,14 +34,11 @@ export default function RegisterScreen({ navigation, route }: Props) {
   const [rollNumber, setRollNumber] = useState('');
   const [expertise, setExpertise] = useState<string[]>([]);
   const EXPERTISE_OPTIONS = [
-    'Criminal Law', 'Civil Law', 'Family Law', 'Labor Law', 
-    'Corporate Law', 'Taxation Law', 'Property Law', 
-    'Intellectual Property', 'Immigration Law', 'Environmental Law', 
-    'Constitutional Law', 'Election Law', 'Maritime Law', 
-    'Banking Law', 'Cyber Law', 'Agrarian Reform Law',
-    'Local Government Law', 'Alternative Dispute Resolution',
-    'Customs Law', 'Mining Law', 'Insurance Law', 
-    'Medical Malpractice', 'Aviation Law'
+    'Civil Law', 'Criminal Law', 'Family Law', 
+    'Corporate and Commercial Law', 'Labor and Employment Law', 
+    'Taxation Law', 'Intellectual Property Law', 'Environmental Law', 
+    'Public Interest and Human Rights Law', 
+    'International Law and Emerging Legal Trends'
   ];
 
   // ── Didit / flow state ─────────────────────────────────────────────────────
