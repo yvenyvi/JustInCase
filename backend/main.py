@@ -128,6 +128,8 @@ class LawyerInfo(BaseModel):
     last_name: Optional[str] = None
     firm_name: Optional[str] = None
     city_municipality: Optional[str] = None
+    rating: Optional[float] = None
+    review_count: Optional[int] = 0
 
 
 class TriageAnalyzeBody(BaseModel):
@@ -618,7 +620,7 @@ def document_generate(
 def get_lawyers() -> dict[str, Any]:
     try:
         resp = httpx.get(
-            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,selfie_url,expertise,pro_bono_logs!pro_bono_logs_attorney_id_fkey(hours,is_verified)",
+            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,selfie_url,expertise,pro_bono_logs!pro_bono_logs_attorney_id_fkey(hours,is_verified),cases!cases_attorney_id_fkey(feedback_rating)",
             headers={
                 "apikey": config.supabase_service_role_key,
                 "Authorization": f"Bearer {config.supabase_service_role_key}",
@@ -635,6 +637,17 @@ def get_lawyers() -> dict[str, Any]:
             total_hours = sum(float(log.get("hours", 0)) for log in logs if log.get("is_verified"))
             if total_hours < 60:
                 l.pop("pro_bono_logs", None) # clean up before sending to client
+                
+                cases_data = l.get("cases") or []
+                ratings = [c.get("feedback_rating") for c in cases_data if c.get("feedback_rating") is not None]
+                if ratings:
+                    l["rating"] = round(sum(ratings) / len(ratings), 1)
+                    l["review_count"] = len(ratings)
+                else:
+                    l["rating"] = None
+                    l["review_count"] = 0
+                
+                l.pop("cases", None)
                 filtered_lawyers.append(l)
                 
         # Limit to 20 after filtering

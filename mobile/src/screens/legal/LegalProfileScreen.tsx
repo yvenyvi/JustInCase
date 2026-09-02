@@ -36,6 +36,8 @@ interface UserProfile {
   role?: string;
   expertise?: string[];
   created_at?: string;
+  rating?: string | null;
+  review_count?: number;
 }
 
 export default function LegalProfileScreen() {
@@ -64,9 +66,21 @@ export default function LegalProfileScreen() {
         .eq('id', user.id)
         .single();
       
-      if (error) throw error;
+      const { data: casesData } = await mobileSupabase
+        .from('cases')
+        .select('feedback_rating')
+        .eq('attorney_id', user.id)
+        .not('feedback_rating', 'is', null);
 
-      return { ...data, email: user.email || data.email } as UserProfile;
+      let rating = null;
+      let review_count = 0;
+      if (casesData && casesData.length > 0) {
+        review_count = casesData.length;
+        const sum = casesData.reduce((acc, curr) => acc + (curr.feedback_rating || 0), 0);
+        rating = (sum / review_count).toFixed(1);
+      }
+
+      return { ...data, email: user.email || data.email, rating, review_count } as UserProfile;
     }
   });
 
@@ -152,11 +166,25 @@ export default function LegalProfileScreen() {
             <Text style={styles.email}>{profile.email}</Text>
             <Text style={styles.handle}>@{profile.handle}</Text>
 
-            <View style={[styles.verificationBadge, isVerified ? styles.badgeVerified : styles.badgeUnverified]}>
-              <Ionicons name={isVerified ? "shield-checkmark" : "shield-half"} size={14} color={isVerified ? "#15803D" : "#B45309"} />
-              <Text style={[styles.verificationText, isVerified ? styles.textVerified : styles.textUnverified]}>
-                {isVerified ? 'Verified Attorney' : 'Unverified Attorney'}
-              </Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <View style={[styles.verificationBadge, isVerified ? styles.badgeVerified : styles.badgeUnverified, { marginTop: 0 }]}>
+                <Ionicons name={isVerified ? "shield-checkmark" : "shield-half"} size={14} color={isVerified ? "#15803D" : "#B45309"} />
+                <Text style={[styles.verificationText, isVerified ? styles.textVerified : styles.textUnverified]}>
+                  {isVerified ? 'Verified' : 'Unverified'}
+                </Text>
+              </View>
+              
+              {profile.rating ? (
+                <View style={[styles.verificationBadge, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A', marginTop: 0 }]}>
+                  <Ionicons name="star" size={14} color="#D97706" />
+                  <Text style={[styles.verificationText, { color: '#92400E' }]}>{profile.rating} ({profile.review_count})</Text>
+                </View>
+              ) : (
+                <View style={[styles.verificationBadge, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0', marginTop: 0 }]}>
+                  <Ionicons name="star-outline" size={14} color="#64748B" />
+                  <Text style={[styles.verificationText, { color: '#475569' }]}>New</Text>
+                </View>
+              )}
             </View>
           </View>
 

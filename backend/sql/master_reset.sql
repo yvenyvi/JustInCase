@@ -89,6 +89,8 @@ CREATE TABLE public.cases (
     closing_notes TEXT,
     closed_at TIMESTAMP WITH TIME ZONE,
     ai_summary TEXT,
+    feedback_rating INTEGER CHECK (feedback_rating >= 1 AND feedback_rating <= 5),
+    client_feedback TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

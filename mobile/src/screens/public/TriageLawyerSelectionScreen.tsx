@@ -15,13 +15,6 @@ export default function TriageLawyerSelectionScreen() {
   const [lawyers, setLawyers] = useState<any[]>([]);
   const [selectedLawyerId, setSelectedLawyerId] = useState<string | null>(null);
 
-  const getMockStats = (id: string) => {
-    let sum = 0;
-    for(let i = 0; i < id.length; i++) sum += id.charCodeAt(i);
-    const rating = 4.0 + (sum % 10) / 10;
-    const cases = 20 + (sum % 80);
-    return { rating: rating.toFixed(1), cases };
-  };
 
   useEffect(() => {
     const fetchLawyers = async () => {
@@ -141,7 +134,6 @@ export default function TriageLawyerSelectionScreen() {
             <Text style={styles.sectionHeaderDesc}>Ayon sa pagsusuri ng aming AI, heto ang mga abogadong pinaka-angkop na hawakan ang iyong kaso.</Text>
             
             {lawyers.map((lawyer) => {
-              const stats = getMockStats(lawyer.id);
               const hasValidImage = lawyer.selfie_url && lawyer.selfie_url.includes('http');
               const initial = (lawyer.first_name && lawyer.first_name.length > 0) ? lawyer.first_name[0].toUpperCase() : 'A';
               const isSelected = selectedLawyerId === lawyer.id;
@@ -178,14 +170,17 @@ export default function TriageLawyerSelectionScreen() {
                         <Ionicons name="location" size={12} color="#3B82F6" />
                         <Text style={[styles.statText, { color: '#1D4ED8' }]}>{lawyer.city_municipality || 'Pilipinas'}</Text>
                       </View>
-                      <View style={[styles.statBadge, styles.ratingBadge]}>
-                        <Ionicons name="star" size={12} color="#F59E0B" />
-                        <Text style={[styles.statText, { color: '#B45309' }]}>{stats.rating}</Text>
-                      </View>
-                      <View style={[styles.statBadge, styles.casesBadge]}>
-                        <Ionicons name="briefcase" size={12} color="#10B981" />
-                        <Text style={[styles.statText, { color: '#047857' }]}>{stats.cases} Cases</Text>
-                      </View>
+                      {lawyer.rating ? (
+                        <View style={[styles.statBadge, styles.ratingBadge]}>
+                          <Ionicons name="star" size={12} color="#F59E0B" />
+                          <Text style={[styles.statText, { color: '#B45309' }]}>{lawyer.rating} ({lawyer.review_count})</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.statBadge, { backgroundColor: '#F3F4F6' }]}>
+                          <Ionicons name="star-outline" size={12} color="#6B7280" />
+                          <Text style={[styles.statText, { color: '#4B5563' }]}>New</Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                   
