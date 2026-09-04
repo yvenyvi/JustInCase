@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { theme } from '../../shared/theme';
+import { NotificationItemSkeleton } from '../../components/ui/Skeleton';
 
 type NotificationItem = {
   id: string;
@@ -152,9 +153,12 @@ export default function NotificationsScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <NotificationItemSkeleton />
+          <NotificationItemSkeleton />
+          <NotificationItemSkeleton />
+          <NotificationItemSkeleton />
+        </ScrollView>
       ) : notifications.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="notifications-off-outline" size={48} color="#CBD5E1" />

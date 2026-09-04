@@ -8,6 +8,7 @@ import { documentGeneratorService } from '../../services/documentGeneratorServic
 import { auditService } from '../../services/auditService';
 import { triageService, type TriageLawyerMatch } from '../../services/triageService';
 import Button from '../../components/Button';
+import Skeleton from '../../components/Skeleton';
 import GeneratedDocumentsModal from './GeneratedDocumentsModal';
 
 type CaseItem = {
@@ -383,9 +384,17 @@ const PublicDashboard = () => {
         </div>
 
         {isCasesLoading ? (
-          <div className={styles.loadingState}>
-            <Loader2 className="animate-spin" size={24} />
-            <p>Kinukuha ang iyong mga kaso...</p>
+          <div className={styles.casesList}>
+            {[1, 2].map((i) => (
+              <div key={i} className={styles.skeletonCard}>
+                <Skeleton className={styles.skeletonTitle} />
+                <div className={styles.skeletonMeta}>
+                  <Skeleton className={styles.skeletonBadge} />
+                  <Skeleton className={styles.skeletonAttorney} />
+                </div>
+                <Skeleton className={styles.skeletonDate} />
+              </div>
+            ))}
           </div>
         ) : cases.length === 0 ? (
           <div className={styles.emptyState}>
@@ -496,9 +505,18 @@ const PublicDashboard = () => {
         </div>
 
         {isDocumentsLoading ? (
-          <div className={styles.loadingState}>
-            <Loader2 className="animate-spin" size={24} />
-            <p>Kinukuha ang iyong mga dokumento...</p>
+          <div className={styles.documentList}>
+            {[1, 2].map((i) => (
+              <div key={i} className={styles.skeletonDocumentItem}>
+                <Skeleton className={styles.skeletonIcon} />
+                <div className={styles.skeletonDocInfo}>
+                  <Skeleton className={styles.skeletonDocTitle} />
+                  <Skeleton className={styles.skeletonDocDate} />
+                  <Skeleton className={styles.skeletonDocPreview} />
+                  <Skeleton className={styles.skeletonDocPreview2} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : generatedDocuments.length === 0 ? (
           <div className={styles.emptyState}>

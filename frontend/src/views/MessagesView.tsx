@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, Send, Paperclip, ChevronLeft, Loader2, MessageSquare, FileText, X, Download } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import styles from './MessagesView.module.css';
+import Skeleton from '../components/Skeleton';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { auditService } from '../services/auditService';
@@ -457,8 +458,16 @@ const MessagesView: React.FC<MessagesViewProps> = ({ role }) => {
           </h3>
 
           {isThreadsLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
-              <Loader2 size={22} className="animate-spin" color="var(--color-primary)" />
+            <div style={{ display: 'flex', flexDirection: 'column', padding: '0.5rem 0' }}>
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1rem' }}>
+                  <Skeleton style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <Skeleton style={{ height: 16, width: '50%', borderRadius: 4, marginBottom: 6 }} />
+                    <Skeleton style={{ height: 12, width: '80%', borderRadius: 4 }} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredThreads.length === 0 ? (
             <div style={{ padding: '2rem 1.5rem', textAlign: 'center' }}>
@@ -536,8 +545,18 @@ const MessagesView: React.FC<MessagesViewProps> = ({ role }) => {
             {/* Messages */}
             <div className={styles.messagesContainer}>
               {isMessagesLoading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
-                  <Loader2 size={22} className="animate-spin" color="var(--color-primary)" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem 1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', maxWidth: '70%' }}>
+                    <Skeleton style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }} />
+                    <Skeleton style={{ height: 44, width: 220, borderRadius: 12 }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Skeleton style={{ height: 52, width: 260, borderRadius: 12 }} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', maxWidth: '70%' }}>
+                    <Skeleton style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }} />
+                    <Skeleton style={{ height: 36, width: 180, borderRadius: 12 }} />
+                  </div>
                 </div>
               ) : messages.length === 0 ? (
                 <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.875rem', padding: '3rem 1rem' }}>

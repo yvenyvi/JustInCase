@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from './LegalNotifications.module.css';
+import Skeleton from '../../components/Skeleton';
 
 interface Notification {
   id: string;
@@ -125,8 +126,17 @@ const LegalNotifications: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className={styles.centered}>
-          <Loader2 size={28} color="var(--color-primary)" style={{ animation: 'spin 1s linear infinite' }} />
+        <div className={styles.list}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className={styles.item} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '1rem' }}>
+              <Skeleton style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <Skeleton style={{ height: 16, width: '40%', borderRadius: 4, marginBottom: 6 }} />
+                <Skeleton style={{ height: 14, width: '75%', borderRadius: 4, marginBottom: 6 }} />
+                <Skeleton style={{ height: 11, width: '20%', borderRadius: 4 }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : notifications.length === 0 ? (
         <div className={styles.empty}>

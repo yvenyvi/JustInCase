@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { mobileSupabase } from '../../shared/supabase';
 import { theme } from '../../shared/theme';
+import { NotificationItemSkeleton } from '../../components/ui/Skeleton';
 
 type NotificationItem = {
   id: string;
@@ -17,7 +18,7 @@ type NotificationItem = {
 };
 
 export default function LegalNotificationsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -148,9 +149,12 @@ export default function LegalNotificationsScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <NotificationItemSkeleton />
+          <NotificationItemSkeleton />
+          <NotificationItemSkeleton />
+          <NotificationItemSkeleton />
+        </ScrollView>
       ) : notifications.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="notifications-off-outline" size={48} color="#CBD5E1" />

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { mobileSupabase } from '../../shared/supabase';
 import { theme } from '../../shared/theme';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 export interface RightsCategory {
   id: string;
@@ -174,9 +175,25 @@ export default function RightsLibraryScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 16 }}>
+            <Skeleton width={80} height={32} borderRadius={16} />
+            <Skeleton width={110} height={32} borderRadius={16} />
+            <Skeleton width={90} height={32} borderRadius={16} />
+          </View>
+          <View style={{ paddingHorizontal: 16, gap: 12 }}>
+            <View style={{ backgroundColor: '#FFF', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
+              <Skeleton width="60%" height={20} borderRadius={4} style={{ marginBottom: 8 }} />
+              <Skeleton width="90%" height={14} borderRadius={4} style={{ marginBottom: 6 }} />
+              <Skeleton width="75%" height={14} borderRadius={4} />
+            </View>
+            <View style={{ backgroundColor: '#FFF', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
+              <Skeleton width="50%" height={20} borderRadius={4} style={{ marginBottom: 8 }} />
+              <Skeleton width="85%" height={14} borderRadius={4} style={{ marginBottom: 6 }} />
+              <Skeleton width="65%" height={14} borderRadius={4} />
+            </View>
+          </View>
+        </ScrollView>
       ) : (
         <>
           <View style={styles.chipsWrapper}>

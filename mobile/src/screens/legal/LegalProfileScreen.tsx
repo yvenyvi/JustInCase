@@ -7,6 +7,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
+import { ProfileSkeleton } from '../../components/ui/Skeleton';
 import * as ImagePicker from 'expo-image-picker';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -234,9 +235,9 @@ export default function LegalProfileScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ProfileSkeleton />
+        </ScrollView>
       ) : profile ? (
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 

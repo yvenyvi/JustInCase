@@ -7,6 +7,7 @@ import { auditService } from '../../services/auditService';
 import ServiceLogModal from './ServiceLogModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import styles from './LegalDashboard.module.css';
+import Skeleton from '../../components/Skeleton';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
@@ -325,8 +326,22 @@ const Cases = () => {
 
       {/* Case cards */}
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-          <Loader2 size={28} className={styles.spin} color="var(--color-primary)" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} style={{ backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <Skeleton style={{ height: 20, width: '60%', borderRadius: 4 }} />
+                <Skeleton style={{ height: 20, width: 80, borderRadius: 10 }} />
+              </div>
+              <Skeleton style={{ height: 14, width: '40%', borderRadius: 4, marginBottom: '0.75rem' }} />
+              <Skeleton style={{ height: 13, width: '95%', borderRadius: 4, marginBottom: 6 }} />
+              <Skeleton style={{ height: 13, width: '70%', borderRadius: 4, marginBottom: '1rem' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
+                <Skeleton style={{ height: 12, width: 90, borderRadius: 4 }} />
+                <Skeleton style={{ height: 12, width: 60, borderRadius: 4 }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className={styles.emptyState} style={{ padding: '3rem', textAlign: 'center' }}>

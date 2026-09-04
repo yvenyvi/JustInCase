@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { auditService } from '../../services/auditService';
+import Skeleton from '../../components/Skeleton';
 import styles from './SystemSettings.module.css';
 
 interface Settings {
@@ -143,8 +144,43 @@ const SystemSettings = () => {
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-        <Loader2 size={28} color="var(--color-primary)" style={{ animation: 'spin 1s linear infinite' }} />
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <div>
+            <Skeleton variant="text" width="200px" height="28px" style={{ marginBottom: '8px' }} />
+            <Skeleton variant="text" width="340px" height="16px" />
+          </div>
+          <Skeleton variant="rounded" width="130px" height="38px" />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', maxWidth: '860px' }}>
+          <div className={styles.card} style={{ pointerEvents: 'none' }}>
+            <div className={styles.cardHeader}>
+              <Skeleton variant="text" width="140px" height="20px" />
+            </div>
+            <div className={styles.cardContent}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                <div>
+                  <Skeleton variant="text" width="120px" height="16px" style={{ marginBottom: '6px' }} />
+                  <Skeleton variant="text" width="200px" height="12px" />
+                </div>
+                <Skeleton variant="rounded" width="44px" height="24px" />
+              </div>
+            </div>
+          </div>
+          <div className={styles.card} style={{ pointerEvents: 'none' }}>
+            <div className={styles.cardHeader}>
+              <Skeleton variant="text" width="150px" height="20px" />
+            </div>
+            <div className={styles.cardContent}>
+              <Skeleton variant="text" width="90%" height="14px" style={{ marginBottom: '8px' }} />
+              <Skeleton variant="text" width="70%" height="14px" style={{ marginBottom: '1.5rem' }} />
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <Skeleton variant="rounded" width="110px" height="36px" />
+                <Skeleton variant="rounded" width="110px" height="36px" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

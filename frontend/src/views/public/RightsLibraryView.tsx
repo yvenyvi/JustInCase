@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, ChevronRight, ChevronDown, BookOpen, Home, Briefcase, Users, ShieldAlert, Scale, Globe, Heart, Baby, GraduationCap, TreePine, Map, FileText, Lock, Landmark, AlertTriangle, Loader2, ExternalLink } from 'lucide-react';
 import { rightsService, RightsCategory, RightsArticle } from '../../services/rightsService';
 import styles from './RightsLibrary.module.css';
+import Skeleton from '../../components/Skeleton';
 
 // Map icon names from DB to actual components
 const iconMap: Record<string, React.ElementType> = {
@@ -124,8 +125,24 @@ const RightsLibraryView = () => {
 
   if (isLoading) {
     return (
-      <div className={styles.container} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <Loader2 className="animate-spin" size={32} color="var(--color-primary)" />
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <Skeleton style={{ height: 24, width: 140, borderRadius: 12, marginBottom: 8 }} />
+          <Skeleton style={{ height: 32, width: '40%', borderRadius: 6, marginBottom: 8 }} />
+          <Skeleton style={{ height: 16, width: '60%', borderRadius: 4 }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', marginTop: '1.5rem' }}>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <Skeleton style={{ width: 36, height: 36, borderRadius: 8 }} />
+                <Skeleton style={{ height: 18, width: '60%', borderRadius: 4 }} />
+              </div>
+              <Skeleton style={{ height: 14, width: '90%', borderRadius: 4, marginBottom: 6 }} />
+              <Skeleton style={{ height: 14, width: '75%', borderRadius: 4 }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

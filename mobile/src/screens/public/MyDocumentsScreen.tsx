@@ -5,6 +5,7 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
+import { DocumentCardSkeleton } from '../../components/ui/Skeleton';
 
 interface UserDocument {
   id: string;
@@ -85,8 +86,10 @@ export default function MyDocumentsScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+        <View style={styles.listContent}>
+          <DocumentCardSkeleton />
+          <DocumentCardSkeleton />
+          <DocumentCardSkeleton />
         </View>
       ) : documents.length === 0 ? (
         <View style={styles.centerBox}>

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import styles from './AuditLogs.module.css';
+import Skeleton from '../../components/Skeleton';
 
 interface LogEntry {
   id: number;
@@ -205,8 +206,17 @@ const AuditLogs = () => {
 
       <div className={styles.tableCard}>
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-            <Loader2 size={28} className={styles.spin ?? ''} color="var(--color-primary)" style={{ animation: 'spin 1s linear infinite' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', padding: '1rem' }}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 0.5rem', borderBottom: '1px solid var(--color-border)' }}>
+                <Skeleton style={{ height: 14, width: 110, borderRadius: 4 }} />
+                <Skeleton style={{ height: 14, width: 130, borderRadius: 4 }} />
+                <Skeleton style={{ height: 14, width: 140, borderRadius: 4 }} />
+                <Skeleton style={{ height: 14, width: '25%', borderRadius: 4 }} />
+                <Skeleton style={{ height: 20, width: 75, borderRadius: 10 }} />
+                <Skeleton style={{ height: 12, width: 90, borderRadius: 4 }} />
+              </div>
+            ))}
           </div>
         ) : (
           <table className={styles.table}>

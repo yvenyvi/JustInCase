@@ -464,3 +464,97 @@
 .createDocBtn:hover {
   opacity: 0.9;
 }
+
+/* Skeleton Loaders */
+.skeletonCard {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skeletonCard:last-child {
+  border-bottom: none;
+}
+
+.skeletonTitle {
+  height: 20px;
+  width: 60%;
+  border-radius: 4px;
+}
+
+.skeletonMeta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.skeletonBadge {
+  height: 24px;
+  width: 100px;
+  border-radius: 12px;
+}
+
+.skeletonAttorney {
+  height: 20px;
+  width: 150px;
+  border-radius: 4px;
+}
+
+.skeletonDate {
+  height: 16px;
+  width: 120px;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+}
+
+.skeletonDocumentItem {
+  display: flex;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  gap: 1.25rem;
+}
+
+.skeletonDocumentItem:last-child {
+  border-bottom: none;
+}
+
+.skeletonIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.skeletonDocInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeletonDocTitle {
+  height: 20px;
+  width: 40%;
+  border-radius: 4px;
+}
+
+.skeletonDocDate {
+  height: 16px;
+  width: 30%;
+  border-radius: 4px;
+}
+
+.skeletonDocPreview {
+  height: 16px;
+  width: 80%;
+  border-radius: 4px;
+}
+
+.skeletonDocPreview2 {
+  height: 16px;
+  width: 60%;
+  border-radius: 4px;
+}

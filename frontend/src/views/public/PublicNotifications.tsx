@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { auditService } from '../../services/auditService';
 import styles from './PublicNotifications.module.css';
+import Skeleton from '../../components/Skeleton';
 
 interface Notification {
   id: string;
@@ -192,8 +193,17 @@ const PublicNotifications: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className={styles.centered}>
-          <Loader2 size={28} color="var(--color-primary)" className={styles.spin} />
+        <div className={styles.card} style={{ padding: '0.5rem 1.25rem' }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.875rem', padding: '1rem 0', borderBottom: i < 4 ? '1px solid var(--color-border)' : 'none' }}>
+              <Skeleton style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <Skeleton style={{ height: 16, width: '45%', borderRadius: 4, marginBottom: 6 }} />
+                <Skeleton style={{ height: 14, width: '80%', borderRadius: 4, marginBottom: 6 }} />
+                <Skeleton style={{ height: 11, width: '20%', borderRadius: 4 }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <>

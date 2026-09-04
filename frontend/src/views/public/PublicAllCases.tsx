@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 import { auditService } from '../../services/auditService';
 import { triageService, type TriageLawyerMatch } from '../../services/triageService';
 import styles from './PublicAllCases.module.css';
+import Skeleton from '../../components/Skeleton';
 
 type CaseItem = {
   id: string;
@@ -390,9 +391,17 @@ const PublicAllCases = () => {
 
         {/* Body */}
         {isLoading ? (
-          <div className={styles.emptyState}>
-            <Loader2 className="animate-spin" size={24} />
-            <p>Kinukuha ang iyong mga kaso...</p>
+          <div className={styles.caseList}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={styles.caseRow} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.75rem' }}>
+                <Skeleton style={{ height: 20, width: '55%', borderRadius: 4 }} />
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <Skeleton style={{ height: 22, width: 90, borderRadius: 11 }} />
+                  <Skeleton style={{ height: 16, width: 140, borderRadius: 4 }} />
+                </div>
+                <Skeleton style={{ height: 14, width: 120, borderRadius: 4 }} />
+              </div>
+            ))}
           </div>
         ) : visible.length === 0 ? (
           <div className={styles.emptyState}>

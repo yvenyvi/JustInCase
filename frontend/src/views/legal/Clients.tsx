@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { createCaseThread } from '../../lib/createCaseThread';
 import styles from './LegalDashboard.module.css';
+import Skeleton from '../../components/Skeleton';
 
 interface ClientCase {
   id: string;
@@ -159,8 +160,22 @@ const Clients = () => {
       </div>
 
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-          <Loader2 size={28} className={styles.spin} color="var(--color-primary)" />
+        <div className={styles.gridCards}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className={styles.card} style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1rem' }}>
+                <Skeleton style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <Skeleton style={{ height: 18, width: '60%', borderRadius: 4, marginBottom: 6 }} />
+                  <Skeleton style={{ height: 13, width: '40%', borderRadius: 4 }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
+                <Skeleton style={{ height: 14, width: '80%', borderRadius: 4 }} />
+                <Skeleton style={{ height: 14, width: '60%', borderRadius: 4 }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className={styles.emptyState}>

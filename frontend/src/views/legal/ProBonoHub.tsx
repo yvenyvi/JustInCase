@@ -7,6 +7,7 @@ import { createCaseThread } from '../../lib/createCaseThread';
 import { auditService } from '../../services/auditService';
 import ConfirmModal from '../../components/ConfirmModal';
 import styles from './LegalDashboard.module.css';
+import Skeleton from '../../components/Skeleton';
 
 interface OpenCase {
   id: string;
@@ -326,8 +327,22 @@ const ProBonoHub = () => {
 
       {/* ── Case grid ──────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-          <Loader2 size={32} className={styles.spin} color="var(--color-primary)" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} style={{ backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', padding: '1.25rem' }}>
+              <Skeleton style={{ height: 20, width: '70%', borderRadius: 4, marginBottom: 8 }} />
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: 12 }}>
+                <Skeleton style={{ height: 18, width: 80, borderRadius: 9 }} />
+                <Skeleton style={{ height: 18, width: 100, borderRadius: 9 }} />
+              </div>
+              <Skeleton style={{ height: 14, width: '95%', borderRadius: 4, marginBottom: 6 }} />
+              <Skeleton style={{ height: 14, width: '80%', borderRadius: 4, marginBottom: 16 }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
+                <Skeleton style={{ height: 12, width: 90, borderRadius: 4 }} />
+                <Skeleton style={{ height: 32, width: 90, borderRadius: 6 }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className={styles.emptyState} style={{ padding: '3rem' }}>

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import styles from './AdminDashboard.module.css';
+import Skeleton from '../../components/Skeleton';
 
 interface KPIs {
   totalUsers: number;
@@ -171,8 +172,29 @@ const AdminDashboard = () => {
       </div>
 
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '6rem' }}>
-          <Loader2 size={32} color="var(--color-primary)" style={{ animation: 'spin 1s linear infinite' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className={styles.kpiGrid}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={styles.kpiCard} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Skeleton style={{ width: 36, height: 36, borderRadius: 8 }} />
+                  <Skeleton style={{ width: 50, height: 16, borderRadius: 8 }} />
+                </div>
+                <Skeleton style={{ height: 32, width: '45%', borderRadius: 4 }} />
+                <Skeleton style={{ height: 14, width: '70%', borderRadius: 4 }} />
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            <div className={styles.kpiCard} style={{ padding: '1.5rem', height: 220 }}>
+              <Skeleton style={{ height: 20, width: '40%', borderRadius: 4, marginBottom: 16 }} />
+              <Skeleton style={{ height: 140, width: '100%', borderRadius: 8 }} />
+            </div>
+            <div className={styles.kpiCard} style={{ padding: '1.5rem', height: 220 }}>
+              <Skeleton style={{ height: 20, width: '40%', borderRadius: 4, marginBottom: 16 }} />
+              <Skeleton style={{ height: 140, width: '100%', borderRadius: 8 }} />
+            </div>
+          </div>
         </div>
       ) : (
         <>

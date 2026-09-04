@@ -18,6 +18,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { auditService } from '../../services/auditService';
 import styles from './CaseManagement.module.css';
+import Skeleton from '../../components/Skeleton';
 
 interface CaseRecord {
   id: string;
@@ -243,9 +244,19 @@ export default function CaseManagement() {
 
       {/* Table */}
       {isLoading ? (
-        <div className={styles.loadingState}>
-          <Loader2 size={32} className={styles.spinner} />
-          <p>Loading cases…</p>
+        <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', padding: '1rem' }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 0.5rem', borderBottom: '1px solid var(--color-border)' }}>
+              <div style={{ width: '35%' }}>
+                <Skeleton style={{ height: 16, width: '80%', borderRadius: 4, marginBottom: 6 }} />
+                <Skeleton style={{ height: 12, width: '45%', borderRadius: 4 }} />
+              </div>
+              <Skeleton style={{ height: 14, width: 90, borderRadius: 4 }} />
+              <Skeleton style={{ height: 14, width: 100, borderRadius: 4 }} />
+              <Skeleton style={{ height: 20, width: 80, borderRadius: 10 }} />
+              <Skeleton style={{ height: 28, width: 70, borderRadius: 6 }} />
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className={styles.emptyState}>

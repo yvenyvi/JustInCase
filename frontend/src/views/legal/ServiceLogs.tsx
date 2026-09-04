@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getCurrentPeriod } from '../../lib/proBonoperiod';
 import ServiceLogModal from './ServiceLogModal';
 import styles from './LegalDashboard.module.css';
+import Skeleton from '../../components/Skeleton';
 
 interface ServiceLog {
   id: string;
@@ -158,8 +159,17 @@ const ServiceLogs: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-            <Loader2 size={28} className={styles.spin} color="var(--color-primary)" />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-border)' }}>
+                <Skeleton style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <Skeleton style={{ height: 16, width: '45%', borderRadius: 4, marginBottom: 6 }} />
+                  <Skeleton style={{ height: 13, width: '70%', borderRadius: 4 }} />
+                </div>
+                <Skeleton style={{ height: 20, width: 60, borderRadius: 4 }} />
+              </div>
+            ))}
           </div>
         ) : logs.length === 0 ? (
           <div className={styles.emptyState} style={{ padding: '3rem' }}>

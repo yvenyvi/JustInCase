@@ -3,6 +3,7 @@ import { UserCheck, UserX, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp }
 import { supabase } from '../../lib/supabase';
 import { auditService } from '../../services/auditService';
 import ConfirmModal from '../../components/ConfirmModal';
+import Skeleton from '../../components/Skeleton';
 import styles from './AttorneyVerifications.module.css';
 
 interface PendingAttorney {
@@ -165,7 +166,22 @@ const AttorneyVerifications = () => {
       {/* List */}
       <div className={styles.list}>
         {isLoading ? (
-          <div className={styles.empty}>Loading…</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={styles.card} style={{ pointerEvents: 'none', padding: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <Skeleton variant="circular" width="44px" height="44px" />
+                    <div>
+                      <Skeleton variant="text" width="160px" height="18px" style={{ marginBottom: '6px' }} />
+                      <Skeleton variant="text" width="220px" height="14px" />
+                    </div>
+                  </div>
+                  <Skeleton variant="rounded" width="90px" height="28px" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
           <div className={styles.empty}>No {activeTab} applications.</div>
         ) : (

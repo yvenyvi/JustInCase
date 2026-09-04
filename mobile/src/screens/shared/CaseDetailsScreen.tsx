@@ -8,6 +8,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 type CaseDetailsRouteProp = RouteProp<RootStackParamList, 'CaseDetails'>;
 
@@ -407,8 +408,34 @@ export default function CaseDetailsScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.centerBox]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Skeleton width={36} height={36} borderRadius={18} style={{ marginRight: 12 }} />
+            <Skeleton width={180} height={24} borderRadius={6} />
+          </View>
+        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={[styles.card, { padding: 18, marginBottom: 16 }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Skeleton width="65%" height={22} borderRadius={6} />
+              <Skeleton width={80} height={24} borderRadius={12} />
+            </View>
+            <Skeleton width="40%" height={14} borderRadius={4} style={{ marginBottom: 14 }} />
+            <Skeleton width="100%" height={14} borderRadius={4} style={{ marginBottom: 6 }} />
+            <Skeleton width="90%" height={14} borderRadius={4} style={{ marginBottom: 6 }} />
+            <Skeleton width="70%" height={14} borderRadius={4} />
+          </View>
+
+          <View style={[styles.card, { padding: 18 }]}>
+            <Skeleton width={140} height={18} borderRadius={4} style={{ marginBottom: 14 }} />
+            <View style={{ gap: 12 }}>
+              <Skeleton width="100%" height={16} borderRadius={4} />
+              <Skeleton width="80%" height={16} borderRadius={4} />
+              <Skeleton width="60%" height={16} borderRadius={4} />
+            </View>
+          </View>
+        </ScrollView>
       </View>
     );
   }

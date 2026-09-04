@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCurrentPeriod } from '../../lib/proBonoperiod';
 import styles from './LegalDashboard.module.css';
+import Skeleton from '../../components/Skeleton';
 
 interface PendingCase {
   id: string;
@@ -118,7 +119,7 @@ const Dashboard = () => {
             <span className={styles.statLabel}>Active Cases</span>
             <Briefcase size={20} color="var(--color-primary)" />
           </div>
-          <div className={styles.statValue}>{isLoading ? <Loader2 size={20} className={styles.spin} /> : activeCaseCount}</div>
+          <div className={styles.statValue}>{isLoading ? <Skeleton style={{ height: 28, width: 44, borderRadius: 4, display: 'inline-block' }} /> : activeCaseCount}</div>
           <div className={styles.statMeta} style={{ color: 'var(--color-success)' }}>
             <TrendingUp size={16} /> In Progress
           </div>
@@ -130,7 +131,13 @@ const Dashboard = () => {
             <Clock size={20} color="var(--color-success)" />
           </div>
           {isLoading ? (
-            <Loader2 size={20} className={styles.spin} color="var(--color-success)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0' }}>
+              <Skeleton style={{ width: 50, height: 50, borderRadius: '50%' }} />
+              <div style={{ flex: 1 }}>
+                <Skeleton style={{ height: 24, width: 70, borderRadius: 4, marginBottom: 6 }} />
+                <Skeleton style={{ height: 12, width: 120, borderRadius: 4 }} />
+              </div>
+            </div>
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -169,7 +176,7 @@ const Dashboard = () => {
             <span className={styles.statLabel}>New Matches</span>
             <Users size={20} color="var(--color-warning)" />
           </div>
-          <div className={styles.statValue}>{isLoading ? <Loader2 size={20} className={styles.spin} /> : pendingCases.length}</div>
+          <div className={styles.statValue}>{isLoading ? <Skeleton style={{ height: 28, width: 44, borderRadius: 4, display: 'inline-block' }} /> : pendingCases.length}</div>
           <div className={styles.activityMeta}>Awaiting your response</div>
         </div>
       </div>
@@ -183,8 +190,13 @@ const Dashboard = () => {
           </div>
 
           {isLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '1.5rem' }}>
-              <Loader2 size={22} className={styles.spin} color="var(--color-primary)" />
+            <div className={styles.alertList}>
+              {[1, 2].map((i) => (
+                <div key={i} className={styles.alertItem} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+                  <Skeleton style={{ height: 18, width: '60%', borderRadius: 4 }} />
+                  <Skeleton style={{ height: 13, width: '85%', borderRadius: 4 }} />
+                </div>
+              ))}
             </div>
           ) : pendingCases.length === 0 ? (
             <p className={styles.alertText} style={{ color: 'var(--color-text-muted)' }}>

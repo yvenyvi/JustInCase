@@ -11,6 +11,7 @@ import {
   Star,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import Skeleton from '../../components/Skeleton';
 import styles from './FeedbackAnalytics.module.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -246,8 +247,30 @@ const FeedbackAnalytics = () => {
       </div>
 
       {isLoading ? (
-        <div className={styles.centered}>
-          <Loader2 size={32} color="var(--color-primary)" style={{ animation: 'spin 1s linear infinite' }} />
+        <div>
+          <div className={styles.kpiGrid}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={styles.kpiCard} style={{ pointerEvents: 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                  <Skeleton variant="circular" width="36px" height="36px" />
+                  <Skeleton variant="rounded" width="50px" height="22px" />
+                </div>
+                <Skeleton variant="text" width="60px" height="28px" style={{ marginBottom: '6px' }} />
+                <Skeleton variant="text" width="100px" height="16px" style={{ marginBottom: '12px' }} />
+                <Skeleton variant="rectangular" width="100%" height="6px" borderRadius="999px" />
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
+            <div style={{ padding: '1.5rem', background: '#fff', borderRadius: '12px', border: '1px solid var(--color-border, #E5E7EB)' }}>
+              <Skeleton variant="text" width="140px" height="20px" style={{ marginBottom: '1rem' }} />
+              <Skeleton variant="rectangular" width="100%" height="180px" borderRadius="8px" />
+            </div>
+            <div style={{ padding: '1.5rem', background: '#fff', borderRadius: '12px', border: '1px solid var(--color-border, #E5E7EB)' }}>
+              <Skeleton variant="text" width="160px" height="20px" style={{ marginBottom: '1rem' }} />
+              <Skeleton variant="rectangular" width="100%" height="180px" borderRadius="8px" />
+            </div>
+          </div>
         </div>
       ) : (
         <>

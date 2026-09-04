@@ -12,6 +12,7 @@ import AvatarUpload from '../../components/AvatarUpload';
 import { documentGeneratorService } from '../../services/documentGeneratorService';
 import GeneratedDocumentsModal from './GeneratedDocumentsModal';
 import styles from './Profile.module.css';
+import Skeleton from '../../components/Skeleton';
 
 type GeneratedDocumentItem = {
   id: string;
@@ -336,8 +337,15 @@ const Profile = () => {
                 <Button variant="ghost" size="sm" onClick={() => navigate('/public/cases')}>View All</Button>
               </div>
               {isCasesLoading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
-                  <Loader2 className="animate-spin" size={24} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', padding: '0.5rem 0' }}>
+                  <div className={styles.activeRequest}>
+                    <Skeleton style={{ height: 18, width: '60%', borderRadius: 4, marginBottom: 8 }} />
+                    <Skeleton style={{ height: 14, width: '30%', borderRadius: 4 }} />
+                  </div>
+                  <div className={styles.activeRequest}>
+                    <Skeleton style={{ height: 18, width: '50%', borderRadius: 4, marginBottom: 8 }} />
+                    <Skeleton style={{ height: 14, width: '25%', borderRadius: 4 }} />
+                  </div>
                 </div>
               ) : cases.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
@@ -380,8 +388,15 @@ const Profile = () => {
               </div>
 
               {isDocumentsLoading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0 1.5rem' }}>
-                  <Loader2 className="animate-spin" size={22} />
+                <div style={{ padding: '0.5rem 0 1rem' }}>
+                  <div className={styles.documentItem}>
+                    <Skeleton style={{ width: 18, height: 18, borderRadius: 4, flexShrink: 0 }} />
+                    <div className={styles.documentInfo} style={{ flex: 1 }}>
+                      <Skeleton style={{ height: 16, width: '50%', borderRadius: 4, marginBottom: 6 }} />
+                      <Skeleton style={{ height: 12, width: '35%', borderRadius: 4, marginBottom: 6 }} />
+                      <Skeleton style={{ height: 12, width: '90%', borderRadius: 4 }} />
+                    </div>
+                  </div>
                 </div>
               ) : generatedDocuments.length > 0 ? (
                 <div className={styles.documentList}>

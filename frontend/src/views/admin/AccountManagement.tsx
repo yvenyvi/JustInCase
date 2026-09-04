@@ -24,6 +24,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { auditService } from '../../services/auditService';
 import styles from './AccountManagement.module.css';
+import Skeleton from '../../components/Skeleton';
 import LocationSelector from '../../components/shared/LocationSelector';
 
 interface UserAccount {
@@ -356,8 +357,22 @@ const AccountManagement = () => {
 
         <div className={styles.tableWrapper}>
           {isLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-              <Loader2 size={28} color="var(--color-primary)" style={{ animation: 'spin 1s linear infinite' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', padding: '1rem' }}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 0.5rem', borderBottom: '1px solid var(--color-border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '30%' }}>
+                    <Skeleton style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <Skeleton style={{ height: 16, width: '70%', borderRadius: 4, marginBottom: 4 }} />
+                      <Skeleton style={{ height: 12, width: '90%', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                  <Skeleton style={{ height: 20, width: 70, borderRadius: 10 }} />
+                  <Skeleton style={{ height: 20, width: 90, borderRadius: 10 }} />
+                  <Skeleton style={{ height: 14, width: 80, borderRadius: 4 }} />
+                  <Skeleton style={{ height: 28, width: 60, borderRadius: 6 }} />
+                </div>
+              ))}
             </div>
           ) : (
             <table className={styles.table}>
