@@ -163,3 +163,32 @@ def generate_interactive_triage(history: list[dict[str, Any]]) -> str:
             )
         else:
             raise ValueError("Gemini key not configured and Groq failed")
+
+
+def ground_triage_result(result: dict[str, Any], legal_sources: list[dict[str, Any]]) -> dict[str, Any]:
+    """Refine only the legal assessment fields using retrieved, source-linked law."""
+    if not legal_sources:
+        return result
+    from juris_service import sources_prompt
+    prompt = (
+        "Review this Philippine legal triage assessment using the supplied research aids. "
+        "Preserve every JSON key and the factual intake fields. Improve only category_of_law, "
+        "primary_issue, ai_assessment, and missing_details. Do not claim certainty, quote a holding, "
+        "or invent a citation. Return JSON only.\n\n"
+        + json.dumps(result)
+        + "\n\n"
+        + sources_prompt(legal_sources)
+    )
+    try:
+        raw = call_groq(
+            messages=[{"role": "user", "content": prompt}],
+            model=config.groq_model,
+            temperature=0.1,
+            max_tokens=1600,
+            timeout=45.0,
+        )
+        raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        grounded = json.loads(raw)
+        return {**result, **{key: grounded[key] for key in ("category_of_law", "primary_issue", "ai_assessment", "missing_details") if key in grounded}}
+    except Exception:
+        return result

@@ -75,7 +75,7 @@ export default function DocumentGeneratorScreen() {
           }
         }
         
-        navigation.navigate('PublicDocumentResult', { result: { content: documentMarkdown, templateTitle: extractedTitle, templateSlug: 'interactive-draft' } });
+        navigation.navigate('PublicDocumentResult', { result: { content: documentMarkdown, templateTitle: extractedTitle, templateSlug: 'interactive-draft', sources: data.sources || [], researchUnavailable: Boolean(data.research_unavailable) } });
       } else {
         const questionText = reply.replace(/^QUESTION:\s*/i, '');
         setMessages(prev => [...prev, { role: 'assistant', content: questionText }]);
@@ -119,7 +119,15 @@ export default function DocumentGeneratorScreen() {
           <Ionicons name="arrow-back" size={24} color="#64748B" />
         </Pressable>
         <Text style={styles.headerTitle}>AI Document Drafter</Text>
-        <View style={{ width: 44 }} />
+        <Pressable
+          onPress={() => navigation.navigate('PublicMyDocuments')}
+          style={styles.savedDocumentsBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Open saved documents"
+          hitSlop={8}
+        >
+          <Ionicons name="folder-open-outline" size={23} color={theme.colors.primary} />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -177,6 +185,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border, zIndex: 10 },
   backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  savedDocumentsBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
   chatScrollView: { flex: 1 },
   chatScroll: { padding: 16, paddingBottom: 40 },

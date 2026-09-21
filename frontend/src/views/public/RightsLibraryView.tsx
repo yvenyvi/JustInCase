@@ -3,6 +3,10 @@ import { Search, ChevronRight, ChevronDown, BookOpen, Home, Briefcase, Users, Sh
 import { rightsService, RightsCategory, RightsArticle } from '../../services/rightsService';
 import styles from './RightsLibrary.module.css';
 import Skeleton from '../../components/Skeleton';
+import { LegalSource, searchLegalSources } from '../../services/legalResearchService';
+import { useLocation } from 'react-router-dom';
+
+type LibraryTab = 'guides' | 'cases' | 'laws' | 'bills';
 
 // Map icon names from DB to actual components
 const iconMap: Record<string, React.ElementType> = {
@@ -61,11 +65,56 @@ const getArticleUrl = (article: RightsArticle): string | null => {
 };
 
 const RightsLibraryView = () => {
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [categories, setCategories] = useState<RightsCategory[]>([]);
   const [articlesByCategory, setArticlesByCategory] = useState<Record<string, RightsArticle[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [expandedArticleId, setExpandedArticleId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<LibraryTab>('guides');
+  const [researchResults, setResearchResults] = useState<LegalSource[]>([]);
+  const [isResearching, setIsResearching] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
+  const [bills, setBills] = useState<any[]>([]);
+
+  useEffect(() => {
+    const state = location.state as { query?: string; sources?: LegalSource[] } | null;
+    if (state?.query) setSearchTerm(state.query);
+    if (state?.sources) {
+      setActiveTab('cases');
+      setResearchResults(state.sources);
+    }
+  }, [location.state]);
+
+  const runResearch = async () => {
+    if (!searchTerm.trim() || (activeTab !== 'cases' && activeTab !== 'laws')) return;
+    setIsResearching(true);
+    setResearchError(null);
+    try {
+      const dataset = activeTab === 'cases' ? 'jurisprudence' : 'republic-acts';
+      const data = await searchLegalSources(searchTerm, [dataset], 8);
+      setResearchResults(data.sources);
+      if (data.unavailable.length) setResearchError('Some external legal sources are temporarily unavailable.');
+    } catch (error) {
+      setResearchResults([]);
+      setResearchError(error instanceof Error ? error.message : 'Search failed.');
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'bills') return;
+    const timer = window.setTimeout(async () => {
+      try {
+        const query = searchTerm.trim() ? `&search=${encodeURIComponent(searchTerm.trim())}` : '';
+        const response = await fetch(`https://open-congress-api.bettergov.ph/api/documents?limit=20&sort=date_filed&dir=desc${query}`);
+        const payload = await response.json();
+        setBills(payload?.data || []);
+      } catch { setBills([]); }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, searchTerm]);
 
   const openExternal = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -150,25 +199,64 @@ const RightsLibraryView = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <span className={styles.badge}>Know Your Rights</span>
-        <h1 className={styles.title}>Legal Rights Library</h1>
+        <span className={styles.badge}>Philippine Legal Research</span>
+        <h1 className={styles.title}>Legal Library</h1>
         <p className={styles.subtitle}>
           {categories.length} na kategorya at {Object.values(articlesByCategory).flat().length} na artikulo — batay sa Constitution, Republic Acts, at Labor Code ng Pilipinas.
         </p>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', margin: '1.25rem 0' }}>
+        {([['guides', 'Guides'], ['cases', 'Cases'], ['laws', 'Laws'], ['bills', 'Pending Bills']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => { setActiveTab(id); setSearchTerm(''); setResearchResults([]); }} className={activeTab === id ? styles.clearBtn : ''} style={activeTab === id ? undefined : { padding: '.7rem 1rem', borderRadius: '999px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer' }}>{label}</button>
+        ))}
       </div>
 
       <div className={styles.searchWrapper}>
         <Search size={20} color="var(--color-text-muted)" />
         <input
           type="text"
-          placeholder="Maghanap ng topic (e.g. 'OFW', 'sahod', 'VAWC', 'senior')"
+          placeholder={activeTab === 'guides' ? "Maghanap ng topic (e.g. 'OFW', 'sahod', 'VAWC')" : activeTab === 'bills' ? 'Search pending House or Senate bills' : activeTab === 'cases' ? 'Search Supreme Court cases' : 'Search Republic Acts'}
           className={styles.searchInput}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
-      <div className={styles.categoriesGrid}>
+      {(activeTab === 'cases' || activeTab === 'laws') && (
+        <div>
+          <button className={styles.clearBtn} onClick={() => void runResearch()} disabled={isResearching || !searchTerm.trim()}>{isResearching ? 'Searching…' : 'Search Juris'}</button>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '.85rem' }}>Juris summaries are AI-generated research aids. Verify findings against the authoritative source.</p>
+          {researchError && <p style={{ color: '#b45309' }}>{researchError} <button onClick={() => void runResearch()}>Retry</button></p>}
+          <div className={styles.categoriesGrid} style={{ marginTop: '1rem' }}>
+            {researchResults.map(source => (
+              <article key={`${source.dataset}-${source.id}`} className={styles.categoryCard}>
+                <h3 className={styles.categoryTitle}>{source.title}</h3>
+                {source.citation && <p className={styles.categoryLaw}>{source.citation}</p>}
+                {source.summary && <p className={styles.categoryDesc}>{source.summary}</p>}
+                <p><a href={source.url} target="_blank" rel="noreferrer">Juris record</a>{source.source_url && <> · <a href={source.source_url} target="_blank" rel="noreferrer">Authoritative source</a></>}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'bills' && (
+        <div>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '.85rem' }}>Pending legislation supplied by Open Congress / BetterGov.ph.</p>
+          <div className={styles.categoriesGrid}>
+            {bills.map((bill: any) => (
+              <article key={bill.id} className={styles.categoryCard}>
+                <h3 className={styles.categoryTitle}>{bill.title || bill.long_title || bill.name}</h3>
+                <p className={styles.categoryLaw}>{bill.name || bill.id} · {bill.status || 'Pending'}</p>
+                <a href={`https://open-congress-api.bettergov.ph/view/documents/${bill.id}`} target="_blank" rel="noreferrer">View bill</a>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'guides' && <div className={styles.categoriesGrid}>
         {filteredCategories.length > 0 ? (
           filteredCategories.map(cat => {
             const IconComp = iconMap[cat.icon_name] || BookOpen;
@@ -245,7 +333,7 @@ const RightsLibraryView = () => {
             <button onClick={() => setSearchTerm('')} className={styles.clearBtn}>I-clear ang Search</button>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 };

@@ -12,7 +12,7 @@ export type RootStackParamList = {
   PublicDocumentForm: { templateSlug: string; templateTitle: string };
   PublicDocumentResult: { result: any };
   PublicMyDocuments: undefined;
-  PublicRightsLibrary: undefined;
+  PublicRightsLibrary: { initialTab?: 'guides' | 'cases' | 'laws'; query?: string; initialSources?: any[] } | undefined;
   PublicLegislationTracker: undefined;
   PublicNotifications: undefined;
   ChatThread: { threadId: string; threadName: string };

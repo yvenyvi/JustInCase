@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, Pressable, Platform, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Platform, ScrollView, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { theme } from '../../shared/theme';
@@ -32,6 +32,25 @@ export default function TriageResultScreen() {
           <Ionicons name="checkmark-circle" size={48} color="#059669" />
           <Text style={styles.resultTitle}>Pagsusuri ng AI Tapos Na</Text>
         </View>
+
+        {!!result.legal_sources?.length && (
+          <View style={styles.aiResultCard}>
+            <Text style={styles.aiResultTitle}>Legal sources</Text>
+            <Text style={styles.sourceNote}>Juris summaries are AI-generated research aids. Verify the authoritative text.</Text>
+            {result.legal_sources.map((source: any) => (
+              <View key={`${source.dataset}-${source.id}`} style={styles.sourceItem}>
+                <Text style={styles.sourceTitle}>{source.title}</Text>
+                {!!source.citation && <Text style={styles.aiDetailLabel}>{source.citation}</Text>}
+                <View style={styles.sourceLinks}>
+                  <Pressable onPress={() => Linking.openURL(source.url)}><Text style={styles.sourceLink}>Juris record</Text></Pressable>
+                  {!!source.source_url && <Pressable onPress={() => Linking.openURL(source.source_url)}><Text style={styles.sourceLink}>Authoritative source</Text></Pressable>}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {result.research_unavailable && <Text style={styles.sourceNote}>External legal sources could not be verified. The assessment was completed using the existing guidance.</Text>}
 
         <View style={styles.aiResultCard}>
           <View style={styles.aiResultHeader}>
@@ -104,6 +123,11 @@ const styles = StyleSheet.create({
   aiDetailRow: { marginBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.secondary, paddingBottom: 16 },
   aiDetailLabel: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 6 },
   aiDetailValue: { color: theme.colors.textPrimary, fontSize: 15, lineHeight: 22, fontWeight: '500' },
+  sourceNote: { color: theme.colors.textSecondary, fontSize: 12, lineHeight: 18, marginVertical: 8 },
+  sourceItem: { borderTopWidth: 1, borderTopColor: theme.colors.border, paddingVertical: 12 },
+  sourceTitle: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  sourceLinks: { flexDirection: 'row', gap: 18 },
+  sourceLink: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
 
   footer: { padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: 'transparent', gap: 12 },
   btnPrimary: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.xl, paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', ...theme.shadows.medium },

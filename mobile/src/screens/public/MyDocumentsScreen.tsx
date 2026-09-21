@@ -13,6 +13,7 @@ interface UserDocument {
   content: string;
   template_slug: string;
   created_at: string;
+  sources?: any[];
 }
 
 export default function MyDocumentsScreen() {
@@ -62,7 +63,8 @@ export default function MyDocumentsScreen() {
       result: { 
         templateTitle: doc.title, 
         content: doc.content, 
-        templateSlug: doc.template_slug 
+        templateSlug: doc.template_slug,
+        sources: doc.sources || []
       } 
     });
   };

@@ -7,6 +7,7 @@ import { mobileSupabase } from '../../shared/supabase';
 import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
+import { searchLegalSources } from '../../shared/legalResearch';
 
 type LegalCaseDetailsRouteProp = RouteProp<RootStackParamList, 'LegalCaseDetails'>;
 
@@ -437,6 +438,18 @@ export default function LegalCaseDetailsScreen() {
     }
   };
 
+  const handleFindSimilarCases = async () => {
+    if (!c) return;
+    try {
+      const research = await searchLegalSources(c.description, ['jurisprudence'], 8);
+      navigation.navigate('PublicRightsLibrary', {
+        initialTab: 'cases', query: research.query, initialSources: research.jurisprudence,
+      });
+    } catch (error: any) {
+      Toast.show({ type: 'error', text1: 'Research unavailable', text2: error?.message || 'Please try again.' });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     if (status.includes('Closed') || status === 'Withdrawn' || status === 'Dropped') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
     if (status === 'Demand Sent' || status === 'Hearing Scheduled') return { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' };
@@ -609,6 +622,10 @@ export default function LegalCaseDetailsScreen() {
 
         {/* Attorney Actions */}
         <View style={styles.actionGrid}>
+          <Pressable style={styles.actionBtn} onPress={handleFindSimilarCases}>
+            <Ionicons name="search" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+            <Text style={styles.actionBtnText}>Find Similar Cases</Text>
+          </Pressable>
           {(isAvailable || (isAssigned && c.status === 'Pending Triage')) && (
             <>
               <Pressable 

@@ -34,6 +34,8 @@ export interface GeneratedDocumentDraft {
   source: 'database' | 'fallback';
   generationMode?: 'ai' | 'template';
   aiAssisted?: boolean;
+  sources?: Array<{ dataset: string; id: string; title: string; citation?: string | null; url: string; source_url?: string | null }>;
+  researchUnavailable?: boolean;
 }
 
 import { supabase } from '../lib/supabase';

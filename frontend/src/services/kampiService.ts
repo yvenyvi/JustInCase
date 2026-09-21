@@ -1,4 +1,5 @@
 type KampiRole = 'user' | 'assistant';
+import { supabase } from '../lib/supabase';
 
 export interface KampiHistoryMessage {
   role: KampiRole;
@@ -20,16 +21,20 @@ export interface KampiChatRequest {
 
 interface KampiChatResponse {
   reply: string;
+  sources: Array<{ title: string; citation?: string | null; url: string; source_url?: string | null }>;
+  research_unavailable?: boolean;
 }
 
 const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 export const kampiService = {
   async chat(request: KampiChatRequest): Promise<KampiChatResponse> {
+    const { data } = await supabase.auth.getSession();
     const response = await fetch(`${apiBaseUrl}/api/kampi/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {}),
       },
       body: JSON.stringify({
         message: request.message,

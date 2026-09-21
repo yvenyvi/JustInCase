@@ -8,6 +8,8 @@ import ServiceLogModal from './ServiceLogModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import styles from './LegalDashboard.module.css';
 import Skeleton from '../../components/Skeleton';
+import { useNavigate } from 'react-router-dom';
+import { searchLegalSources } from '../../services/legalResearchService';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
@@ -43,6 +45,7 @@ const statusColor: Record<string, string> = {
 };
 
 const Cases = () => {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [cases, setCases] = React.useState<Case[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -499,6 +502,12 @@ const Cases = () => {
 
               {/* Modal body — scrollable */}
               <div style={{ overflowY: 'auto', flex: 1, padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <button onClick={async () => {
+                  const research = await searchLegalSources(cleanDesc || dc.title, ['jurisprudence'], 8);
+                  navigate('/legal/library', { state: { query: research.query, sources: research.sources } });
+                }} style={{ padding: '.7rem 1rem', border: '1px solid var(--color-primary)', borderRadius: '10px', background: 'transparent', color: 'var(--color-primary)', fontWeight: 700, cursor: 'pointer' }}>
+                  Find Similar Cases
+                </button>
                 {/* Description */}
                 <div>
                   <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.6rem' }}>Description</p>

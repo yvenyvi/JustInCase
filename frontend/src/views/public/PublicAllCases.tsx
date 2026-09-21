@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, Clock, HelpCircle, XCircle, Users, Star,
   Loader2, AlertTriangle, Briefcase, Eye, Paperclip,
@@ -11,6 +11,7 @@ import { auditService } from '../../services/auditService';
 import { triageService, type TriageLawyerMatch } from '../../services/triageService';
 import styles from './PublicAllCases.module.css';
 import Skeleton from '../../components/Skeleton';
+import { searchLegalSources } from '../../services/legalResearchService';
 
 type CaseItem = {
   id: string;
@@ -105,6 +106,7 @@ const getFileIcon = (type: string | null) => {
 };
 
 const PublicAllCases = () => {
+  const navigate = useNavigate();
   const { profile } = useAuth();
 
   const [cases, setCases] = React.useState<CaseItem[]>([]);
@@ -551,6 +553,12 @@ const PublicAllCases = () => {
               </div>
             ) : caseDetail && (
               <div className={styles.detailBody}>
+                <button onClick={async () => {
+                  const research = await searchLegalSources(caseDetail.description || detailCase.title, ['jurisprudence'], 8);
+                  navigate('/public/rights', { state: { query: research.query, sources: research.sources } });
+                }} style={{ padding: '.7rem 1rem', border: '1px solid var(--color-primary)', borderRadius: '10px', background: 'transparent', color: 'var(--color-primary)', fontWeight: 700, cursor: 'pointer' }}>
+                  Find Similar Cases
+                </button>
 
                 {/* ── 1. Case Description ─────────────────────────────────── */}
                 {caseDetail.description && (

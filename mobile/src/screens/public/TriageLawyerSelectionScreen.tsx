@@ -75,7 +75,8 @@ export default function TriageLawyerSelectionScreen() {
         opposingParty: result.opposing_party,
         evidence: result.evidence,
         lawyer_preference: result.lawyer_preference,
-        ai_assessment: result.ai_assessment
+        ai_assessment: result.ai_assessment,
+        legal_sources: result.legal_sources || []
       };
 
       // The database enum is ONLY 'Pro Bono' or 'Private'. If 'Any', we store null.

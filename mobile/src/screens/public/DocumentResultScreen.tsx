@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Linking } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -61,7 +61,8 @@ export default function DocumentResultScreen() {
         body: JSON.stringify({
           title: result.templateTitle || 'Generated Document',
           content: result.content,
-          templateSlug: result.templateSlug
+          templateSlug: result.templateSlug,
+          sources: result.sources || []
         })
       });
       
@@ -189,6 +190,27 @@ export default function DocumentResultScreen() {
           </View>
         </View>
 
+        {result.sources?.length > 0 && (
+          <View style={styles.sourcesCard}>
+            <Text style={styles.sourcesTitle}>Legal sources</Text>
+            <Text style={styles.sourcesNote}>Juris summaries are AI-generated research aids. Verify the full text at the authoritative source.</Text>
+            {result.sources.map((source: any) => (
+              <View key={`${source.dataset}-${source.id}`} style={styles.sourceItem}>
+                <Text style={styles.sourceTitle}>{source.title}</Text>
+                {!!source.citation && <Text style={styles.sourceCitation}>{source.citation}</Text>}
+                <View style={styles.sourceLinks}>
+                  {!!source.url && <Pressable onPress={() => Linking.openURL(source.url)}><Text style={styles.sourceLink}>Juris record</Text></Pressable>}
+                  {!!source.source_url && <Pressable onPress={() => Linking.openURL(source.source_url)}><Text style={styles.sourceLink}>Authoritative source</Text></Pressable>}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {result.researchUnavailable && (
+          <View style={styles.warningBox}><Text style={styles.warningText}>External legal sources could not be verified. The draft was still generated without fabricated citations.</Text></View>
+        )}
+
         <View style={styles.disclaimerBox}>
           <Ionicons name="information-circle-outline" size={20} color="#64748B" />
           <Text style={styles.disclaimerText}>
@@ -248,6 +270,14 @@ const styles = StyleSheet.create({
   copyBtnText: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   documentBody: { padding: 20 },
   documentContent: { color: '#334155', fontSize: 14, lineHeight: 22, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
+  sourcesCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, borderWidth: 1, borderColor: theme.colors.border, padding: 16, marginBottom: 20 },
+  sourcesTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  sourcesNote: { fontSize: 12, color: theme.colors.textSecondary, lineHeight: 18, marginTop: 4, marginBottom: 12 },
+  sourceItem: { borderTopWidth: 1, borderTopColor: theme.colors.border, paddingVertical: 12 },
+  sourceTitle: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
+  sourceCitation: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  sourceLinks: { flexDirection: 'row', gap: 18, marginTop: 8 },
+  sourceLink: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   disclaimerBox: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: theme.colors.secondary, padding: 16, borderRadius: theme.borderRadius.md, gap: 12 },
   disclaimerText: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 20, flex: 1 },
   footer: { padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderTopColor: theme.colors.border, gap: 16 },

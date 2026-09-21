@@ -54,8 +54,6 @@ export function RootNavigator() {
               <Stack.Screen name="PublicDocumentForm" component={DocumentFormScreen} />
               <Stack.Screen name="PublicDocumentResult" component={DocumentResultScreen} />
               <Stack.Screen name="PublicMyDocuments" component={require('../screens/public/MyDocumentsScreen').default} />
-              <Stack.Screen name="PublicRightsLibrary" component={RightsLibraryScreen} />
-              <Stack.Screen name="PublicLegislationTracker" component={LegislationTrackerScreen} />
             </Stack.Group>
           )}
 
@@ -71,6 +69,8 @@ export function RootNavigator() {
           <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
           <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
           <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
+          <Stack.Screen name="PublicRightsLibrary" component={RightsLibraryScreen} />
+          <Stack.Screen name="PublicLegislationTracker" component={LegislationTrackerScreen} />
         </Stack.Group>
       ) : (
         <Stack.Screen name="Auth" component={AuthNavigator} />

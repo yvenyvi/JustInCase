@@ -2,6 +2,7 @@ from typing import Any
 
 from config import config
 from groq_client import call_groq
+from juris_service import sources_prompt
 
 SYSTEM_PROMPT = (
     "You are Kampi, a legal aid AI assistant for JusticeLink PH. "
@@ -65,6 +66,7 @@ def generate_kampi_reply(
     message: str,
     history: list[dict[str, Any]] | None = None,
     rights_context: list[dict[str, Any]] | None = None,
+    legal_sources: list[dict[str, Any]] | None = None,
 ) -> str:
     user_message = message.strip()
     if not user_message:
@@ -80,6 +82,7 @@ def generate_kampi_reply(
 
     if rights_context_text:
         messages.append({"role": "system", "content": rights_context_text})
+    messages.append({"role": "system", "content": sources_prompt(legal_sources or [])})
 
     messages.extend(history_messages)
     messages.append({"role": "user", "content": user_message})

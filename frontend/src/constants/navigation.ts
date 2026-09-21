@@ -21,6 +21,12 @@ import { NavigationSection } from '../types';
 
 export const legalNavigation: NavigationSection[] = [
   {
+    section: 'Resources',
+    items: [
+      { id: 'library', label: 'Legal Library', icon: BookOpen, path: '/legal/library' },
+    ]
+  },
+  {
     section: 'Overview',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/legal/dashboard' },
@@ -66,7 +72,7 @@ export const publicNavigation: NavigationSection[] = [
   {
     section: 'Resources',
     items: [
-      { id: 'guides', label: 'Rights Library', icon: BookOpen, path: '/public/rights' },
+      { id: 'guides', label: 'Legal Library', icon: BookOpen, path: '/public/rights' },
     ]
   },
   {

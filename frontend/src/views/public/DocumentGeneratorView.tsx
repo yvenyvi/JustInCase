@@ -165,6 +165,22 @@ const DocumentGeneratorView = () => {
           <pre className={styles.preview}>
             {generatedDraft.content}
           </pre>
+          {!!generatedDraft.sources?.length && (
+            <div className={styles.warningBox}>
+              <p className={styles.warningTitle}>Legal sources</p>
+              <p>Juris summaries are AI-generated research aids. Verify each authoritative source before relying on it.</p>
+              <ul className={styles.warningList}>
+                {generatedDraft.sources.map((source) => (
+                  <li key={`${source.dataset}-${source.id}`}>
+                    {source.title}{source.citation ? ` (${source.citation})` : ''}{' '}
+                    <a href={source.url} target="_blank" rel="noreferrer">Juris record</a>
+                    {source.source_url && <> · <a href={source.source_url} target="_blank" rel="noreferrer">Authoritative source</a></>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {generatedDraft.researchUnavailable && <div className={styles.errorBox}>External legal sources could not be verified. No unverified citations were added.</div>}
         </div>
 
         <div className={styles.resultFooter}>

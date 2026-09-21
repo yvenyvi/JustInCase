@@ -144,7 +144,7 @@ export default function PublicDashboardScreen() {
               <View style={[styles.toolIconContainer, { backgroundColor: '#F0FDF4' }]}>
                 <Ionicons name="document-text" size={24} color="#16A34A" />
               </View>
-              <Text style={styles.toolText}>Legal Docs</Text>
+              <Text style={styles.toolText}>Document Drafter</Text>
             </Pressable>
           </Card>
           <Card style={styles.toolCard}>
@@ -152,7 +152,7 @@ export default function PublicDashboardScreen() {
               <View style={[styles.toolIconContainer, { backgroundColor: '#EFF6FF' }]}>
                 <Ionicons name="library" size={24} color="#2563EB" />
               </View>
-              <Text style={styles.toolText}>Rights Library</Text>
+              <Text style={styles.toolText}>Legal Library</Text>
             </Pressable>
           </Card>
           <Card style={styles.toolCard}>

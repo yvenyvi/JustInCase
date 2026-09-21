@@ -171,7 +171,15 @@ const KampiFloatingChat: React.FC = () => {
 
     try {
       const response = await kampiService.chat({ message: query, history, rightsContext });
-      return response.reply;
+      if (!response.sources?.length) {
+        return response.research_unavailable
+          ? `${response.reply}\n\nExternal legal sources could not be verified right now.`
+          : response.reply;
+      }
+      const sourceLines = response.sources.map((source) =>
+        `• ${source.title}${source.citation ? ` (${source.citation})` : ''}: ${source.source_url || source.url}`
+      );
+      return `${response.reply}\n\nSources (Juris summaries are AI-generated research aids; verify the authoritative text):\n${sourceLines.join('\n')}`;
     } catch (err) {
       console.error('Error generating Kampi response:', err);
       return "Pasensya na, hindi ko ma-access ang AI service ngayon. Subukan ulit mamaya. Kung legal concern ito, maaari mo ring i-check ang Rights Library.";

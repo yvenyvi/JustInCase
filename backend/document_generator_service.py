@@ -840,6 +840,7 @@ def _normalize_chat_history(history: list[dict[str, Any]]) -> list[dict[str, str
 def generate_interactive_draft(
     history: list[dict[str, Any]],
     user_profile: dict[str, str] | None = None,
+    legal_sources: list[dict[str, Any]] | None = None,
 ) -> str:
     if not config.groq_api_keys:
         raise RuntimeError("No Groq API keys are configured.")
@@ -852,7 +853,11 @@ def generate_interactive_draft(
         user_phone=up.get("phone_number") or "Not provided",
     )
 
-    messages: list[dict[str, str]] = [{"role": "system", "content": sys_prompt}]
+    from juris_service import sources_prompt
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": sys_prompt},
+        {"role": "system", "content": sources_prompt(legal_sources or []) + "\nUse citations in the document only when customary for that document type."},
+    ]
     messages.extend(_normalize_chat_history(history))
 
     return call_groq(

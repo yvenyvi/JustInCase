@@ -17,6 +17,7 @@ from document_generator_service import generate_document_draft, list_document_te
 from kampi_service import generate_kampi_reply
 from legal_registration_service import upload_legal_verification_asset
 from triage_service import analyze_triage_case
+from juris_service import search_legal_sources
 
 app = FastAPI(title="JusticeLink Backend", version="1.0.0")
 
@@ -120,6 +121,25 @@ class InteractiveDraftHistoryMessage(BaseModel):
 
 class InteractiveDraftBody(BaseModel):
     history: list[InteractiveDraftHistoryMessage] = Field(default_factory=list)
+
+
+class LegalResearchBody(BaseModel):
+    query: str = Field(min_length=2, max_length=6000)
+    datasets: list[str] = Field(default_factory=lambda: ["jurisprudence", "republic-acts"])
+    year: Optional[int] = None
+    limit: int = Field(default=5, ge=1, le=10)
+
+
+@app.post("/api/legal-research/search")
+def legal_research_search(
+    body: LegalResearchBody,
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    del current_user
+    try:
+        return search_legal_sources(body.query, body.datasets, body.year, body.limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 class LawyerInfo(BaseModel):
@@ -430,14 +450,23 @@ async def legal_registration_ocr(
 
 
 @app.post("/api/kampi/chat")
-def kampi_chat(body: KampiChatBody) -> dict[str, str]:
+def kampi_chat(body: KampiChatBody) -> dict[str, Any]:
     try:
-        reply = generate_kampi_reply(
+        preliminary = generate_kampi_reply(
             message=body.message,
             history=[entry.model_dump() for entry in body.history],
             rights_context=[entry.model_dump() for entry in body.rightsContext],
         )
-        return {"reply": reply}
+        if preliminary.strip() == "I am a legal assistant. I can only answer legal questions.":
+            return {"reply": preliminary, "sources": [], "research_unavailable": False}
+        research = search_legal_sources(body.message, limit=4)
+        reply = generate_kampi_reply(
+            message=body.message,
+            history=[entry.model_dump() for entry in body.history],
+            rights_context=[entry.model_dump() for entry in body.rightsContext],
+            legal_sources=research["sources"],
+        )
+        return {"reply": reply, "sources": research["sources"], "research_unavailable": bool(research["unavailable"])}
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except RuntimeError as exc:
@@ -497,8 +526,21 @@ def document_interactive_draft(
         # Convert Pydantic models to dicts
         history_dicts = [{"role": msg.role, "content": msg.content} for msg in body.history]
         
-        reply = generate_interactive_draft(history=history_dicts, user_profile=user_profile)
-        return {"response": reply}
+        # Retrieval only occurs once the model is ready to draft. A preliminary
+        # pass preserves the existing conversational question flow.
+        preliminary = generate_interactive_draft(history=history_dicts, user_profile=user_profile)
+        if not preliminary.startswith("DOCUMENT:"):
+            return {"response": preliminary, "sources": []}
+        try:
+            research = search_legal_sources(preliminary[:6000], limit=4)
+            reply = generate_interactive_draft(
+                history=history_dicts,
+                user_profile=user_profile,
+                legal_sources=research["sources"],
+            )
+            return {"response": reply, "sources": research["sources"], "research_unavailable": bool(research["unavailable"])}
+        except Exception:
+            return {"response": preliminary, "sources": [], "research_unavailable": True}
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
 
@@ -507,6 +549,7 @@ class DocumentSaveBody(BaseModel):
     title: str
     content: str
     templateSlug: Optional[str] = None
+    sources: list[dict[str, Any]] = Field(default_factory=list)
 
 @app.post("/api/documents/save")
 def document_save(
@@ -526,7 +569,7 @@ def document_save(
             json={
                 "user_id": user_id,
                 "template_slug": body.templateSlug or "interactive-draft",
-                "input_payload": {"title": body.title},
+                "input_payload": {"title": body.title, "sources": body.sources[:10]},
                 "generated_text": body.content,
                 "status": "saved"
             },
@@ -559,6 +602,7 @@ def list_user_documents(
                 "content": item.get("generated_text") or "",
                 "template_slug": item.get("template_slug") or "document",
                 "created_at": item.get("created_at"),
+                "sources": (item.get("input_payload") or {}).get("sources") or [],
             }
             for item in resp.json()
         ]
@@ -620,6 +664,27 @@ def document_generate(
             user_id=user_id,
             values=body.values,
         )
+        try:
+            research = search_legal_sources(
+                f"Philippine law requirements for {body.templateSlug or result.get('templateTitle', 'legal document')}",
+                limit=4,
+            )
+            result["sources"] = research["sources"]
+            result["researchUnavailable"] = bool(research["unavailable"])
+            if result.get("documentId"):
+                httpx.patch(
+                    f"{config.supabase_url}/rest/v1/generated_documents?id=eq.{result['documentId']}",
+                    headers={
+                        "apikey": config.supabase_service_role_key,
+                        "Authorization": f"Bearer {config.supabase_service_role_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={"input_payload": {**body.values, "sources": research["sources"][:10]}},
+                    timeout=8,
+                )
+        except Exception:
+            result["sources"] = []
+            result["researchUnavailable"] = True
         return result
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
@@ -684,6 +749,18 @@ def triage_analyze(body: TriageAnalyzeBody) -> dict[str, Any]:
             outcome=body.outcome or "",
             available_lawyers=lawyers_data,
         )
+        try:
+            from triage_service import ground_triage_result
+            research = search_legal_sources(
+                f"{result.get('category_of_law', '')} {result.get('primary_issue', '')}",
+                limit=4,
+            )
+            result = ground_triage_result(result, research["sources"])
+            result["legal_sources"] = research["sources"]
+            result["research_unavailable"] = bool(research["unavailable"])
+        except Exception:
+            result["legal_sources"] = []
+            result["research_unavailable"] = True
         return result
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
@@ -724,8 +801,23 @@ def triage_interactive(
         history_dicts[-1]['content'] += extracted_text
 
     try:
-        from triage_service import generate_interactive_triage
+        from triage_service import generate_interactive_triage, ground_triage_result
         reply = generate_interactive_triage(history=history_dicts)
+        if reply.startswith("TRIAGE_RESULT:"):
+            raw_json = reply[len("TRIAGE_RESULT:"):].strip()
+            result = json.loads(raw_json)
+            try:
+                research = search_legal_sources(
+                    f"{result.get('category_of_law', '')} {result.get('primary_issue', '')}",
+                    limit=4,
+                )
+                result = ground_triage_result(result, research["sources"])
+                result["legal_sources"] = research["sources"]
+                result["research_unavailable"] = bool(research["unavailable"])
+            except Exception:
+                result["legal_sources"] = []
+                result["research_unavailable"] = True
+            reply = "TRIAGE_RESULT: " + json.dumps(result)
         return {"response": reply}
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { mobileSupabase } from '../../shared/supabase';
 import { theme } from '../../shared/theme';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { LegalSource, searchLegalSources } from '../../shared/legalResearch';
 
 export interface RightsCategory {
   id: string;
@@ -27,13 +28,38 @@ export interface RightsArticle {
 
 export default function RightsLibraryScreen() {
   const navigation = useNavigation();
-  const [searchTerm, setSearchTerm] = useState('');
+  const route = useRoute<any>();
+  const [activeTab, setActiveTab] = useState<'guides' | 'cases' | 'laws'>(route.params?.initialTab || 'guides');
+  const [searchTerm, setSearchTerm] = useState(route.params?.query || '');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   
   const [categories, setCategories] = useState<RightsCategory[]>([]);
   const [articles, setArticles] = useState<RightsArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedArticleId, setExpandedArticleId] = useState<string | null>(null);
+  const [researchResults, setResearchResults] = useState<LegalSource[]>(route.params?.initialSources || []);
+  const [isResearching, setIsResearching] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
+
+  const runResearch = async () => {
+    if (activeTab === 'guides' || searchTerm.trim().length < 2) return;
+    setIsResearching(true);
+    setResearchError(null);
+    try {
+      const dataset = activeTab === 'cases' ? 'jurisprudence' : 'republic-acts';
+      const data = await searchLegalSources(searchTerm.trim(), [dataset], 8);
+      setResearchResults(activeTab === 'cases' ? data.jurisprudence : data.republic_acts);
+    } catch (error: any) {
+      setResearchError(error?.message || 'Legal research is temporarily unavailable.');
+      setResearchResults([]);
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (route.params?.query && activeTab !== 'guides' && !route.params?.initialSources?.length) runResearch();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -147,7 +173,7 @@ export default function RightsLibraryScreen() {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#64748B" />
         </Pressable>
-        <Text style={styles.headerTitle}>Rights Library</Text>
+        <Text style={styles.headerTitle}>Legal Library</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -155,26 +181,55 @@ export default function RightsLibraryScreen() {
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
           <TextInput 
-            placeholder="Search by topic, keyword, or specific content..."
+            placeholder={activeTab === 'guides' ? 'Search guides by topic...' : 'Search Philippine law or a legal issue...'}
             placeholderTextColor="#94A3B8"
             style={styles.searchInput}
             value={searchTerm}
             onChangeText={setSearchTerm}
+            onSubmitEditing={runResearch}
+            returnKeyType="search"
           />
+          {activeTab !== 'guides' && (
+            <Pressable onPress={runResearch} disabled={isResearching} accessibilityLabel="Search legal research">
+              {isResearching ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <Ionicons name="arrow-forward-circle" size={25} color={theme.colors.primary} />}
+            </Pressable>
+          )}
         </View>
         <Text style={styles.searchHintText}>
-          Tip: Our contextual search allows you to use casual terms. Try searching "kid" to find Child Rights, or "job" to find Labor Laws.
+          {activeTab === 'guides' ? 'Browse plain-language guides or switch tabs to research cases and laws.' : 'Do not enter names, addresses, or confidential case details. Summaries are AI-generated research aids.'}
         </Text>
-        <Pressable 
-          style={styles.trackerBtn}
-          onPress={() => navigation.navigate('PublicLegislationTracker' as never)}
-        >
-          <Ionicons name="document-text" size={20} color="#fff" />
-          <Text style={styles.trackerBtnText}>Track Pending Legislation</Text>
-        </Pressable>
+        <View style={styles.libraryTabs}>
+          {(['guides', 'cases', 'laws'] as const).map(tab => (
+            <Pressable key={tab} style={[styles.libraryTab, activeTab === tab && styles.libraryTabActive]} onPress={() => { setActiveTab(tab); setResearchResults([]); setResearchError(null); }}>
+              <Text style={[styles.libraryTabText, activeTab === tab && styles.libraryTabTextActive]}>{tab === 'guides' ? 'Guides' : tab === 'cases' ? 'Cases' : 'Laws'}</Text>
+            </Pressable>
+          ))}
+          <Pressable style={styles.libraryTab} onPress={() => navigation.navigate('PublicLegislationTracker' as never)}>
+            <Text style={styles.libraryTabText}>Pending Bills</Text>
+          </Pressable>
+        </View>
       </View>
 
-      {isLoading ? (
+      {activeTab !== 'guides' ? (
+        <ScrollView contentContainerStyle={styles.researchContent} showsVerticalScrollIndicator={false}>
+          {researchError ? (
+            <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color="#CBD5E1" /><Text style={styles.emptyTitle}>{researchError}</Text><Pressable style={styles.trackerBtn} onPress={runResearch}><Text style={styles.trackerBtnText}>Retry</Text></Pressable></View>
+          ) : researchResults.length > 0 ? researchResults.map(source => (
+            <View key={`${source.dataset}-${source.id}`} style={styles.sourceCard}>
+              <Text style={styles.sourceCitation}>{source.citation || (source.dataset === 'jurisprudence' ? 'Supreme Court decision' : 'Republic Act')}</Text>
+              <Text style={styles.sourceTitle}>{source.title}</Text>
+              {!!source.summary && <Text style={styles.sourceSummary}>{source.summary}</Text>}
+              <Text style={styles.aiNotice}>AI-generated research aid — verify against the authoritative source.</Text>
+              <View style={styles.sourceActions}>
+                <Pressable onPress={() => openUrl(source.url)}><Text style={styles.sourceLink}>View on Juris</Text></Pressable>
+                {!!source.source_url && <Pressable onPress={() => openUrl(source.source_url)}><Text style={styles.sourceLink}>Authoritative source</Text></Pressable>}
+              </View>
+            </View>
+          )) : (
+            <View style={styles.emptyState}><Ionicons name="search-outline" size={48} color="#CBD5E1" /><Text style={styles.emptyTitle}>Search {activeTab === 'cases' ? 'Supreme Court cases' : 'Republic Acts'}</Text><Text style={styles.emptySubtitle}>Use a citation, doctrine, or plain-language legal question.</Text></View>
+          )}
+        </ScrollView>
+      ) : isLoading ? (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 16 }}>
             <Skeleton width={80} height={32} borderRadius={16} />
@@ -296,6 +351,19 @@ const styles = StyleSheet.create({
   searchHintText: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 8, lineHeight: 16 },
   trackerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.primary, paddingHorizontal: 16, paddingVertical: 12, borderRadius: theme.borderRadius.md, marginTop: 16, justifyContent: 'center', gap: 8 },
   trackerBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  libraryTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  libraryTab: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18, backgroundColor: theme.colors.secondary, borderWidth: 1, borderColor: theme.colors.border },
+  libraryTabActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  libraryTabText: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '700' },
+  libraryTabTextActive: { color: '#FFFFFF' },
+  researchContent: { padding: 24, paddingBottom: 60, gap: 14 },
+  sourceCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, borderWidth: 1, borderColor: theme.colors.border, padding: 16 },
+  sourceCitation: { color: theme.colors.primary, fontSize: 12, fontWeight: '800', marginBottom: 5 },
+  sourceTitle: { color: theme.colors.textPrimary, fontSize: 17, fontWeight: '800', lineHeight: 23 },
+  sourceSummary: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 10 },
+  aiNotice: { color: theme.colors.warning, fontSize: 11, lineHeight: 16, marginTop: 12 },
+  sourceActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 18, marginTop: 14 },
+  sourceLink: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   chipsWrapper: { backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   chipsContainer: { paddingHorizontal: 24, paddingVertical: 12, gap: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: theme.borderRadius.xl, backgroundColor: theme.colors.secondary, borderWidth: 1, borderColor: theme.colors.border },

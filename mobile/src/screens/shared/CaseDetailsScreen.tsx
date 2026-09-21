@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { API_BASE_URL } from '../../shared/api';
+import { searchLegalSources } from '../../shared/legalResearch';
 
 type CaseDetailsRouteProp = RouteProp<RootStackParamList, 'CaseDetails'>;
 
@@ -387,6 +388,18 @@ export default function CaseDetailsScreen() {
     });
   };
 
+  const handleFindSimilarCases = async () => {
+    if (!c) return;
+    try {
+      const research = await searchLegalSources(c.description, ['jurisprudence'], 8);
+      navigation.navigate('PublicRightsLibrary' as never, {
+        initialTab: 'cases', query: research.query, initialSources: research.jurisprudence,
+      } as never);
+    } catch (error: any) {
+      Toast.show({ type: 'error', text1: 'Research unavailable', text2: error?.message || 'Please try again.' });
+    }
+  };
+
   useEffect(() => {
     if (isFocused) {
       fetchCaseDetails();
@@ -660,6 +673,10 @@ export default function CaseDetailsScreen() {
 
         {!isCaseClosed && (
           <View style={styles.actionGrid}>
+            <Pressable style={styles.actionBtn} onPress={handleFindSimilarCases}>
+              <Ionicons name="search" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+              <Text style={styles.actionBtnText}>Find Similar Cases</Text>
+            </Pressable>
             {isClient && (
               <Pressable 
                 style={[styles.actionBtn, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]} 

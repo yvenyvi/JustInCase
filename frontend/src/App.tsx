@@ -171,6 +171,7 @@ function App() {
             <Route path="notifications" element={<LegalNotifications />} />
             <Route path="profile" element={<LegalProfile />} />
             <Route path="messages" element={<MessagesView role="legal" />} />
+            <Route path="library" element={<RightsLibraryView />} />
             <Route path="terms" element={<TermsView />} />
           </Route>
         </Route>

@@ -192,6 +192,9 @@ export default function LegalDashboardScreen() {
             )}
           </View>
           <View style={{ flexDirection: 'row', gap: 12 }}>
+            <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('PublicRightsLibrary')} accessibilityLabel="Open Legal Library">
+              <Ionicons name="library" size={23} color={theme.colors.primary} />
+            </Pressable>
             <NotificationBell />
             <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('Profile' as any)}>
               <Ionicons name="person" size={24} color={theme.colors.primary} />
