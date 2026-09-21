@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, Pressable, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
-import Toast from 'react-native-toast-message';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
 import { DocumentCardSkeleton } from '../../components/ui/Skeleton';
+import { API_BASE_URL } from '../../shared/api';
 
 interface UserDocument {
   id: string;
@@ -22,12 +22,17 @@ export default function MyDocumentsScreen() {
   
   const [documents, setDocuments] = useState<UserDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchDocuments = async () => {
-    if (!session?.access_token) return;
+    if (!session?.access_token) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
+    setErrorMessage(null);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
+      const baseUrl = API_BASE_URL;
       const response = await fetch(`${baseUrl}/api/documents`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -40,7 +45,7 @@ export default function MyDocumentsScreen() {
       setDocuments(data.documents || []);
     } catch (error) {
       console.error(error);
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Nabigong kunin ang iyong mga dokumento.' });
+      setErrorMessage('Nabigong kunin ang iyong mga dokumento. Pakisubukang muli.');
     } finally {
       setIsLoading(false);
     }
@@ -91,6 +96,15 @@ export default function MyDocumentsScreen() {
           <DocumentCardSkeleton />
           <DocumentCardSkeleton />
         </View>
+      ) : errorMessage ? (
+        <View style={styles.centerBox}>
+          <Ionicons name="cloud-offline-outline" size={56} color="#94A3B8" />
+          <Text style={styles.emptyTitle}>Hindi ma-load ang mga dokumento</Text>
+          <Text style={styles.emptySubtitle}>{errorMessage}</Text>
+          <Pressable style={styles.retryButton} onPress={fetchDocuments}>
+            <Text style={styles.retryText}>Subukan Muli</Text>
+          </Pressable>
+        </View>
       ) : documents.length === 0 ? (
         <View style={styles.centerBox}>
           <Ionicons name="document-text-outline" size={64} color="#CBD5E1" />
@@ -124,4 +138,6 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1 },
   cardTitle: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   cardDate: { color: theme.colors.textSecondary, fontSize: 13 },
+  retryButton: { marginTop: 20, backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, paddingHorizontal: 20, paddingVertical: 12 },
+  retryText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 });

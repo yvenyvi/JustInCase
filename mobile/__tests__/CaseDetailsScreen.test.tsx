@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, cleanup } from '@testing-library/react-native';
 import CaseDetailsScreen from '../src/screens/shared/CaseDetailsScreen';
 import { mobileSupabase } from '../src/shared/supabase';
 
@@ -13,7 +13,8 @@ jest.mock('@react-navigation/native', () => ({
   }),
   useRoute: () => ({
     params: { caseId: 'test-case-id' }
-  })
+  }),
+  useIsFocused: () => true,
 }));
 
 // Mock Supabase
@@ -36,6 +37,10 @@ jest.mock('@expo/vector-icons', () => ({
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 describe('CaseDetailsScreen', () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -111,7 +116,7 @@ describe('CaseDetailsScreen', () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    const { getByText, queryByText } = await render(
+    const { getByText } = await render(
       <QueryClientProvider client={queryClient}>
         <CaseDetailsScreen />
       </QueryClientProvider>

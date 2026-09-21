@@ -9,6 +9,7 @@ import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { API_BASE_URL } from '../../shared/api';
 
 type CaseDetailsRouteProp = RouteProp<RootStackParamList, 'CaseDetails'>;
 
@@ -393,7 +394,7 @@ export default function CaseDetailsScreen() {
   }, [isFocused, caseId]);
 
   useEffect(() => {
-    const isCaseClosed = c?.status === 'Closed' || c?.status === 'Resolved';
+    const isCaseClosed = !!c?.status && (c.status.includes('Closed') || c.status === 'Resolved' || c.status === 'Dropped');
     if (c && isClient && isCaseClosed && (c.feedbackRating === null || c.feedbackRating === undefined)) {
       setIsReviewModalVisible(true);
     }
@@ -508,7 +509,7 @@ export default function CaseDetailsScreen() {
           try {
             const { data: { session } } = await mobileSupabase.auth.getSession();
             const token = session?.access_token;
-            const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.164.56.97:8000';
+            const apiBaseUrl = API_BASE_URL;
             
             await fetch(`${apiBaseUrl}/api/cases/${c.id}/summarize`, {
               method: 'POST',

@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
+import { API_BASE_URL } from '../../shared/api';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -36,8 +37,10 @@ export default function DocumentGeneratorScreen() {
     setMessages(newMessages);
     setIsLoading(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
+      const baseUrl = API_BASE_URL;
       const token = session?.access_token || '';
 
       const headers: Record<string, string> = {
@@ -48,7 +51,8 @@ export default function DocumentGeneratorScreen() {
       const response = await fetch(`${baseUrl}/api/documents/interactive-draft`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ history: newMessages })
+        body: JSON.stringify({ history: newMessages }),
+        signal: controller.signal,
       });
 
       if (!response.ok) throw new Error('Network response was not ok');
@@ -76,10 +80,14 @@ export default function DocumentGeneratorScreen() {
         const questionText = reply.replace(/^QUESTION:\s*/i, '');
         setMessages(prev => [...prev, { role: 'assistant', content: questionText }]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Paumanhin, mayroong error sa system ngayon. Pakisubukang muli.' }]);
+      const message = error?.name === 'AbortError'
+        ? 'Masyadong matagal ang paggawa ng dokumento. Pakisubukang muli.'
+        : 'Paumanhin, mayroong error sa system ngayon. Pakisubukang muli.';
+      setMessages(prev => [...prev, { role: 'assistant', content: message }]);
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };

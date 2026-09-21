@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, cleanup } from '@testing-library/react-native';
 import RegisterScreen from '../src/screens/auth/RegisterScreen';
 import { mobileSupabase } from '../src/shared/supabase';
 
@@ -55,6 +55,10 @@ global.fetch = jest.fn(() =>
 ) as jest.Mock;
 
 describe('RegisterScreen', () => {
+  afterEach(async () => {
+    await cleanup();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -85,6 +89,17 @@ describe('RegisterScreen', () => {
     });
   });
 
+  it('navigates to Login when Login link is pressed', async () => {
+    const { findByTestId } = await render(
+      <RegisterScreen navigation={mockNavigation as any} route={mockRoute as any} />
+    );
+
+    const loginLink = await findByTestId('login-link');
+    fireEvent.press(loginLink);
+
+    expect(mockGoBack).toHaveBeenCalled();
+  });
+
   it('advances to Step 2 when fields are valid (Citizen)', async () => {
     const { findByText, findByPlaceholderText } = await render(
       <RegisterScreen navigation={mockNavigation as any} route={mockRoute as any} />
@@ -105,14 +120,4 @@ describe('RegisterScreen', () => {
     expect(await findByText('Verify Your Identity')).toBeTruthy();
   });
 
-  it('navigates to Login when Login link is pressed', async () => {
-    const { findByTestId } = await render(
-      <RegisterScreen navigation={mockNavigation as any} route={mockRoute as any} />
-    );
-
-    const loginLink = await findByTestId('login-link');
-    fireEvent.press(loginLink);
-
-    expect(mockGoBack).toHaveBeenCalled();
-  });
 });

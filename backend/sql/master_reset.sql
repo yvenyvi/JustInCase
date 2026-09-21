@@ -116,6 +116,9 @@ CREATE TABLE public.message_threads (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE UNIQUE INDEX message_threads_case_id_unique
+  ON public.message_threads(case_id) WHERE case_id IS NOT NULL;
+
 -- Thread Participants
 CREATE TABLE public.thread_participants (
     thread_id UUID REFERENCES public.message_threads(id) ON DELETE CASCADE,
@@ -156,6 +159,13 @@ CREATE TABLE public.notifications (
     link TEXT,
     is_read BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.notification_preferences (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    push_enabled BOOLEAN NOT NULL DEFAULT true,
+    email_enabled BOOLEAN NOT NULL DEFAULT true,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- PRO-BONO SERVICE LOGS
@@ -221,7 +231,7 @@ CREATE TABLE public.document_templates (
 CREATE TABLE public.generated_documents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  template_id UUID NOT NULL REFERENCES public.document_templates(id) ON DELETE RESTRICT,
+  template_id UUID REFERENCES public.document_templates(id) ON DELETE RESTRICT,
   template_slug TEXT NOT NULL,
   input_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
   generated_text TEXT NOT NULL,

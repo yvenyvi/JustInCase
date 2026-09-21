@@ -7,6 +7,7 @@ import { useMobileAuth } from '../../shared/MobileAuthContext';
 import * as DocumentPicker from 'expo-document-picker';
 import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
+import { API_BASE_URL } from '../../shared/api';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -62,7 +63,7 @@ export default function TriageScreen() {
     setIsLoading(true);
 
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
+      const baseUrl = API_BASE_URL;
       const token = session?.access_token || '';
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;

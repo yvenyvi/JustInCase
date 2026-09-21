@@ -5,6 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { mobileSupabase } from '../../shared/supabase';
 import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
+import { API_BASE_URL } from '../../shared/api';
 
 export default function TriageLawyerSelectionScreen() {
   const navigation = useNavigation<any>();
@@ -19,7 +20,6 @@ export default function TriageLawyerSelectionScreen() {
   useEffect(() => {
     const fetchLawyers = async () => {
       try {
-        const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
         const response = await fetch(`${API_BASE_URL}/api/lawyers`);
         const resultData = await response.json();
         

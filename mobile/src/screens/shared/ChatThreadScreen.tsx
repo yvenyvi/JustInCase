@@ -70,9 +70,20 @@ export default function ChatThreadScreen() {
             
           if (threadErr) {
             if (threadErr.code === '23503') throw new Error('NOT_FOUND');
-            throw threadErr;
+            if (threadErr.code === '23505') {
+              const { data: racedThread, error: racedThreadError } = await mobileSupabase
+                .from('message_threads')
+                .select('id')
+                .eq('case_id', threadId)
+                .single();
+              if (racedThreadError || !racedThread) throw racedThreadError || threadErr;
+              resThreadId = racedThread.id;
+            } else {
+              throw threadErr;
+            }
+          } else {
+            resThreadId = newThread.id;
           }
-          resThreadId = newThread.id;
         }
       }
 

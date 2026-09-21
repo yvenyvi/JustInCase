@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,6 +10,15 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SettingsScreen() {
   const navigation = useNavigation<NavigationProp>();
+
+  const openSupport = async () => {
+    const url = 'mailto:support@justicelink.ph?subject=JusticeLink%20Support';
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Help & Support', 'Email support@justicelink.ph for assistance.');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -49,7 +58,7 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>ABOUT</Text>
         <View style={styles.list}>
-          <Pressable style={styles.listItem} onPress={() => {}}>
+          <Pressable style={styles.listItem} onPress={openSupport}>
             <View style={[styles.iconContainer, { backgroundColor: '#E0F2FE' }]}>
               <Ionicons name="help-buoy" size={20} color="#0284C7" />
             </View>

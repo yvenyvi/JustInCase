@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 import { ProfileSkeleton } from '../../components/ui/Skeleton';
 import * as ImagePicker from 'expo-image-picker';
+import { API_BASE_URL } from '../../shared/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -121,10 +122,9 @@ export default function LegalProfileScreen() {
       const { data: { user } } = await mobileSupabase.auth.getUser();
       if (!user) throw new Error("Not logged in");
       
-      const { error } = await mobileSupabase
-        .from('users')
-        .update({ expertise: editingExpertise })
-        .eq('id', user.id);
+      const { error } = await mobileSupabase.rpc('users_update_own_profile', {
+        p_expertise: editingExpertise,
+      });
         
       if (error) throw error;
       
@@ -172,7 +172,6 @@ export default function LegalProfileScreen() {
         const { data: { user } } = await mobileSupabase.auth.getUser();
         if (!user) throw new Error("Not logged in");
 
-        const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
         const formData = new FormData();
         formData.append('email', profile.email);
         formData.append('kind', 'selfie');
@@ -194,10 +193,9 @@ export default function LegalProfileScreen() {
 
         const newAvatarUrl = payload.url;
         
-        const { error } = await mobileSupabase
-          .from('users')
-          .update({ selfie_url: newAvatarUrl })
-          .eq('id', user.id);
+        const { error } = await mobileSupabase.rpc('users_update_own_profile', {
+          p_selfie_url: newAvatarUrl,
+        });
           
         if (error) throw error;
         

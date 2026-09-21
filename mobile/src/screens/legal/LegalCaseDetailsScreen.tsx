@@ -6,6 +6,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
+import { API_BASE_URL } from '../../shared/api';
 
 type LegalCaseDetailsRouteProp = RouteProp<RootStackParamList, 'LegalCaseDetails'>;
 
@@ -251,12 +252,21 @@ export default function LegalCaseDetailsScreen() {
   const handleAcceptCase = async () => {
     try {
       if (!c || !currentUser) return;
-      const { error } = await mobileSupabase
+      const { data, error } = await mobileSupabase
         .from('cases')
         .update({ attorney_id: currentUser.id, status: 'In Progress' })
-        .eq('id', c.id);
+        .eq('id', c.id)
+        .is('attorney_id', null)
+        .eq('status', 'Pending Triage')
+        .select('id')
+        .maybeSingle();
       
       if (error) throw error;
+      if (!data) {
+        Toast.show({ type: 'info', text1: 'Case unavailable', text2: 'Another attorney has already accepted this case.' });
+        fetchCaseDetails();
+        return;
+      }
       
       // Notify Client (handled automatically by database trigger trg_notify_on_case_status)
 
@@ -327,7 +337,7 @@ export default function LegalCaseDetailsScreen() {
         try {
           const { data: { session } } = await mobileSupabase.auth.getSession();
           const token = session?.access_token;
-          const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.164.56.97:8000';
+          const apiBaseUrl = API_BASE_URL;
           
           await fetch(`${apiBaseUrl}/api/cases/${c.id}/summarize`, {
             method: 'POST',
@@ -376,7 +386,7 @@ export default function LegalCaseDetailsScreen() {
       try {
         const { data: { session } } = await mobileSupabase.auth.getSession();
         const token = session?.access_token;
-        const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.164.56.97:8000';
+        const apiBaseUrl = API_BASE_URL;
         
         await fetch(`${apiBaseUrl}/api/cases/${c.id}/summarize`, {
           method: 'POST',

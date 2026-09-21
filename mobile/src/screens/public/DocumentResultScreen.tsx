@@ -8,6 +8,7 @@ import { documentDirectory, writeAsStringAsync, EncodingType, StorageAccessFrame
 import * as Sharing from 'expo-sharing';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
+import { API_BASE_URL } from '../../shared/api';
 
 export default function DocumentResultScreen() {
   const navigation = useNavigation();
@@ -50,7 +51,7 @@ export default function DocumentResultScreen() {
     }
     setIsSaving(true);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
+      const baseUrl = API_BASE_URL;
       const response = await fetch(`${baseUrl}/api/documents/save`, {
         method: 'POST',
         headers: {
@@ -78,7 +79,7 @@ export default function DocumentResultScreen() {
   const downloadFile = async (format: 'pdf' | 'docx', setLoader: (val: boolean) => void) => {
     setLoader(true);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.100.144:8000';
+      const baseUrl = API_BASE_URL;
       const title = result.templateTitle ? result.templateTitle.replace(/\s+/g, '_') : 'Document';
       
       const response = await fetch(`${baseUrl}/api/documents/export/${format}`, {

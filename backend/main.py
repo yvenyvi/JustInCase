@@ -516,7 +516,7 @@ def document_save(
     user_id = current_user["id"]
     try:
         resp = httpx.post(
-            f"{config.supabase_url}/rest/v1/user_documents",
+            f"{config.supabase_url}/rest/v1/generated_documents",
             headers={
                 "apikey": config.supabase_service_role_key,
                 "Authorization": f"Bearer {config.supabase_service_role_key}",
@@ -525,9 +525,10 @@ def document_save(
             },
             json={
                 "user_id": user_id,
-                "title": body.title,
-                "content": body.content,
-                "template_slug": body.templateSlug
+                "template_slug": body.templateSlug or "interactive-draft",
+                "input_payload": {"title": body.title},
+                "generated_text": body.content,
+                "status": "saved"
             },
             timeout=10,
         )
@@ -543,7 +544,7 @@ def list_user_documents(
     user_id = current_user["id"]
     try:
         resp = httpx.get(
-            f"{config.supabase_url}/rest/v1/user_documents?user_id=eq.{user_id}&order=created_at.desc",
+            f"{config.supabase_url}/rest/v1/generated_documents?user_id=eq.{user_id}&select=id,template_slug,generated_text,input_payload,created_at&order=created_at.desc",
             headers={
                 "apikey": config.supabase_service_role_key,
                 "Authorization": f"Bearer {config.supabase_service_role_key}",
@@ -551,7 +552,17 @@ def list_user_documents(
             timeout=10,
         )
         resp.raise_for_status()
-        return {"documents": resp.json()}
+        documents = [
+            {
+                "id": item.get("id"),
+                "title": (item.get("input_payload") or {}).get("title") or item.get("template_slug") or "Legal Document",
+                "content": item.get("generated_text") or "",
+                "template_slug": item.get("template_slug") or "document",
+                "created_at": item.get("created_at"),
+            }
+            for item in resp.json()
+        ]
+        return {"documents": documents}
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to fetch documents right now.") from exc
 

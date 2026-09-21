@@ -12,6 +12,7 @@ DECLARE
     v_thread_name VARCHAR;
     v_recipient_id UUID;
     v_sender_name VARCHAR;
+    v_case_id UUID;
 BEGIN
     -- Find the recipient in the thread (the participant who is NOT the sender)
     -- We assume 1-on-1 threads for now. We select the first one.
@@ -19,6 +20,22 @@ BEGIN
     FROM public.thread_participants
     WHERE thread_id = NEW.thread_id AND user_id != NEW.sender_id
     LIMIT 1;
+
+    -- The recipient may not have opened the chat yet, so they may not have a
+    -- thread_participants row. Fall back to the case's two parties.
+    IF v_recipient_id IS NULL THEN
+        SELECT case_id INTO v_case_id
+        FROM public.message_threads
+        WHERE id = NEW.thread_id;
+
+        SELECT CASE
+            WHEN client_id = NEW.sender_id THEN attorney_id
+            ELSE client_id
+        END INTO v_recipient_id
+        FROM public.cases
+        WHERE id = v_case_id
+          AND NEW.sender_id IN (client_id, attorney_id);
+    END IF;
 
     IF v_recipient_id IS NOT NULL THEN
         -- Get sender name
@@ -71,13 +88,22 @@ BEGIN
                 'case_accepted',
                 NEW.id
             );
-        ELSIF NEW.status = 'Closed - Won' OR NEW.status = 'Closed - Lost' THEN
+        ELSIF NEW.status LIKE 'Closed%' OR NEW.status IN ('Resolved', 'Dropped', 'Withdrawn') THEN
             INSERT INTO public.notifications (user_id, title, body, type, reference_id)
             VALUES (
                 NEW.client_id,
                 'Case Closed',
-                'Your case "' || NEW.title || '" has been marked as closed.',
+                'Your case "' || NEW.title || '" is now marked as ' || NEW.status || '.',
                 'case_closed',
+                NEW.id
+            );
+        ELSE
+            INSERT INTO public.notifications (user_id, title, body, type, reference_id)
+            VALUES (
+                NEW.client_id,
+                'Case Status Updated',
+                'Your case "' || NEW.title || '" is now marked as ' || NEW.status || '.',
+                'case_update',
                 NEW.id
             );
         END IF;

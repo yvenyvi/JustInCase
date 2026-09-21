@@ -1,14 +1,72 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, Switch } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, Switch, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../shared/theme';
+import { mobileSupabase } from '../../shared/supabase';
+import { useMobileAuth } from '../../shared/MobileAuthContext';
+import Toast from 'react-native-toast-message';
 
 export default function NotificationSettingsScreen() {
   const navigation = useNavigation();
+  const { user } = useMobileAuth();
   const [emailNotifs, setEmailNotifs] = useState(true);
   const [pushNotifs, setPushNotifs] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error } = await mobileSupabase
+        .from('notification_preferences')
+        .select('push_enabled,email_enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Hindi ma-load ang notification settings.' });
+      } else if (data) {
+        setPushNotifs(data.push_enabled);
+        setEmailNotifs(data.email_enabled);
+      }
+      setIsLoading(false);
+    };
+
+    loadPreferences();
+  }, [user?.id]);
+
+  const savePreferences = async (pushEnabled: boolean, emailEnabled: boolean) => {
+    if (!user?.id) return;
+    setIsSaving(true);
+    const { error } = await mobileSupabase
+      .from('notification_preferences')
+      .upsert({
+        user_id: user.id,
+        push_enabled: pushEnabled,
+        email_enabled: emailEnabled,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    setIsSaving(false);
+
+    if (error) {
+      Toast.show({ type: 'error', text1: 'Not saved', text2: 'Pakisubukang muli.' });
+    }
+  };
+
+  const changePush = (value: boolean) => {
+    setPushNotifs(value);
+    savePreferences(value, emailNotifs);
+  };
+
+  const changeEmail = (value: boolean) => {
+    setEmailNotifs(value);
+    savePreferences(pushNotifs, value);
+  };
 
   return (
     <View style={styles.container}>
@@ -23,7 +81,9 @@ export default function NotificationSettingsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.instructions}>Piliin kung paano mo gusto makatanggap ng mga updates at paalala.</Text>
 
-        <View style={styles.list}>
+        {isLoading ? (
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        ) : <View style={styles.list}>
           <View style={styles.listItem}>
             <View style={styles.itemTextContainer}>
               <Text style={styles.listTitle}>Push Notifications</Text>
@@ -32,8 +92,9 @@ export default function NotificationSettingsScreen() {
             <Switch
               trackColor={{ false: theme.colors.border, true: '#CCFBF1' }}
               thumbColor={pushNotifs ? theme.colors.primary : theme.colors.background}
-              onValueChange={setPushNotifs}
+              onValueChange={changePush}
               value={pushNotifs}
+              disabled={isSaving}
             />
           </View>
 
@@ -45,12 +106,13 @@ export default function NotificationSettingsScreen() {
             <Switch
               trackColor={{ false: theme.colors.border, true: '#CCFBF1' }}
               thumbColor={emailNotifs ? theme.colors.primary : theme.colors.background}
-              onValueChange={setEmailNotifs}
+              onValueChange={changeEmail}
               value={emailNotifs}
+              disabled={isSaving}
             />
           </View>
 
-        </View>
+        </View>}
       </ScrollView>
     </View>
   );

@@ -13,6 +13,7 @@ import { mobileSupabase } from '../../shared/supabase';
 import { createClient } from '@supabase/supabase-js';
 import AddressPicker from '../../components/AddressPicker';
 import { theme } from '../../shared/theme';
+import { API_BASE_URL } from '../../shared/api';
 import * as ImagePicker from 'expo-image-picker';
 
 type Props = NativeStackScreenProps<any>;
@@ -93,7 +94,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
   }, [route.params?.resumeState]);
 
   // Backend URL — uses .env or current LAN IP for physical devices + emulators
-  const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.1.21:8000';
+  const apiBaseUrl = API_BASE_URL;
 
   // ── Deep-link listener: app re-opened from external browser ───────────────
   useEffect(() => {

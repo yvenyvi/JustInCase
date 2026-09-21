@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
+import { API_BASE_URL } from '../../shared/api';
 
 export default function DocumentFormScreen() {
   const navigation = useNavigation<any>();
@@ -69,7 +70,7 @@ export default function DocumentFormScreen() {
     setIsGenerating(true);
     
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.1.21:8000';
+      const baseUrl = API_BASE_URL;
       const userId = session?.user?.id || 'anonymous';
       const token = session?.access_token || '';
       

@@ -18,6 +18,94 @@ AS $$
   SELECT role::text FROM public.users WHERE id = auth.uid();
 $$;
 
+CREATE OR REPLACE FUNCTION public.is_case_participant(case_uuid uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.cases
+    WHERE id = case_uuid
+      AND (
+        client_id = auth.uid()
+        OR attorney_id = auth.uid()
+        OR public.get_my_role() = 'Super Administrator'
+      )
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_thread_participant(p_thread_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.thread_participants
+    WHERE thread_id = p_thread_id
+      AND user_id = auth.uid()
+  ) OR EXISTS (
+    SELECT 1
+    FROM public.message_threads
+    WHERE id = p_thread_id
+      AND case_id IS NOT NULL
+      AND public.is_case_participant(case_id)
+  ) OR public.get_my_role() = 'Super Administrator';
+$$;
+
+CREATE OR REPLACE FUNCTION public.users_update_own_profile(
+  p_first_name text DEFAULT NULL,
+  p_middle_name text DEFAULT NULL,
+  p_last_name text DEFAULT NULL,
+  p_suffix text DEFAULT NULL,
+  p_date_of_birth date DEFAULT NULL,
+  p_phone_number text DEFAULT NULL,
+  p_region text DEFAULT NULL,
+  p_province text DEFAULT NULL,
+  p_city_municipality text DEFAULT NULL,
+  p_barangay text DEFAULT NULL,
+  p_street_address text DEFAULT NULL,
+  p_selfie_url text DEFAULT NULL,
+  p_firm_name text DEFAULT NULL,
+  p_expertise text[] DEFAULT NULL
+)
+RETURNS public.users
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  updated_user public.users;
+BEGIN
+  UPDATE public.users
+  SET
+    first_name = COALESCE(p_first_name, first_name),
+    middle_name = COALESCE(p_middle_name, middle_name),
+    last_name = COALESCE(p_last_name, last_name),
+    suffix = COALESCE(p_suffix, suffix),
+    date_of_birth = COALESCE(p_date_of_birth, date_of_birth),
+    phone_number = COALESCE(p_phone_number, phone_number),
+    region = COALESCE(p_region, region),
+    province = COALESCE(p_province, province),
+    city_municipality = COALESCE(p_city_municipality, city_municipality),
+    barangay = COALESCE(p_barangay, barangay),
+    street_address = COALESCE(p_street_address, street_address),
+    selfie_url = COALESCE(p_selfie_url, selfie_url),
+    firm_name = COALESCE(p_firm_name, firm_name),
+    expertise = COALESCE(p_expertise, expertise),
+    updated_at = now()
+  WHERE id = auth.uid()
+  RETURNING * INTO updated_user;
+
+  RETURN updated_user;
+END;
+$$;
+
 -- ==========================================
 -- USERS TABLE
 -- ==========================================
@@ -26,16 +114,11 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "users_read_own" ON public.users;
 DROP POLICY IF EXISTS "users_admin_all" ON public.users;
 DROP POLICY IF EXISTS "users_update_own" ON public.users;
+DROP POLICY IF EXISTS "users_read_authenticated" ON public.users;
 
 -- Anyone authenticated can read any user profile (needed for attorney listings, messaging)
 CREATE POLICY "users_read_authenticated" ON public.users
   FOR SELECT TO authenticated USING (true);
-
--- Users can update their own profile
-CREATE POLICY "users_update_own" ON public.users
-  FOR UPDATE TO authenticated
-  USING (id = auth.uid())
-  WITH CHECK (id = auth.uid());
 
 -- Admins can do everything
 CREATE POLICY "users_admin_all" ON public.users
@@ -90,10 +173,20 @@ DROP POLICY IF EXISTS "cases_attorney_assigned" ON public.cases;
 DROP POLICY IF EXISTS "cases_attorney_update" ON public.cases;
 DROP POLICY IF EXISTS "cases_admin_all" ON public.cases;
 DROP POLICY IF EXISTS "cases_read_authenticated" ON public.cases;
+DROP POLICY IF EXISTS "cases_read_scoped" ON public.cases;
 
--- All authenticated users can read cases (needed for Realtime + Pro Bono Hub)
-CREATE POLICY "cases_read_authenticated" ON public.cases
-  FOR SELECT TO authenticated USING (true);
+-- Citizens read their cases, assigned attorneys read theirs, and attorneys can see unassigned cases.
+CREATE POLICY "cases_read_scoped" ON public.cases
+  FOR SELECT TO authenticated USING (
+    client_id = auth.uid()
+    OR attorney_id = auth.uid()
+    OR (
+      attorney_id IS NULL
+      AND status = 'Pending Triage'
+      AND public.get_my_role() = 'Volunteer Attorney'
+    )
+    OR public.get_my_role() = 'Super Administrator'
+  );
 
 -- Citizens can create their own cases
 CREATE POLICY "cases_client_own" ON public.cases
@@ -106,7 +199,16 @@ CREATE POLICY "cases_attorney_update" ON public.cases
   USING (
     client_id = auth.uid()
     OR attorney_id = auth.uid()
-    OR (attorney_id IS NULL AND status = 'Pending Triage')
+    OR (
+      attorney_id IS NULL
+      AND status = 'Pending Triage'
+      AND public.get_my_role() = 'Volunteer Attorney'
+    )
+    OR public.get_my_role() = 'Super Administrator'
+  )
+  WITH CHECK (
+    client_id = auth.uid()
+    OR attorney_id = auth.uid()
     OR public.get_my_role() = 'Super Administrator'
   );
 
@@ -123,15 +225,15 @@ ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "messages_thread_participant" ON public.messages;
 DROP POLICY IF EXISTS "messages_read_authenticated" ON public.messages;
 DROP POLICY IF EXISTS "messages_insert_authenticated" ON public.messages;
+DROP POLICY IF EXISTS "messages_read_participants" ON public.messages;
 
--- All authenticated users can read messages (simple policy for reliable Realtime)
-CREATE POLICY "messages_read_authenticated" ON public.messages
-  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "messages_read_participants" ON public.messages
+  FOR SELECT TO authenticated USING (public.is_thread_participant(thread_id));
 
 -- Users can only send messages as themselves
 CREATE POLICY "messages_insert_authenticated" ON public.messages
   FOR INSERT TO authenticated
-  WITH CHECK (sender_id = auth.uid());
+  WITH CHECK (sender_id = auth.uid() AND public.is_thread_participant(thread_id));
 
 -- ==========================================
 -- MESSAGE THREADS TABLE
@@ -141,15 +243,27 @@ ALTER TABLE public.message_threads ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "threads_participant_read" ON public.message_threads;
 
 DROP POLICY IF EXISTS "threads_read_authenticated" ON public.message_threads;
+DROP POLICY IF EXISTS "threads_read_participant" ON public.message_threads;
+DROP POLICY IF EXISTS "threads_create" ON public.message_threads;
+DROP POLICY IF EXISTS "threads_update_participant" ON public.message_threads;
 
-CREATE POLICY "threads_read_authenticated" ON public.message_threads
-  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "threads_read_participant" ON public.message_threads
+  FOR SELECT TO authenticated USING (
+    public.is_thread_participant(id)
+    OR (case_id IS NOT NULL AND public.is_case_participant(case_id))
+  );
 
 CREATE POLICY "threads_create" ON public.message_threads
-  FOR INSERT TO authenticated WITH CHECK (true);
+  FOR INSERT TO authenticated WITH CHECK (
+    case_id IS NULL
+    OR public.is_case_participant(case_id)
+    OR public.get_my_role() = 'Volunteer Attorney'
+  );
 
 CREATE POLICY "threads_update_participant" ON public.message_threads
-  FOR UPDATE TO authenticated USING (true);
+  FOR UPDATE TO authenticated
+  USING (public.is_thread_participant(id) OR public.is_case_participant(case_id))
+  WITH CHECK (public.is_thread_participant(id) OR public.is_case_participant(case_id));
 
 -- ==========================================
 -- THREAD PARTICIPANTS TABLE
@@ -160,10 +274,18 @@ DROP POLICY IF EXISTS "thread_participants_read" ON public.thread_participants;
 DROP POLICY IF EXISTS "thread_participants_insert" ON public.thread_participants;
 
 CREATE POLICY "thread_participants_read" ON public.thread_participants
-  FOR SELECT TO authenticated USING (true);
+  FOR SELECT TO authenticated USING (
+    user_id = auth.uid()
+    OR public.is_thread_participant(thread_id)
+    OR public.get_my_role() = 'Super Administrator'
+  );
 
 CREATE POLICY "thread_participants_insert" ON public.thread_participants
-  FOR INSERT TO authenticated WITH CHECK (true);
+  FOR INSERT TO authenticated WITH CHECK (
+    user_id = auth.uid()
+    OR public.is_thread_participant(thread_id)
+    OR public.get_my_role() = 'Super Administrator'
+  );
 
 -- ==========================================
 -- TRIAGE ASSESSMENTS TABLE
@@ -173,12 +295,13 @@ ALTER TABLE public.triage_assessments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "triage_read_case_owner" ON public.triage_assessments;
 DROP POLICY IF EXISTS "triage_insert_authenticated" ON public.triage_assessments;
 
--- Users can read triage for their own cases; attorneys can read triage for assigned cases
-CREATE POLICY "triage_read_authenticated" ON public.triage_assessments
-  FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "triage_read_authenticated" ON public.triage_assessments;
+DROP POLICY IF EXISTS "triage_read_case_participant" ON public.triage_assessments;
+CREATE POLICY "triage_read_case_participant" ON public.triage_assessments
+  FOR SELECT TO authenticated USING (public.is_case_participant(case_id));
 
 CREATE POLICY "triage_insert_authenticated" ON public.triage_assessments
-  FOR INSERT TO authenticated WITH CHECK (true);
+  FOR INSERT TO authenticated WITH CHECK (public.is_case_participant(case_id));
 
 -- ==========================================
 -- AI CONVERSATIONS & MESSAGES
@@ -219,7 +342,14 @@ ALTER TABLE public.pro_bono_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "pro_bono_logs_read" ON public.pro_bono_logs;
 CREATE POLICY "pro_bono_logs_read" ON public.pro_bono_logs
   FOR SELECT TO authenticated
-  USING ( true );
+  USING (
+    attorney_id = auth.uid()
+    OR EXISTS (
+      SELECT 1 FROM public.cases
+      WHERE cases.id = pro_bono_logs.case_id AND cases.client_id = auth.uid()
+    )
+    OR public.get_my_role() = 'Super Administrator'
+  );
 
 DROP POLICY IF EXISTS "pro_bono_logs_insert" ON public.pro_bono_logs;
 CREATE POLICY "pro_bono_logs_insert" ON public.pro_bono_logs
@@ -230,6 +360,13 @@ DROP POLICY IF EXISTS "pro_bono_logs_update" ON public.pro_bono_logs;
 CREATE POLICY "pro_bono_logs_update" ON public.pro_bono_logs
   FOR UPDATE TO authenticated
   USING (
+    attorney_id = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM public.cases
+      WHERE cases.id = pro_bono_logs.case_id AND cases.client_id = auth.uid()
+    )
+  )
+  WITH CHECK (
     attorney_id = auth.uid() OR
     EXISTS (
       SELECT 1 FROM public.cases
@@ -248,7 +385,16 @@ CREATE POLICY "pro_bono_logs_delete" ON public.pro_bono_logs
 ALTER TABLE public.document_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.generated_documents ENABLE ROW LEVEL SECURITY;
 
+-- Interactive AI drafts are not based on a saved template.
+ALTER TABLE public.generated_documents ALTER COLUMN template_id DROP NOT NULL;
+
+-- A case has one canonical conversation thread. The partial index still allows
+-- non-case/system threads with a NULL case_id.
+CREATE UNIQUE INDEX IF NOT EXISTS message_threads_case_id_unique
+  ON public.message_threads(case_id) WHERE case_id IS NOT NULL;
+
 DROP POLICY IF EXISTS "templates_read_all" ON public.document_templates;
+DROP POLICY IF EXISTS "templates_admin_all" ON public.document_templates;
 DROP POLICY IF EXISTS "generated_docs_own" ON public.generated_documents;
 
 -- Everyone can read active templates
@@ -263,6 +409,23 @@ CREATE POLICY "templates_admin_all" ON public.document_templates
 
 -- Users manage their own generated documents
 CREATE POLICY "generated_docs_own" ON public.generated_documents
+  FOR ALL TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+-- Notification settings
+CREATE TABLE IF NOT EXISTS public.notification_preferences (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  push_enabled BOOLEAN NOT NULL DEFAULT true,
+  email_enabled BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+
+ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "notification_preferences_own" ON public.notification_preferences;
+
+CREATE POLICY "notification_preferences_own" ON public.notification_preferences
   FOR ALL TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
