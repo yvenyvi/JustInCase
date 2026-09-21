@@ -242,7 +242,7 @@ const ProBonoHub = () => {
         <div className={styles.pageHeading}>
           <h1 className={styles.title}>Pro-Bono Matchmaking Hub</h1>
           <p className={styles.subtitle}>
-            Open cases from the Smart Legal Triage system. Cases matching your specialties are ranked first.
+            Open cases from the Legal Help Assessment. Cases matching your specialties are ranked first.
           </p>
         </div>
         <div className={styles.headerActions}>

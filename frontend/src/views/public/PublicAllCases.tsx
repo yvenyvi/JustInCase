@@ -419,7 +419,7 @@ const PublicAllCases = () => {
             </p>
             {activeTab === 'all' && (
               <Link to="/public/triage" className={styles.emptyLink}>
-                Magsimula ng Triage
+                Simulan ang Assessment
               </Link>
             )}
           </div>

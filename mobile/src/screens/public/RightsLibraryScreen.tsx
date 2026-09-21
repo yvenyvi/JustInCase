@@ -201,7 +201,7 @@ export default function RightsLibraryScreen() {
         <View style={styles.libraryTabs}>
           {(['guides', 'cases', 'laws'] as const).map(tab => (
             <Pressable key={tab} style={[styles.libraryTab, activeTab === tab && styles.libraryTabActive]} onPress={() => { setActiveTab(tab); setResearchResults([]); setResearchError(null); }}>
-              <Text style={[styles.libraryTabText, activeTab === tab && styles.libraryTabTextActive]}>{tab === 'guides' ? 'Guides' : tab === 'cases' ? 'Cases' : 'Laws'}</Text>
+              <Text style={[styles.libraryTabText, activeTab === tab && styles.libraryTabTextActive]}>{tab === 'guides' ? 'Rights Guides' : tab === 'cases' ? 'Cases' : 'Laws'}</Text>
             </Pressable>
           ))}
           <Pressable style={styles.libraryTab} onPress={() => navigation.navigate('PublicLegislationTracker' as never)}>
@@ -261,7 +261,7 @@ export default function RightsLibraryScreen() {
                 style={[styles.chip, !selectedCategoryId && styles.chipActive]}
                 onPress={() => setSelectedCategoryId(null)}
               >
-                <Text style={[styles.chipText, !selectedCategoryId && styles.chipTextActive]}>Lahat</Text>
+                <Text style={[styles.chipText, !selectedCategoryId && styles.chipTextActive]}>All topics</Text>
               </Pressable>
               {categories.map(cat => (
                 <Pressable 

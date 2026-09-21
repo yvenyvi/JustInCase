@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, Pressable, Platform, ScrollView, Linking } from
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { theme } from '../../shared/theme';
+import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 
 export default function TriageResultScreen() {
   const navigation = useNavigation<any>();
@@ -26,6 +27,7 @@ export default function TriageResultScreen() {
         <Text style={styles.headerTitle}>Assessment Result</Text>
         <View style={{ width: 44 }} />
       </View>
+      <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose attorney']} current={1} />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.resultHeader}>

@@ -21,16 +21,16 @@ import { NavigationSection } from '../types';
 
 export const legalNavigation: NavigationSection[] = [
   {
-    section: 'Resources',
-    items: [
-      { id: 'library', label: 'Legal Library', icon: BookOpen, path: '/legal/library' },
-    ]
-  },
-  {
     section: 'Overview',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/legal/dashboard' },
       { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/legal/messages' },
+    ]
+  },
+  {
+    section: 'Resources',
+    items: [
+      { id: 'library', label: 'Legal Library', icon: BookOpen, path: '/legal/library' },
     ]
   },
   {
@@ -64,9 +64,9 @@ export const publicNavigation: NavigationSection[] = [
   {
     section: 'Legal Support',
     items: [
-      { id: 'triage', label: 'Get Help', icon: ClipboardList, path: '/public/triage' },
+      { id: 'triage', label: 'Legal Help Assessment', icon: ClipboardList, path: '/public/triage' },
       { id: 'cases', label: 'My Cases', icon: FolderOpen, path: '/public/cases' },
-      { id: 'documents', label: 'Document Maker', icon: FileSignature, path: '/public/documents' },
+      { id: 'documents', label: 'Document Drafter', icon: FileSignature, path: '/public/documents' },
     ]
   },
   {

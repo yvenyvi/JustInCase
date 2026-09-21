@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LogOut, ChevronRight, User as UserIcon, X } from 'lucide-react';
+import { ChevronRight, User as UserIcon, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './Sidebar.module.css';
 
@@ -31,7 +31,7 @@ type SidebarProps = {
 };
 
 const Sidebar = ({ sections = [], user, className = '', isOpen = false, onClose }: SidebarProps) => {
-  const { signOut, profile } = useAuth();
+  const { profile } = useAuth();
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''} ${className}`}>
       <div className={styles.logoContainer}>
@@ -88,13 +88,6 @@ const Sidebar = ({ sections = [], user, className = '', isOpen = false, onClose 
               <span className={styles.userName}>{user.name}</span>
               <span className={styles.userRole}>{user.role}</span>
             </div>
-            <button
-              className={styles.logoutBtn}
-              aria-label="Sign Out"
-              onClick={() => void signOut()}
-            >
-              <LogOut size={18} />
-            </button>
           </div>
         )}
         <div className={styles.proBonoBadge}>

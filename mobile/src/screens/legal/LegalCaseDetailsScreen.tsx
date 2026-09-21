@@ -622,10 +622,6 @@ export default function LegalCaseDetailsScreen() {
 
         {/* Attorney Actions */}
         <View style={styles.actionGrid}>
-          <Pressable style={styles.actionBtn} onPress={handleFindSimilarCases}>
-            <Ionicons name="search" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
-            <Text style={styles.actionBtnText}>Find Similar Cases</Text>
-          </Pressable>
           {(isAvailable || (isAssigned && c.status === 'Pending Triage')) && (
             <>
               <Pressable 
@@ -692,6 +688,10 @@ export default function LegalCaseDetailsScreen() {
             </View>
             </>
           )}
+          <Pressable style={styles.actionBtn} onPress={handleFindSimilarCases} accessibilityRole="button" accessibilityHint="Opens de-identified jurisprudence research">
+            <Ionicons name="search" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+            <Text style={styles.actionBtnText}>Research Similar Cases</Text>
+          </Pressable>
         </View>
 
         {isAssigned && timeLogs.length > 0 && (

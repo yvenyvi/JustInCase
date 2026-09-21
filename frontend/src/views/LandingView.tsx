@@ -181,7 +181,7 @@ const LandingView = () => {
                 <MagicBentoCard glowColor="37, 99, 235">
                   <div className={styles.serviceCardInner}>
                     <div className={styles.iconWrapper}><ClipboardList size={24} /></div>
-                    <h3>Smart Legal Triage</h3>
+                    <h3>Legal Help Assessment</h3>
                     <p>Sagutin ang ilang katanungan para mai-match ka sa tamang pro-bono attorney na expert sa iyong problema (Labor, Housing, VAWC, etc.).</p>
                   </div>
                 </MagicBentoCard>
@@ -190,7 +190,7 @@ const LandingView = () => {
                 <MagicBentoCard glowColor="37, 99, 235">
                   <div className={styles.serviceCardInner}>
                     <div className={styles.iconWrapper}><BookOpen size={24} /></div>
-                    <h3>Know Your Rights Library</h3>
+                    <h3>Legal Library</h3>
                     <p>Alamin ang iyong mga karapatan. Basahin ang aming mga guides tungkol sa Rent Control Act, Labor Code, at iba pa.</p>
                   </div>
                 </MagicBentoCard>
@@ -310,8 +310,8 @@ const LandingView = () => {
             <div className={styles.footerLinks}>
               <div className={styles.linkColumn}>
                 <h4>Platform</h4>
-                <Link to="/login">Smart Triage</Link>
-                <Link to="/login">Rights Library</Link>
+                <Link to="/login">Legal Help Assessment</Link>
+                <Link to="/login">Legal Library</Link>
                 <Link to="/login">Document Generator</Link>
               </div>
               <div className={styles.linkColumn}>

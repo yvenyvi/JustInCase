@@ -67,10 +67,6 @@ export default function PublicCasesScreen() {
     };
   }, [queryClient]);
 
-  const handleLogout = async () => {
-    await mobileSupabase.auth.signOut();
-  };
-
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'in progress':
@@ -117,9 +113,6 @@ export default function PublicCasesScreen() {
           <Pressable onPress={() => navigation.navigate('PublicNotifications' as any)} style={styles.iconBtn}>
             <Ionicons name="notifications-outline" size={24} color="#64748B" />
           </Pressable>
-          <Pressable onPress={handleLogout} style={styles.iconBtn}>
-            <Ionicons name="log-out-outline" size={24} color="#64748B" />
-          </Pressable>
         </View>
       </View>
 
@@ -154,7 +147,7 @@ export default function PublicCasesScreen() {
         <View style={styles.emptyState}>
           <Ionicons name="briefcase-outline" size={48} color="#CBD5E1" />
           <Text style={styles.emptyTitle}>Wala kang kaso</Text>
-          <Text style={styles.emptySubtitle}>Pumunta sa Triage para makahanap ng abogado.</Text>
+          <Text style={styles.emptySubtitle}>Simulan ang Legal Help Assessment para makahanap ng abogado.</Text>
         </View>
       ) : filteredCases.length === 0 ? (
         <View style={styles.emptyState}>

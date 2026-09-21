@@ -9,6 +9,7 @@ import * as Sharing from 'expo-sharing';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
+import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 
 export default function DocumentResultScreen() {
   const navigation = useNavigation();
@@ -149,6 +150,7 @@ export default function DocumentResultScreen() {
         </View>
         <View style={{ width: 44 }} />
       </View>
+      <WorkflowProgress steps={['Describe document', 'Review details', 'Save or export']} current={2} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.successBanner}>

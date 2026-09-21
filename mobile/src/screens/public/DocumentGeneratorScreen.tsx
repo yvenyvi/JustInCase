@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
+import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -118,7 +119,7 @@ export default function DocumentGeneratorScreen() {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#64748B" />
         </Pressable>
-        <Text style={styles.headerTitle}>AI Document Drafter</Text>
+        <Text style={styles.headerTitle}>Document Drafter</Text>
         <Pressable
           onPress={() => navigation.navigate('PublicMyDocuments')}
           style={styles.savedDocumentsBtn}
@@ -129,6 +130,7 @@ export default function DocumentGeneratorScreen() {
           <Ionicons name="folder-open-outline" size={23} color={theme.colors.primary} />
         </Pressable>
       </View>
+      <WorkflowProgress steps={['Describe document', 'Review details', 'Save or export']} current={messages.length > 2 ? 1 : 0} />
 
       <ScrollView
         ref={scrollViewRef}

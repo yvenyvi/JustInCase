@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Briefcase, Clock, AlertCircle, ArrowRight, TrendingUp, Loader2 } from 'lucide-react';
+import { Users, Briefcase, Clock, AlertCircle, ArrowRight, TrendingUp, Loader2, MessageSquare, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -113,6 +113,22 @@ const Dashboard = () => {
         </div>
       </div>
 
+      <section aria-labelledby="quick-actions-title" style={{ marginBottom: '1.5rem' }}>
+        <h2 id="quick-actions-title" style={{ fontSize: '.78rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--color-text-muted)', marginBottom: '.75rem' }}>Quick actions</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '.75rem' }}>
+          {[
+            { label: 'Review cases', detail: pendingCases.length ? `${pendingCases.length} awaiting review` : 'View your caseload', icon: Briefcase, path: '/legal/cases' },
+            { label: 'Open messages', detail: 'Continue client conversations', icon: MessageSquare, path: '/legal/messages' },
+            { label: 'Legal research', detail: 'Search cases and Republic Acts', icon: BookOpen, path: '/legal/library' },
+          ].map(action => (
+            <button key={action.label} onClick={() => navigate(action.path)} style={{ display: 'flex', alignItems: 'center', gap: '.8rem', textAlign: 'left', padding: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', cursor: 'pointer', color: 'var(--color-text)' }}>
+              <action.icon size={20} color="var(--color-primary)" />
+              <span><strong style={{ display: 'block' }}>{action.label}</strong><small style={{ color: 'var(--color-text-muted)' }}>{action.detail}</small></span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <div className={styles.statGrid}>
         <div className={`${styles.card} ${styles.statCard}`}>
           <div className={styles.statTopRow}>
@@ -205,7 +221,7 @@ const Dashboard = () => {
           ) : (
             <>
               <p className={styles.alertText}>
-                Mayroon kang <strong>{pendingCases.length}</strong> bagong Smart Triage match{pendingCases.length > 1 ? 'es' : ''} na naghihintay ng iyong review.
+                Mayroon kang <strong>{pendingCases.length}</strong> bagong legal-help match{pendingCases.length > 1 ? 'es' : ''} na naghihintay ng iyong review.
               </p>
               <div className={styles.alertList}>
                 {pendingCases.map((c) => (

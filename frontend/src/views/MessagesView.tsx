@@ -423,7 +423,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({ role }) => {
   }
 
   const emptyMessage = role === 'public'
-    ? 'Wala pang mensahe. Pumili ng abogado sa Smart Triage para makapagsimula ng kaso.'
+    ? 'Wala pang mensahe. Kumpletuhin ang Legal Help Assessment para makapagsimula ng kaso.'
     : 'Wala pang mensahe. Ang mga mensahe ay lilitaw kapag tinanggap mo ang isang kaso.';
 
   return (

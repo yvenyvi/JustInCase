@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +8,7 @@ import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '../../components/ui/Card';
 import { theme } from '../../shared/theme';
-import { NotificationBell } from '../../components/ui/NotificationBell';
+import { DashboardHeader } from '../../components/ui/DashboardHeader';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -95,29 +95,12 @@ export default function PublicDashboardScreen() {
       <View style={styles.ambientGlow1} />
       <View style={styles.ambientGlow2} />
       
-      {/* Header Section */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>Magandang Araw,</Text>
-            {isLoading ? (
-              <ActivityIndicator size="small" color={theme.colors.primary} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
-            ) : (
-              <Text style={styles.name}>{firstName}</Text>
-            )}
-          </View>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <NotificationBell />
-            <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('Profile' as any)}>
-              <Ionicons name="person" size={24} color={theme.colors.primary} />
-            </Pressable>
-          </View>
-        </View>
-        <View style={styles.tipBox}>
-          <Ionicons name="bulb-outline" size={20} color={theme.colors.warning} style={{ marginRight: 8 }} />
-          <Text style={styles.tipText}>{randomTip}</Text>
-        </View>
-      </View>
+      <DashboardHeader
+        eyebrow="Welcome back"
+        name={firstName || 'JusticeLink user'}
+        subtitle={activeCase ? 'Continue your case or choose another legal task.' : 'Start with your concern, or use a self-help tool.'}
+        isLoading={isLoading}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Hero CTA */}
@@ -137,8 +120,8 @@ export default function PublicDashboardScreen() {
         </Pressable>
 
         {/* Quick Tools */}
-        <Text style={styles.sectionTitle}>MGA TOOLS</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickToolsScroll}>
+        <Text style={styles.sectionTitle}>SELF-HELP TOOLS</Text>
+        <View style={styles.quickToolsGrid}>
           <Card style={styles.toolCard}>
             <Pressable onPress={() => navigation.navigate('PublicDocumentGenerator')} style={styles.toolCardInner}>
               <View style={[styles.toolIconContainer, { backgroundColor: '#F0FDF4' }]}>
@@ -155,15 +138,7 @@ export default function PublicDashboardScreen() {
               <Text style={styles.toolText}>Legal Library</Text>
             </Pressable>
           </Card>
-          <Card style={styles.toolCard}>
-            <Pressable onPress={() => navigation.navigate('PublicNotifications')} style={styles.toolCardInner}>
-              <View style={[styles.toolIconContainer, { backgroundColor: '#FFF7ED' }]}>
-                <Ionicons name="notifications" size={24} color="#EA580C" />
-              </View>
-              <Text style={styles.toolText}>Updates</Text>
-            </Pressable>
-          </Card>
-        </ScrollView>
+        </View>
 
         {/* Active Case Widget */}
         <View style={styles.sectionHeader}>
@@ -236,8 +211,9 @@ const styles = StyleSheet.create({
   sectionTitle: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12, marginLeft: 4 },
   seeAllText: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   quickToolsScroll: { gap: 12, paddingBottom: 32 },
-  toolCard: { width: 110, padding: 0, marginRight: 12 },
-  toolCardInner: { padding: 16, alignItems: 'center' },
+  quickToolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingBottom: 32 },
+  toolCard: { width: '47.5%', padding: 0 },
+  toolCardInner: { minHeight: 126, padding: 16, alignItems: 'center', justifyContent: 'center' },
   toolIconContainer: { width: 48, height: 48, borderRadius: theme.borderRadius.lg, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   toolText: { color: theme.colors.textPrimary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   caseWidget: { padding: 0 },

@@ -8,6 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
+import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -164,7 +165,7 @@ export default function TriageScreen() {
         <Pressable onPress={() => navigation.reset({ index: 0, routes: [{ name: 'PublicHome' }] })} style={styles.backBtn}>
           <Ionicons name="close" size={24} color="#64748B" />
         </Pressable>
-        <Text style={styles.headerTitle}>AI Triage Intake</Text>
+        <Text style={styles.headerTitle}>Legal Help Assessment</Text>
         <Pressable onPress={() => {
           setMessages([{ role: 'assistant', content: 'Magandang araw! Ako ay isang AI legal intake assistant. Ilarawan ang iyong legal na problema at tutulungan kitang i-assess ito at ihanap ng angkop na abogado.' }]);
           setInputText('');
@@ -173,6 +174,7 @@ export default function TriageScreen() {
           <Ionicons name="refresh" size={20} color={theme.colors.primary} />
         </Pressable>
       </View>
+      <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose attorney']} current={0} />
 
       <ScrollView
         ref={scrollViewRef}

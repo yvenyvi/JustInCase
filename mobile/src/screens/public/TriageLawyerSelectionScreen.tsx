@@ -6,6 +6,7 @@ import { mobileSupabase } from '../../shared/supabase';
 import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
+import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 
 export default function TriageLawyerSelectionScreen() {
   const navigation = useNavigation<any>();
@@ -127,6 +128,7 @@ export default function TriageLawyerSelectionScreen() {
         <Text style={styles.headerTitle}>Pumili ng Abogado</Text>
         <View style={{ width: 44 }} />
       </View>
+      <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose attorney']} current={2} />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {lawyers.length > 0 ? (

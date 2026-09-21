@@ -182,7 +182,7 @@ const KampiFloatingChat: React.FC = () => {
       return `${response.reply}\n\nSources (Juris summaries are AI-generated research aids; verify the authoritative text):\n${sourceLines.join('\n')}`;
     } catch (err) {
       console.error('Error generating Kampi response:', err);
-      return "Pasensya na, hindi ko ma-access ang AI service ngayon. Subukan ulit mamaya. Kung legal concern ito, maaari mo ring i-check ang Rights Library.";
+      return "Pasensya na, hindi ko ma-access ang AI service ngayon. Subukan ulit mamaya. Kung legal concern ito, maaari mo ring i-check ang Legal Library.";
     }
   };
 

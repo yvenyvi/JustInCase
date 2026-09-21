@@ -12,7 +12,6 @@ import PublicProfileScreen from '../screens/public/PublicProfileScreen';
 import LegalDashboardScreen from '../screens/legal/LegalDashboardScreen';
 import LegalCasesScreen from '../screens/legal/LegalCasesScreen';
 import LegalMessagesScreen from '../screens/legal/LegalMessagesScreen';
-import LegalNotificationsScreen from '../screens/legal/LegalNotificationsScreen';
 import LegalProfileScreen from '../screens/legal/LegalProfileScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../shared/theme';
@@ -37,22 +36,22 @@ export function AppNavigator() {
           },
           tabBarActiveTintColor: theme.colors.primary,
           tabBarInactiveTintColor: theme.colors.textSecondary,
+          tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+          tabBarHideOnKeyboard: true,
           tabBarIcon: ({ focused, color, size }) => {
             let iconName: any = 'home';
             if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';
             else if (route.name === 'Cases') iconName = focused ? 'briefcase' : 'briefcase-outline';
             else if (route.name === 'Messages') iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-            else if (route.name === 'Notifications') iconName = focused ? 'notifications' : 'notifications-outline';
             else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
             
             return <Ionicons name={iconName} size={size} color={color} />;
           },
         })}
       >
-        <Tab.Screen name="Dashboard" component={LegalDashboardScreen} />
+        <Tab.Screen name="Dashboard" component={LegalDashboardScreen} options={{ title: 'Home' }} />
         <Tab.Screen name="Cases" component={LegalCasesScreen} />
         <Tab.Screen name="Messages" component={LegalMessagesScreen} />
-        <Tab.Screen name="Notifications" component={LegalNotificationsScreen} />
         <Tab.Screen name="Profile" component={LegalProfileScreen} />
       </Tab.Navigator>
     );
@@ -83,6 +82,8 @@ export function AppNavigator() {
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textSecondary,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarHideOnKeyboard: true,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: any = 'home';
           if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';
@@ -94,7 +95,7 @@ export function AppNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Dashboard" component={PublicDashboardScreen} />
+      <Tab.Screen name="Dashboard" component={PublicDashboardScreen} options={{ title: 'Home' }} />
       <Tab.Screen name="Cases" component={PublicCasesScreen} />
       <Tab.Screen name="Messages" component={PublicMessagesScreen} />
       <Tab.Screen name="Profile" component={PublicProfileScreen} />

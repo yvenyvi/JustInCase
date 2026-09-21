@@ -87,10 +87,6 @@ export default function PublicMessagesScreen() {
     };
   }, [queryClient]);
 
-  const handleLogout = async () => {
-    await mobileSupabase.auth.signOut();
-  };
-
   return (
     <View style={styles.container}>
       {/* Ambient Background Glows */}
@@ -104,9 +100,6 @@ export default function PublicMessagesScreen() {
         <View style={styles.headerActions}>
           <Pressable onPress={() => navigation.navigate('PublicNotifications' as any)} style={styles.iconBtn}>
             <Ionicons name="notifications-outline" size={24} color="#64748B" />
-          </Pressable>
-          <Pressable onPress={handleLogout} style={styles.iconBtn}>
-            <Ionicons name="log-out-outline" size={24} color="#64748B" />
           </Pressable>
         </View>
       </View>

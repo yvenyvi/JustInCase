@@ -56,7 +56,7 @@ export function NotificationBell() {
   };
 
   return (
-    <Pressable style={styles.iconContainer} onPress={navigateToNotifications}>
+    <Pressable style={styles.iconContainer} onPress={navigateToNotifications} accessibilityRole="button" accessibilityLabel={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'} accessibilityHint="Opens your notifications">
       <Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
       {unreadCount > 0 && (
         <View style={styles.badge}>
@@ -69,8 +69,8 @@ export function NotificationBell() {
 
 const styles = StyleSheet.create({
   iconContainer: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: theme.borderRadius.xl,
     backgroundColor: theme.colors.surface,
     alignItems: 'center',
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
     position: 'relative'
   },
   badge: {

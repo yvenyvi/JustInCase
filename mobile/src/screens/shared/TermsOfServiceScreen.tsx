@@ -42,7 +42,7 @@ export default function TermsOfServiceScreen() {
 
         <Text style={styles.heading}>5. Limitasyon ng Pananagutan</Text>
         <Text style={styles.paragraph}>
-          Bagama't sinisikap naming maging tumpak ang lahat ng impormasyon sa app (tulad ng Rights Library at Document Generators), hindi mananagot ang LAYA platform o ang mga developer nito sa anumang resulta na nag-ugat sa maling pagkakaintindi ng batas. Palaging komunsulta sa iyong nakatalagang abogado para sa legal na katiyakan.
+          Bagama't sinisikap naming maging tumpak ang lahat ng impormasyon sa app (tulad ng Legal Library at Document Drafter), hindi mananagot ang LAYA platform o ang mga developer nito sa anumang resulta na nag-ugat sa maling pagkakaintindi ng batas. Palaging komunsulta sa iyong nakatalagang abogado para sa legal na katiyakan.
         </Text>
       </ScrollView>
     </View>

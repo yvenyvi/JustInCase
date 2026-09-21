@@ -673,20 +673,6 @@ export default function CaseDetailsScreen() {
 
         {!isCaseClosed && (
           <View style={styles.actionGrid}>
-            <Pressable style={styles.actionBtn} onPress={handleFindSimilarCases}>
-              <Ionicons name="search" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
-              <Text style={styles.actionBtnText}>Find Similar Cases</Text>
-            </Pressable>
-            {isClient && (
-              <Pressable 
-                style={[styles.actionBtn, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]} 
-                onPress={handleWithdrawCase}
-              >
-                <Ionicons name="close-circle" size={20} color="#DC2626" style={{ marginRight: 8 }} />
-                <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Cancel Case</Text>
-              </Pressable>
-            )}
-
             <Pressable 
               style={[styles.actionBtn, styles.actionBtnPrimary]} 
               onPress={() => navigation.navigate('ChatThread', { threadId: c.id, threadName: c.assignedTo || 'Support' })}
@@ -701,8 +687,22 @@ export default function CaseDetailsScreen() {
                 <Text style={styles.actionBtnText}>Log Hours</Text>
               </Pressable>
             )}
+            {isClient && (
+              <Pressable
+                style={[styles.actionBtn, { backgroundColor: '#FFF7F7', borderColor: '#FECACA' }]}
+                onPress={handleWithdrawCase}
+              >
+                <Ionicons name="close-circle-outline" size={20} color="#DC2626" style={{ marginRight: 8 }} />
+                <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Cancel Case</Text>
+              </Pressable>
+            )}
           </View>
         )}
+
+        <Pressable style={[styles.actionBtn, { marginTop: 12 }]} onPress={handleFindSimilarCases} accessibilityRole="button" accessibilityHint="Opens de-identified jurisprudence research">
+          <Ionicons name="search" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+          <Text style={styles.actionBtnText}>Research Similar Cases</Text>
+        </Pressable>
 
         {caseDocuments.length > 0 && (
           <View style={{ marginTop: 32 }}>

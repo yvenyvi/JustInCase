@@ -62,7 +62,7 @@ const PublicLayout = ({ user, navigationSections }: PublicLayoutProps) => {
                 className={`${styles.mobileNavItem} ${isActive ? styles.mobileActive : ''}`}
               >
                 <div className={styles.mobileIcon}><item.icon size={20} /></div>
-                <span className={styles.mobileLabel}>{item.label}</span>
+                <span className={styles.mobileLabel}>{item.id === 'triage' ? 'Get Help' : item.id === 'guides' ? 'Library' : item.label}</span>
               </Link>
             );
           })}

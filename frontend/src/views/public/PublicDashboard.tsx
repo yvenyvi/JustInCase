@@ -399,9 +399,9 @@ const PublicDashboard = () => {
         ) : cases.length === 0 ? (
           <div className={styles.emptyState}>
             <CheckCircle2 size={40} strokeWidth={1.5} />
-            <p>Wala kang kaso sa ngayon. I-try ang Smart Triage para makahanap ng abogado.</p>
+            <p>Wala kang kaso sa ngayon. Simulan ang Legal Help Assessment para makahanap ng abogado.</p>
             <Link to="/public/triage" className={styles.createDocBtn}>
-              Magsimula ng Triage
+              Simulan ang Assessment
             </Link>
           </div>
         ) : (

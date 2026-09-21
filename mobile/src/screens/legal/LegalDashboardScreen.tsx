@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
-import { NotificationBell } from '../../components/ui/NotificationBell';
+import { DashboardHeader } from '../../components/ui/DashboardHeader';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -180,34 +180,29 @@ export default function LegalDashboardScreen() {
       <View style={styles.ambientGlow1} />
       <View style={styles.ambientGlow2} />
       
-      {/* Header Section */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            {isLoading ? (
-               <ActivityIndicator size="small" color={theme.colors.primary} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
-            ) : (
-              <Text style={styles.name}>Atty. {firstName}</Text>
-            )}
-          </View>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('PublicRightsLibrary')} accessibilityLabel="Open Legal Library">
-              <Ionicons name="library" size={23} color={theme.colors.primary} />
-            </Pressable>
-            <NotificationBell />
-            <Pressable style={styles.avatarContainer} onPress={() => navigation.navigate('Profile' as any)}>
-              <Ionicons name="person" size={24} color={theme.colors.primary} />
-            </Pressable>
-          </View>
-        </View>
-        <View style={styles.tipBox}>
-          <Ionicons name="scale-outline" size={20} color="#047857" style={{ marginRight: 8 }} />
-          <Text style={styles.tipText}>Thank you for providing accessible justice.</Text>
-        </View>
-      </View>
+      <DashboardHeader
+        eyebrow="Attorney workspace"
+        name={`Atty. ${firstName || 'Attorney'}`}
+        subtitle={directRequests.length > 0 ? `${directRequests.length} request${directRequests.length === 1 ? '' : 's'} need your review.` : 'Your cases and research tools are ready.'}
+        isLoading={isLoading}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>QUICK ACTIONS</Text>
+        <View style={styles.quickActions}>
+          <Pressable style={styles.quickAction} onPress={() => navigation.navigate('Cases' as any)} accessibilityRole="button">
+            <View style={[styles.quickIcon, { backgroundColor: '#EFF6FF' }]}><Ionicons name="briefcase-outline" size={21} color="#2563EB" /></View>
+            <Text style={styles.quickLabel}>Review cases</Text>
+          </Pressable>
+          <Pressable style={styles.quickAction} onPress={() => navigation.navigate('Messages' as any)} accessibilityRole="button">
+            <View style={[styles.quickIcon, { backgroundColor: '#F0FDF4' }]}><Ionicons name="chatbubbles-outline" size={21} color="#16A34A" /></View>
+            <Text style={styles.quickLabel}>Messages</Text>
+          </Pressable>
+          <Pressable style={styles.quickAction} onPress={() => navigation.navigate('PublicRightsLibrary')} accessibilityRole="button">
+            <View style={[styles.quickIcon, { backgroundColor: '#F5F3FF' }]}><Ionicons name="library-outline" size={21} color="#7C3AED" /></View>
+            <Text style={styles.quickLabel}>Legal research</Text>
+          </Pressable>
+        </View>
         
         {/* Stats Row */}
         <View style={styles.statsRow}>
@@ -425,6 +420,10 @@ const styles = StyleSheet.create({
   tipText: { flex: 1, color: '#065F46', fontSize: 13, lineHeight: 18, fontWeight: '500' },
   
   scrollContent: { paddingBottom: 40 },
+  quickActions: { flexDirection: 'row', gap: 10, paddingHorizontal: 24, marginBottom: 24 },
+  quickAction: { flex: 1, minHeight: 104, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.lg, padding: 12, justifyContent: 'space-between' },
+  quickIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  quickLabel: { color: theme.colors.textPrimary, fontSize: 12, lineHeight: 16, fontWeight: '700' },
   
   statsRow: { flexDirection: 'row', gap: 16, marginBottom: 32, paddingHorizontal: 24 },
   statCard: { flex: 1, borderRadius: theme.borderRadius.xl, padding: 16, borderWidth: 1, shadowColor: theme.colors.textSecondary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
@@ -434,6 +433,7 @@ const styles = StyleSheet.create({
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 24 },
   sectionTitle: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  standaloneSectionTitle: { paddingHorizontal: 24, marginBottom: 10 },
   viewAllText: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   
   casesScroll: { paddingHorizontal: 24, gap: 16 },

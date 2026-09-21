@@ -207,7 +207,7 @@ const RightsLibraryView = () => {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', margin: '1.25rem 0' }}>
-        {([['guides', 'Guides'], ['cases', 'Cases'], ['laws', 'Laws'], ['bills', 'Pending Bills']] as const).map(([id, label]) => (
+        {([['guides', 'Rights Guides'], ['cases', 'Cases'], ['laws', 'Laws'], ['bills', 'Pending Bills']] as const).map(([id, label]) => (
           <button key={id} onClick={() => { setActiveTab(id); setSearchTerm(''); setResearchResults([]); }} className={activeTab === id ? styles.clearBtn : ''} style={activeTab === id ? undefined : { padding: '.7rem 1rem', borderRadius: '999px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer' }}>{label}</button>
         ))}
       </div>

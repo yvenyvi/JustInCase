@@ -137,10 +137,10 @@ const TriageView = () => {
   return (
     <div className={styles.triageContainer}>
       <div className={styles.header}>
-        <div className={styles.badgePrimary}>Triage System</div>
+        <div className={styles.badgePrimary}>Legal Help Assessment</div>
         <h1 className={styles.title}>Alamin natin ang tamang tulong para sa'yo.</h1>
         <p className={styles.subtitle}>
-          Phase 1: Sagutin muna ang basic questions, saka mo ilahad ang concern details para ma-match ka sa pinaka-angkop na pro-bono lawyer.
+          Sagutin ang basic questions, ilahad ang concern, at tingnan ang mga attorney na angkop sa iyong pangangailangan.
         </p>
       </div>
 
