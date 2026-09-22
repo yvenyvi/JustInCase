@@ -57,7 +57,6 @@ export default function LegalProfileScreen() {
   const [isEditExpertiseVisible, setIsEditExpertiseVisible] = useState(false);
   const [editingExpertise, setEditingExpertise] = useState<string[]>([]);
   const [isSavingExpertise, setIsSavingExpertise] = useState(false);
-  const [isReviewsModalVisible, setIsReviewsModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'about'>('overview');
 
   const { data: profile, isLoading, refetch } = useQuery({
@@ -71,6 +70,8 @@ export default function LegalProfileScreen() {
         .select('*')
         .eq('id', user.id)
         .single();
+
+      if (error) throw error;
       
       const { data: casesData } = await mobileSupabase
         .from('cases')

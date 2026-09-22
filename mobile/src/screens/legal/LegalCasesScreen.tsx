@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Platform, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -229,7 +229,7 @@ export default function LegalCasesScreen() {
               {availableCases.length > 0 ? (
                 availableCases.map(c => {
                   let parsedDesc: any = null;
-                  try { parsedDesc = JSON.parse(c.description || '{}'); } catch(e) {}
+                  try { parsedDesc = JSON.parse(c.description || '{}'); } catch {}
                   const clientObj: any = Array.isArray(c.client) ? c.client[0] : c.client;
                   
                   return (

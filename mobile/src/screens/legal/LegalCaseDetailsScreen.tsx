@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Alert } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
@@ -65,34 +65,29 @@ export default function LegalCaseDetailsScreen() {
   const [isUpdateStatusModalVisible, setIsUpdateStatusModalVisible] = useState(false);
   const [newStatus, setNewStatus] = useState('Demand Sent');
 
-  useEffect(() => {
-    fetchCaseDetails();
+  const fetchTimeLogs = useCallback(async () => {
+    try {
+      const { data: tLogs } = await mobileSupabase
+        .from('pro_bono_logs')
+        .select('id, hours, description, created_at, is_verified')
+        .eq('case_id', caseId)
+        .order('created_at', { ascending: false });
 
-    const channel = mobileSupabase
-      .channel(`legal_case_updates_${caseId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pro_bono_logs', filter: `case_id=eq.${caseId}` },
-        () => {
-          fetchTimeLogs();
-          fetchCaseDetails(false);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'cases', filter: `id=eq.${caseId}` },
-        () => {
-          fetchCaseDetails(false);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      mobileSupabase.removeChannel(channel);
-    };
+      if (tLogs) {
+        setTimeLogs(tLogs.map(l => ({
+          id: l.id,
+          hours: l.hours,
+          description: l.description,
+          date: new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          isVerified: l.is_verified
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching time logs:', err);
+    }
   }, [caseId]);
 
-  const fetchCaseDetails = async (showLoader = true) => {
+  const fetchCaseDetails = useCallback(async (showLoader = true) => {
     if (showLoader) setIsLoading(true);
     try {
       const { data: { user } } = await mobileSupabase.auth.getUser();
@@ -179,29 +174,34 @@ export default function LegalCaseDetailsScreen() {
     } finally {
       if (showLoader) setIsLoading(false);
     }
-  };
+  }, [caseId, fetchTimeLogs]);
 
-  const fetchTimeLogs = async () => {
-    try {
-      const { data: tLogs } = await mobileSupabase
-        .from('pro_bono_logs')
-        .select('id, hours, description, created_at, is_verified')
-        .eq('case_id', caseId)
-        .order('created_at', { ascending: false });
+  useEffect(() => {
+    void fetchCaseDetails();
 
-      if (tLogs) {
-        setTimeLogs(tLogs.map(l => ({
-          id: l.id,
-          hours: l.hours,
-          description: l.description,
-          date: new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          isVerified: l.is_verified
-        })));
-      }
-    } catch (err) {
-      console.error('Error fetching time logs:', err);
-    }
-  };
+    const channel = mobileSupabase
+      .channel(`legal_case_updates_${caseId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pro_bono_logs', filter: `case_id=eq.${caseId}` },
+        () => {
+          void fetchTimeLogs();
+          void fetchCaseDetails(false);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cases', filter: `id=eq.${caseId}` },
+        () => {
+          void fetchCaseDetails(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void mobileSupabase.removeChannel(channel);
+    };
+  }, [caseId, fetchCaseDetails, fetchTimeLogs]);
 
   const handleLogSubmit = async () => {
     const hoursNum = parseFloat(logHours);
@@ -499,7 +499,7 @@ export default function LegalCaseDetailsScreen() {
       ai_assessment: jsonDesc.ai_assessment,
       missing_details: jsonDesc.missing_details || 'None identified'
     } : jsonDesc.aiAnalysis;
-  } catch (e) {
+  } catch {
     // Fallback to legacy plain text parsing
     const descLines = c.description.split('\n');
     const concernLines: string[] = [];

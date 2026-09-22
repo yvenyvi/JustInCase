@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View, Pressable, Platform, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -8,10 +8,26 @@ import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
 import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 
+const CASE_FIELD_MAX_LENGTH = 100;
+
+export function normalizeCaseCategory(value: unknown): string {
+  const normalized = typeof value === 'string'
+    ? value.replace(/\s+/g, ' ').trim()
+    : '';
+  return (normalized || 'General Practice').slice(0, CASE_FIELD_MAX_LENGTH);
+}
+
+export function buildCaseTitle(category: string, date: string): string {
+  const suffix = ` Concern (${date})`;
+  const availableCategoryLength = Math.max(1, CASE_FIELD_MAX_LENGTH - suffix.length);
+  const shortenedCategory = category.slice(0, availableCategoryLength).trimEnd();
+  return `${shortenedCategory}${suffix}`.slice(0, CASE_FIELD_MAX_LENGTH);
+}
+
 export default function TriageLawyerSelectionScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const result = route.params?.result || {};
+  const result = useMemo(() => route.params?.result || {}, [route.params?.result]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lawyers, setLawyers] = useState<any[]>([]);
@@ -67,10 +83,12 @@ export default function TriageLawyerSelectionScreen() {
       const user = session.user;
       
       const dateStr = new Date().toLocaleDateString();
-      const caseTitle = `${result.category_of_law || 'Legal'} Concern (${dateStr})`;
+      const category = normalizeCaseCategory(result.category_of_law);
+      const caseTitle = buildCaseTitle(category, dateStr);
 
       const fullDescriptionObject = {
         summary: result.primary_issue,
+        category_of_law: result.category_of_law || category,
         urgency: result.urgency,
         location: result.location,
         opposingParty: result.opposing_party,
@@ -90,7 +108,7 @@ export default function TriageLawyerSelectionScreen() {
       const caseData = {
         title: caseTitle,
         client_id: user.id,
-        category: result.category_of_law || 'General Practice',
+        category,
         description: JSON.stringify(fullDescriptionObject),
         status: 'Pending Triage',
         attorney_id: selectedLawyerId || null,
@@ -108,7 +126,7 @@ export default function TriageLawyerSelectionScreen() {
       Toast.show({ type: 'success', text1: 'Success', text2: 'Naipadala na ang iyong kaso.' });
       navigation.reset({ index: 0, routes: [{ name: 'PublicHome' }] });
     } catch (error: any) {
-      console.error(error);
+      console.warn('Case submission failed:', error?.message || 'Unknown database error');
       Toast.show({ type: 'error', text1: 'Error', text2: 'Nabigo ang pag-submit ng kaso.' });
     } finally {
       setIsSubmitting(false);

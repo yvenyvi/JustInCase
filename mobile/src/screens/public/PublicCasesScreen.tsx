@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,14 +10,6 @@ import { theme } from '../../shared/theme';
 import { CaseCardSkeleton } from '../../components/ui/Skeleton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-type CaseItem = {
-  id: string;
-  title: string;
-  status: string;
-  assignedTo: string | null;
-  updatedAt: string;
-};
 
 export default function PublicCasesScreen() {
   const navigation = useNavigation<NavigationProp>();

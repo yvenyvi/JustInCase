@@ -245,7 +245,7 @@ export default function LegalDashboardScreen() {
               let parsedDesc = null;
               try {
                 parsedDesc = JSON.parse(c.description || '{}');
-              } catch (e) {}
+              } catch {}
 
               return (
                 <View key={c.id} style={styles.caseCard}>
@@ -300,7 +300,7 @@ export default function LegalDashboardScreen() {
               let parsedDesc = null;
               try {
                 parsedDesc = JSON.parse(c.description || '{}');
-              } catch (e) {}
+              } catch {}
 
               return (
                 <View key={c.id} style={styles.caseCard}>
@@ -358,7 +358,7 @@ export default function LegalDashboardScreen() {
               let parsedDesc = null;
               try {
                 parsedDesc = JSON.parse(c.description || '{}');
-              } catch (e) {}
+              } catch {}
 
               return (
                 <View key={c.id} style={styles.caseCard}>

@@ -15,6 +15,7 @@ import DocumentResultScreen from '../screens/public/DocumentResultScreen';
 import RightsLibraryScreen from '../screens/public/RightsLibraryScreen';
 import LegislationTrackerScreen from '../screens/public/LegislationTrackerScreen';
 import NotificationsScreen from '../screens/public/NotificationsScreen';
+import MyDocumentsScreen from '../screens/public/MyDocumentsScreen';
 import ChatThreadScreen from '../screens/shared/ChatThreadScreen';
 import CaseDetailsScreen from '../screens/shared/CaseDetailsScreen';
 import LegalCaseDetailsScreen from '../screens/legal/LegalCaseDetailsScreen';
@@ -53,7 +54,7 @@ export function RootNavigator() {
               <Stack.Screen name="PublicDocumentGenerator" component={DocumentGeneratorScreen} />
               <Stack.Screen name="PublicDocumentForm" component={DocumentFormScreen} />
               <Stack.Screen name="PublicDocumentResult" component={DocumentResultScreen} />
-              <Stack.Screen name="PublicMyDocuments" component={require('../screens/public/MyDocumentsScreen').default} />
+              <Stack.Screen name="PublicMyDocuments" component={MyDocumentsScreen} />
             </Stack.Group>
           )}
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';

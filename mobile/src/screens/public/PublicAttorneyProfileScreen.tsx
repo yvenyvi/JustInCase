@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Image, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Image, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -58,6 +58,8 @@ export default function PublicAttorneyProfileScreen() {
         .select('*')
         .eq('id', attorneyId)
         .single();
+
+      if (error) throw error;
       
       const { data: casesData } = await mobileSupabase
         .from('cases')

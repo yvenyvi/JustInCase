@@ -54,7 +54,7 @@ describe('TriageResultScreen', () => {
     const { getByText } = await render(<TriageResultScreen />);
 
     const nextButton = getByText('Hanapan ng Abogado');
-    fireEvent.press(nextButton);
+    await fireEvent.press(nextButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('PublicTriageLawyerSelection', {
       result: mockRoute.params.result,
@@ -65,7 +65,7 @@ describe('TriageResultScreen', () => {
     const { getByText } = await render(<TriageResultScreen />);
 
     const cancelButton = getByText('Kanselahin');
-    fireEvent.press(cancelButton);
+    await fireEvent.press(cancelButton);
 
     expect(mockReset).toHaveBeenCalledWith({
       index: 0,

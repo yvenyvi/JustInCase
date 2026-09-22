@@ -81,6 +81,7 @@ CREATE TABLE public.users (
 CREATE TABLE public.cases (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
+    category VARCHAR(100),
     description TEXT,
     lawyer_preference public.lawyer_preference_type,
     status public.case_status DEFAULT 'Pending Triage',

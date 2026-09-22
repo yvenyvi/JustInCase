@@ -4,13 +4,20 @@
     "slug": "laya-mobile",
     "scheme": "laya",
     "version": "0.1.0",
+    "icon": "./src/assets/app-icon.png",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "softwareKeyboardLayoutMode": "resize"
+      "package": "com.justicelink.laya",
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/app-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "plugins": [
       "expo-secure-store",

@@ -3,6 +3,8 @@ import { render, fireEvent, waitFor, cleanup } from '@testing-library/react-nati
 import CaseDetailsScreen from '../src/screens/shared/CaseDetailsScreen';
 import { mobileSupabase } from '../src/shared/supabase';
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 // Mock navigation
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -33,8 +35,6 @@ jest.mock('../src/shared/supabase', () => ({
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 describe('CaseDetailsScreen', () => {
   afterEach(async () => {
@@ -77,9 +77,6 @@ describe('CaseDetailsScreen', () => {
       },
     });
 
-    const mockLogs = jest.fn().mockResolvedValue({ data: [] });
-    const mockTimeLogs = jest.fn().mockResolvedValue({ data: [] });
-
     (mobileSupabase.from as jest.Mock).mockImplementation((table) => {
       if (table === 'cases') {
         return { select: mockSelect, eq: mockEq, single: mockSingleCase };
@@ -114,9 +111,9 @@ describe('CaseDetailsScreen', () => {
     });
 
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
-    const { getByText } = await render(
+    const { getByText, unmount } = await render(
       <QueryClientProvider client={queryClient}>
         <CaseDetailsScreen />
       </QueryClientProvider>
@@ -129,12 +126,15 @@ describe('CaseDetailsScreen', () => {
 
     // Check if the "Message Attorney" button is present and click it
     const msgBtn = getByText('Message Attorney');
-    fireEvent.press(msgBtn);
+    await fireEvent.press(msgBtn);
     
     // Verify navigation
     expect(mockNavigate).toHaveBeenCalledWith('ChatThread', {
       threadId: 'test-case-id',
       threadName: 'Atty. Test Atty'
     });
+
+    unmount();
+    queryClient.clear();
   });
 });

@@ -4,8 +4,19 @@ from xhtml2pdf import pisa
 from docx import Document
 import re
 
+
+_INVALID_XML_CHARACTERS = re.compile(
+    "[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]"
+)
+
+
+def _sanitize_document_text(value: str) -> str:
+    """Remove characters forbidden by XML-based PDF/DOCX renderers."""
+    return _INVALID_XML_CHARACTERS.sub("", value)
+
 def convert_markdown_to_pdf(markdown_text: str) -> io.BytesIO:
     """Convert markdown text to a PDF byte stream using xhtml2pdf."""
+    markdown_text = _sanitize_document_text(markdown_text)
     html_content = markdown.markdown(markdown_text)
     
     styled_html = f"""
@@ -46,6 +57,7 @@ def convert_markdown_to_pdf(markdown_text: str) -> io.BytesIO:
 
 def convert_markdown_to_docx(markdown_text: str) -> io.BytesIO:
     """Convert markdown text to a DOCX byte stream."""
+    markdown_text = _sanitize_document_text(markdown_text)
     doc = Document()
     
     lines = markdown_text.split('\n')

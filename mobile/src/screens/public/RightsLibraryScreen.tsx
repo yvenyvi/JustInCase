@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -40,8 +40,11 @@ export default function RightsLibraryScreen() {
   const [researchResults, setResearchResults] = useState<LegalSource[]>(route.params?.initialSources || []);
   const [isResearching, setIsResearching] = useState(false);
   const [researchError, setResearchError] = useState<string | null>(null);
+  const hasRunInitialResearch = useRef(false);
+  const initialQuery = route.params?.query as string | undefined;
+  const hasInitialSources = Boolean(route.params?.initialSources?.length);
 
-  const runResearch = async () => {
+  const runResearch = useCallback(async () => {
     if (activeTab === 'guides' || searchTerm.trim().length < 2) return;
     setIsResearching(true);
     setResearchError(null);
@@ -55,11 +58,13 @@ export default function RightsLibraryScreen() {
     } finally {
       setIsResearching(false);
     }
-  };
+  }, [activeTab, searchTerm]);
 
   useEffect(() => {
-    if (route.params?.query && activeTab !== 'guides' && !route.params?.initialSources?.length) runResearch();
-  }, []);
+    if (hasRunInitialResearch.current || !initialQuery || activeTab === 'guides' || hasInitialSources) return;
+    hasRunInitialResearch.current = true;
+    void runResearch();
+  }, [activeTab, hasInitialSources, initialQuery, runResearch]);
 
   useEffect(() => {
     const fetchData = async () => {

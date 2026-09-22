@@ -45,7 +45,7 @@ const Header = ({
         )}
         {showBrand && (
           <div className={styles.brand}>
-            <img src="/logo.png" alt="LAYA" style={{ width: '28px', height: '28px', marginRight: '0.65rem' }} />
+            <img src="/logo-mark.png" alt="LAYA emblem" style={{ width: '32px', height: '28px', objectFit: 'contain', marginRight: '0.65rem' }} />
             <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-primary)', marginRight: '1.25rem', whiteSpace: 'nowrap' }}>LAYA</span>
           </div>
         )}

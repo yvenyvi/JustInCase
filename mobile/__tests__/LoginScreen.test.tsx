@@ -2,7 +2,6 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import LoginScreen from '../src/screens/auth/LoginScreen';
 import { mobileSupabase } from '../src/shared/supabase';
-import * as SecureStore from 'expo-secure-store';
 
 // Mock vector icons
 jest.mock('@expo/vector-icons', () => ({
@@ -10,10 +9,7 @@ jest.mock('@expo/vector-icons', () => ({
 }));
 
 jest.mock('react-native-keyboard-aware-scroll-view', () => ({
-  KeyboardAwareScrollView: jest.fn().mockImplementation(({ children }) => {
-    const React = require('react');
-    return React.createElement(React.Fragment, null, children);
-  })
+  KeyboardAwareScrollView: 'ScrollView'
 }));// Mock Navigation
 const mockReplace = jest.fn();
 const mockNavigate = jest.fn();
@@ -61,7 +57,7 @@ describe('LoginScreen', () => {
     const { getByText } = await render(<LoginScreen navigation={mockNavigation as any} route={mockRoute as any} />);
 
     const loginButton = getByText('LOGIN');
-    fireEvent.press(loginButton);
+    await fireEvent.press(loginButton);
 
     await waitFor(() => {
       expect(getByText('Email is required')).toBeTruthy();
@@ -82,11 +78,11 @@ describe('LoginScreen', () => {
     const emailInput = await findByPlaceholderText('example@email.com');
     const passwordInput = await findByPlaceholderText('••••••');
     
-    fireEvent.changeText(emailInput, 'test@example.com');
-    fireEvent.changeText(passwordInput, 'password123');
+    await fireEvent.changeText(emailInput, 'test@example.com');
+    await fireEvent.changeText(passwordInput, 'password123');
 
     const loginButton = await findByText('LOGIN');
-    fireEvent.press(loginButton);
+    await fireEvent.press(loginButton);
 
     await waitFor(() => {
       expect(mobileSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
@@ -96,11 +92,11 @@ describe('LoginScreen', () => {
     });
   });
 
-  it.only('navigates to ForgotPassword when link is pressed', async () => {
+  it('navigates to ForgotPassword when link is pressed', async () => {
     const { findByTestId } = await render(<LoginScreen navigation={mockNavigation as any} route={mockRoute as any} />);
 
     const forgotPasswordLink = await findByTestId('forgot-password-link');
-    fireEvent.press(forgotPasswordLink);
+    await fireEvent.press(forgotPasswordLink);
 
     expect(mockNavigate).toHaveBeenCalledWith('ForgotPassword');
   });
@@ -109,7 +105,7 @@ describe('LoginScreen', () => {
     const { findByTestId } = await render(<LoginScreen navigation={mockNavigation as any} route={mockRoute as any} />);
 
     const signupButton = await findByTestId('signup-button');
-    fireEvent.press(signupButton);
+    await fireEvent.press(signupButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('Register');
   });

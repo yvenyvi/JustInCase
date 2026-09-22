@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import {
   Pressable, StyleSheet, Text, TextInput, View,
-  Platform, ActivityIndicator, Image,
+  ActivityIndicator, Image,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as SecureStore from 'expo-secure-store';
@@ -9,7 +9,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import Toast from 'react-native-toast-message';
-import { mobileSupabase } from '../../shared/supabase';
 import { createClient } from '@supabase/supabase-js';
 import AddressPicker from '../../components/AddressPicker';
 import { theme } from '../../shared/theme';
@@ -76,6 +75,77 @@ export default function RegisterScreen({ navigation, route }: Props) {
   // ── Validation State ───────────────────────────────────────────────────────
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Backend URL — uses .env or current LAN IP for physical devices + emulators
+  const apiBaseUrl = API_BASE_URL;
+
+  // ── Polling loop ───────────────────────────────────────────────────────────
+  const pollDiditStatus = useCallback(async function pollStatus(currentAttemptId: string, attempt = 0) {
+    if (attempt > 200) {
+      setDiditStatus('failed');
+      Toast.show({ type: 'error', text1: 'Session Timed Out', text2: 'Please start registration again.' });
+      return;
+    }
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/public-registration/status/${currentAttemptId}`);
+
+      if (response.status === 404) {
+        setDiditStatus('failed');
+        Toast.show({ type: 'error', text1: 'Session Expired', text2: 'The server was restarted. Please begin again.' });
+        return;
+      }
+      if (!response.ok) {
+        pollingRef.current = setTimeout(() => pollStatus(currentAttemptId, attempt + 1), 4000);
+        return;
+      }
+
+      const payload = await response.json();
+
+      if (payload.status === 'verified' || payload.status === 'approved') {
+        SecureStore.deleteItemAsync('didit_registration_state').catch(() => {});
+        setDiditStatus('verified');
+
+        const ocr = payload.ocrData || {};
+        let fName = ocr.firstName || '';
+        let mName = ocr.middleName || '';
+        let lName = ocr.lastName || '';
+
+        if (ocr.fullName && (!fName || !lName)) {
+          const parts = ocr.fullName.split(/\s+/).filter(Boolean);
+          if (parts.length >= 2) {
+            if (!fName) fName = parts[0];
+            if (!lName) lName = parts[parts.length - 1];
+            if (!mName && parts.length > 2) mName = parts.slice(1, -1).join(' ');
+          }
+        }
+
+        setFirstName(fName);
+        setMiddleName(mName);
+        setLastName(lName);
+        setDob(ocr.dob || '');
+        setIdNumber(ocr.idNumber || '');
+        setExpirationDate(ocr.expirationDate || '');
+        setSex(ocr.sex || '');
+
+        const address = ocr.address || {};
+        setRegion(address.region || '');
+        setProvince(address.province || '');
+        setCity(address.city || '');
+        setBarangay(address.barangay || '');
+        setStreetAddress(address.street || address.streetAddress || address.addressLine1 || '');
+
+        setImageUrls(payload.imageUrls || {});
+        setStep(4);
+      } else if (payload.status === 'failed') {
+        setDiditStatus('failed');
+      } else {
+        pollingRef.current = setTimeout(() => pollStatus(currentAttemptId, attempt + 1), 3000);
+      }
+    } catch {
+      const delay = Math.min(3000 + attempt * 500, 10000);
+      pollingRef.current = setTimeout(() => pollStatus(currentAttemptId, attempt + 1), delay);
+    }
+  }, [apiBaseUrl]);
+
   // ── Resume logic (if app crashed and restarted during verification) ────────
   useEffect(() => {
     const resumeState = route.params?.resumeState as any;
@@ -91,10 +161,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
       setDiditStatus('pending');
       pollDiditStatus(resumeState.attemptId);
     }
-  }, [route.params?.resumeState]);
-
-  // Backend URL — uses .env or current LAN IP for physical devices + emulators
-  const apiBaseUrl = API_BASE_URL;
+  }, [pollDiditStatus, route.params?.resumeState]);
 
   // ── Deep-link listener: app re-opened from external browser ───────────────
   useEffect(() => {
@@ -109,7 +176,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
     };
     const sub = Linking.addEventListener('url', handleURL);
     return () => sub.remove();
-  }, [attemptId, diditStatus]);
+  }, [attemptId, diditStatus, pollDiditStatus]);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -169,7 +236,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
       setDiditStatus('pending');
       setStep(3);
       pollDiditStatus(attemptId);
-    } catch (err: any) {
+    } catch {
       Toast.show({ type: 'error', text1: 'Browser Error', text2: 'Could not open verification browser.' });
     }
   };
@@ -221,7 +288,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
         setProvince(ocr.province || '');
 
         setStep(3);
-      } catch (e: any) {
+      } catch {
         Toast.show({ type: 'info', text1: 'OCR Unavailable', text2: 'Could not extract details automatically. Please enter them manually.' });
         setStep(3);
       } finally {
@@ -246,76 +313,6 @@ export default function RegisterScreen({ navigation, route }: Props) {
     if (!result.canceled && result.assets[0].uri) {
       setLocalSelfieImage(result.assets[0].uri);
       setStep(4);
-    }
-  };
-
-  // ── Polling loop ───────────────────────────────────────────────────────────
-  const pollDiditStatus = async (currentAttemptId: string, attempt = 0) => {
-    if (attempt > 200) {
-      setDiditStatus('failed');
-      Toast.show({ type: 'error', text1: 'Session Timed Out', text2: 'Please start registration again.' });
-      return;
-    }
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/public-registration/status/${currentAttemptId}`);
-
-      if (response.status === 404) {
-        setDiditStatus('failed');
-        Toast.show({ type: 'error', text1: 'Session Expired', text2: 'The server was restarted. Please begin again.' });
-        return;
-      }
-      if (!response.ok) {
-        pollingRef.current = setTimeout(() => pollDiditStatus(currentAttemptId, attempt + 1), 4000);
-        return;
-      }
-
-      const payload = await response.json();
-
-      if (payload.status === 'verified' || payload.status === 'approved') {
-        // Success! Remove the crash-recovery state since we're back safely
-        SecureStore.deleteItemAsync('didit_registration_state').catch(() => {});
-        setDiditStatus('verified');
-
-        const ocr = payload.ocrData || {};
-        let fName = ocr.firstName || '';
-        let mName = ocr.middleName || '';
-        let lName = ocr.lastName || '';
-
-        if (ocr.fullName && (!fName || !lName)) {
-          const parts = ocr.fullName.split(/\s+/).filter(Boolean);
-          if (parts.length >= 2) {
-            if (!fName) fName = parts[0];
-            if (!lName) lName = parts[parts.length - 1];
-            if (!mName && parts.length > 2) mName = parts.slice(1, -1).join(' ');
-          }
-        }
-
-        setFirstName(fName);
-        setMiddleName(mName);
-        setLastName(lName);
-        setDob(ocr.dob || '');
-        setIdNumber(ocr.idNumber || '');
-        setExpirationDate(ocr.expirationDate || '');
-        setSex(ocr.sex || '');
-
-        const address = ocr.address || {};
-        setRegion(address.region || '');
-        setProvince(address.province || '');
-        setCity(address.city || '');
-        setBarangay(address.barangay || '');
-        const street = address.street || address.streetAddress || address.addressLine1 || '';
-        setStreetAddress(street);
-
-        setImageUrls(payload.imageUrls || {});
-        setStep(4);
-      } else if (payload.status === 'failed') {
-        setDiditStatus('failed');
-      } else {
-        pollingRef.current = setTimeout(() => pollDiditStatus(currentAttemptId, attempt + 1), 3000);
-      }
-    } catch {
-      const delay = Math.min(3000 + attempt * 500, 10000);
-      pollingRef.current = setTimeout(() => pollDiditStatus(currentAttemptId, attempt + 1), delay);
     }
   };
 
@@ -458,7 +455,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(profileData),
           });
-        } catch (_) {
+        } catch {
           // Non-fatal: trigger may have already inserted the profile
         }
       }
@@ -470,29 +467,6 @@ export default function RegisterScreen({ navigation, route }: Props) {
       setIsFinalizing(false);
     }
   };
-
-  // ── Step counter dots ──────────────────────────────────────────────────────
-  const renderStepDots = () => (
-    <View style={styles.stepDotRow}>
-      {([1, 2, 3, 4] as Step[]).map((s) => (
-        <View key={s} style={[styles.stepDot, step >= s && styles.stepDotActive]}>
-          {step > s ? (
-            <Ionicons name="checkmark" size={10} color="#fff" />
-          ) : (
-            <Text style={[styles.stepDotLabel, step === s && styles.stepDotLabelActive]}>{s}</Text>
-          )}
-        </View>
-      ))}
-      {([1, 2, 3] as Step[]).map((s) => (
-        <View
-          key={`line-${s}`}
-          style={[styles.stepLine, step > s && styles.stepLineActive,
-            // Position lines between dots (via absolute positioning handled by container)
-          ]}
-        />
-      ))}
-    </View>
-  );
 
   return (
     <KeyboardAwareScrollView 
@@ -510,7 +484,7 @@ export default function RegisterScreen({ navigation, route }: Props) {
       {/* Header */}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
-            <Image source={require('../../assets/logo.png')} style={styles.appLogo} />
+            <Image source={require('../../assets/logo-mark.png')} style={styles.appLogo} accessibilityLabel="LAYA bird and justice scales emblem" />
           </View>
           <Text style={styles.brandTitle}>LAYA</Text>
           <Text style={styles.brandSlogan}>Empower Your Rights. Free Your Future.</Text>
@@ -946,7 +920,7 @@ const styles = StyleSheet.create({
   // ── Header ─────────────────────────────────────────────────────────────────
   topSection: { alignItems: 'center', paddingTop: 60, paddingBottom: 32 },
   logoContainer: { marginBottom: 12 },
-  appLogo: { width: 130, height: 130, resizeMode: 'contain' },
+  appLogo: { width: 150, height: 108, resizeMode: 'contain' },
   brandTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 32, letterSpacing: 2 },
   brandSlogan: { ...theme.typography.body, color: theme.colors.textSecondary, fontSize: 16, marginTop: 4, letterSpacing: 0.5 },
 

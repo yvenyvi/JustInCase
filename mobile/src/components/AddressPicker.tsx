@@ -46,7 +46,7 @@ export default function AddressPicker({
         setRegion(match.region_name);
       }
     }
-  }, [region]);
+  }, [region, regionCode, setRegion]);
 
   useEffect(() => {
     if (province && !provinceCode && regionCode) {
@@ -60,7 +60,7 @@ export default function AddressPicker({
         setProvince(match.province_name);
       }
     }
-  }, [province, regionCode]);
+  }, [province, provinceCode, regionCode, setProvince]);
 
   useEffect(() => {
     if (city && !cityCode && (provinceCode || regionCode)) {
@@ -74,7 +74,7 @@ export default function AddressPicker({
         setCity(match.city_name);
       }
     }
-  }, [city, provinceCode, regionCode]);
+  }, [city, cityCode, provinceCode, regionCode, setCity]);
 
   useEffect(() => {
     if (barangay && !barangayCode && cityCode) {
@@ -88,7 +88,7 @@ export default function AddressPicker({
         setBarangay(match.brgy_name);
       }
     }
-  }, [barangay, cityCode]);
+  }, [barangay, barangayCode, cityCode, setBarangay]);
 
   // Options
   const regionOptions = phRegion.map((r: any) => ({

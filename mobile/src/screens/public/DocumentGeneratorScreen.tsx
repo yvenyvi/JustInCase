@@ -175,7 +175,14 @@ export default function DocumentGeneratorScreen() {
           multiline
           maxLength={1000}
         />
-        <Pressable style={[styles.sendBtn, !inputText.trim() && { opacity: 0.5 }]} onPress={sendMessage} disabled={!inputText.trim() || isLoading}>
+        <Pressable
+          style={[styles.sendBtn, !inputText.trim() && { opacity: 0.5 }]}
+          onPress={sendMessage}
+          disabled={!inputText.trim() || isLoading}
+          accessibilityRole="button"
+          accessibilityLabel="Send document details"
+          accessibilityState={{ disabled: !inputText.trim() || isLoading }}
+        >
           <Ionicons name="send" size={20} color="#FFFFFF" />
         </Pressable>
       </View>

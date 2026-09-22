@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,16 +15,6 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export default function PublicDashboardScreen() {
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
-
-  const TIPS = [
-    "Did you know? You have the right to a safe working environment under the Labor Code.",
-    "Did you know? You have the right to remain silent when being questioned by authorities.",
-    "Did you know? Your employer must pay your final pay within 30 days of resignation.",
-    "Did you know? Maternity leave in the Philippines is 105 days with full pay.",
-    "Did you know? You have the right to seek legal counsel of your own choice."
-  ];
-
-  const [randomTip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)]);
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['publicDashboard'],

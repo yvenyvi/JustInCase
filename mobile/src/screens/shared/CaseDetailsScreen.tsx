@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useRoute, RouteProp, useIsFocused } from '@react-navigation/native';
@@ -193,11 +193,21 @@ export default function CaseDetailsScreen() {
   });
 
   const isLoading = isLoadingCase || isLoadingLogs || isLoadingDocs;
+  const isAttorney = Boolean(c && currentUser?.id === c.attorneyId);
+  const isClient = Boolean(c && currentUser?.id === c.clientId);
 
-  // Stubs to support existing mutations without refactoring all handlers
-  const fetchCaseDetails = () => queryClient.invalidateQueries({ queryKey: ['caseDetails', caseId] });
-  const fetchTimeLogs = () => queryClient.invalidateQueries({ queryKey: ['caseTimeLogs', caseId] });
-  const fetchDocuments = () => queryClient.invalidateQueries({ queryKey: ['caseDocuments', caseId] });
+  const fetchCaseDetails = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['caseDetails', caseId] }),
+    [caseId, queryClient]
+  );
+  const fetchTimeLogs = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['caseTimeLogs', caseId] }),
+    [caseId, queryClient]
+  );
+  const fetchDocuments = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['caseDocuments', caseId] }),
+    [caseId, queryClient]
+  );
 
   useEffect(() => {
     const channel = mobileSupabase
@@ -229,7 +239,7 @@ export default function CaseDetailsScreen() {
     return () => {
       mobileSupabase.removeChannel(channel);
     };
-  }, [caseId, queryClient]);
+  }, [caseId, fetchCaseDetails, fetchDocuments, fetchTimeLogs]);
 
   const handleUploadDocument = async () => {
     try {
@@ -259,7 +269,7 @@ export default function CaseDetailsScreen() {
       } as any);
 
       // Upload to Storage
-      const { data: uploadData, error: uploadError } = await mobileSupabase.storage
+      const { error: uploadError } = await mobileSupabase.storage
         .from('case-documents')
         .upload(fileName, formData, {
           cacheControl: '3600',
@@ -404,14 +414,14 @@ export default function CaseDetailsScreen() {
     if (isFocused) {
       fetchCaseDetails();
     }
-  }, [isFocused, caseId]);
+  }, [isFocused, fetchCaseDetails]);
 
   useEffect(() => {
     const isCaseClosed = !!c?.status && (c.status.includes('Closed') || c.status === 'Resolved' || c.status === 'Dropped');
     if (c && isClient && isCaseClosed && (c.feedbackRating === null || c.feedbackRating === undefined)) {
       setIsReviewModalVisible(true);
     }
-  }, [c?.status, c?.feedbackRating]);
+  }, [c, isClient]);
 
   const getStatusColor = (status: string) => {
     if (status.includes('Closed') || status === 'Withdrawn' || status === 'Dropped') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
@@ -463,11 +473,7 @@ export default function CaseDetailsScreen() {
   }
 
   const colors = getStatusColor(c.status);
-  const isAttorney = currentUser?.id === c.attorneyId;
-  const isAssigned = c.attorneyId === currentUser?.id;
-  const isAvailable = c.attorneyId === null;
   const isCaseClosed = c.status.includes('Closed') || c.status === 'Withdrawn' || c.status === 'Dropped' || c.status === 'Resolved';
-  const isClient = currentUser?.id === c.clientId;
 
   // Parse description
   let parsedDesc: any = { concern: c.description, opposing: '', urgency: '', location: '', income: '', deadline: '', evidence: '', outcome: '' };
@@ -484,7 +490,7 @@ export default function CaseDetailsScreen() {
       evidence: jsonDesc.evidence || '',
       outcome: jsonDesc.outcome || ''
     };
-  } catch (e) {
+  } catch {
     const descLines = c.description.split('\n');
     const concernLines: string[] = [];
     
@@ -704,26 +710,49 @@ export default function CaseDetailsScreen() {
           <Text style={styles.actionBtnText}>Research Similar Cases</Text>
         </Pressable>
 
-        {caseDocuments.length > 0 && (
-          <View style={{ marginTop: 32 }}>
-            <Text style={[styles.sectionLabel, { marginLeft: 8 }]}>DOCUMENTS</Text>
-            <View style={styles.card}>
-              {caseDocuments.map((doc, index) => (
-                <View key={doc.id} style={[styles.logItem, index > 0 && styles.logItemBorder]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <View style={styles.docIconBox}>
-                      <Ionicons name="document-text" size={20} color={theme.colors.primary} />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={styles.docTitle} numberOfLines={1}>{doc.file_name}</Text>
-                      <Text style={styles.docDate}>{new Date(doc.created_at).toLocaleDateString()}</Text>
-                    </View>
+        <View style={{ marginTop: 32 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginHorizontal: 8 }}>
+            <Text style={[styles.sectionLabel, { marginBottom: 0, marginLeft: 0 }]}>DOCUMENTS</Text>
+            <Pressable
+              onPress={handleUploadDocument}
+              disabled={isUploadingDoc}
+              accessibilityRole="button"
+              accessibilityLabel="Upload case document"
+              style={{ flexDirection: 'row', alignItems: 'center', opacity: isUploadingDoc ? 0.6 : 1 }}
+            >
+              {isUploadingDoc ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Ionicons name="cloud-upload-outline" size={17} color={theme.colors.primary} />
+              )}
+              <Text style={{ color: theme.colors.primary, fontSize: 13, fontWeight: '700', marginLeft: 5 }}>
+                {isUploadingDoc ? 'Uploading...' : 'Upload'}
+              </Text>
+            </Pressable>
+          </View>
+          <View style={styles.card}>
+            {caseDocuments.length > 0 ? caseDocuments.map((doc, index) => (
+              <View key={doc.id} style={[styles.logItem, index > 0 && styles.logItemBorder]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <View style={styles.docIconBox}>
+                    <Ionicons name="document-text" size={20} color={theme.colors.primary} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.docTitle} numberOfLines={1}>{doc.file_name}</Text>
+                    <Text style={styles.docDate}>{new Date(doc.created_at).toLocaleDateString()}</Text>
                   </View>
                 </View>
-              ))}
-            </View>
+              </View>
+            )) : (
+              <View style={{ alignItems: 'center', paddingVertical: 22, paddingHorizontal: 16 }}>
+                <Ionicons name="documents-outline" size={28} color={theme.typography.caption.color} />
+                <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 8, textAlign: 'center' }}>
+                  No case documents uploaded yet.
+                </Text>
+              </View>
+            )}
           </View>
-        )}
+        </View>
 
         {timeLogs.length > 0 && (
           <View style={{ marginTop: 32 }}>

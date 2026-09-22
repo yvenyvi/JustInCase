@@ -13,17 +13,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 type ChatThreadRouteProp = RouteProp<RootStackParamList, 'ChatThread'>;
 
-type MessageItem = {
-  id: string;
-  text: string;
-  sender: 'me' | 'other';
-  time: string;
-  created_at: string;
-  attachment_url?: string;
-  attachment_name?: string;
-  attachment_type?: string;
-};
-
 export default function ChatThreadScreen() {
   const navigation = useNavigation();
   const route = useRoute<ChatThreadRouteProp>();
@@ -131,7 +120,7 @@ export default function ChatThreadScreen() {
       });
       navigation.goBack();
     }
-  }, [isError, error]);
+  }, [isError, error, navigation]);
 
   useEffect(() => {
     if (!isLoading && messages.length > 0) {
@@ -229,7 +218,7 @@ export default function ChatThreadScreen() {
       } as any);
 
       // Upload to Storage
-      const { data: uploadData, error: uploadError } = await mobileSupabase.storage
+      const { error: uploadError } = await mobileSupabase.storage
         .from('message-attachments')
         .upload(fileName, formData, {
           cacheControl: '3600',
@@ -381,7 +370,14 @@ export default function ChatThreadScreen() {
           onFocus={handleInputFocus}
           multiline
         />
-        <Pressable style={[styles.sendBtn, message.trim() ? styles.sendBtnActive : {}]} onPress={handleSend}>
+        <Pressable
+          style={[styles.sendBtn, message.trim() ? styles.sendBtnActive : {}]}
+          onPress={handleSend}
+          accessibilityRole="button"
+          accessibilityLabel="Send message"
+          accessibilityState={{ disabled: !message.trim() || !userId }}
+          disabled={!message.trim() || !userId}
+        >
           <Ionicons name="send" size={20} color={message.trim() ? theme.colors.surface : theme.colors.textSecondary} />
         </Pressable>
       </View>

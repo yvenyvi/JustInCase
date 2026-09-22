@@ -3,6 +3,8 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import PublicDashboardScreen from '../src/screens/public/PublicDashboardScreen';
 import { mobileSupabase } from '../src/shared/supabase';
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 // Mock navigation
 const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
@@ -37,15 +39,13 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
 describe('PublicDashboardScreen', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
     jest.clearAllMocks();
     queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
   });
 
@@ -83,7 +83,7 @@ describe('PublicDashboardScreen', () => {
       return { select: mockSelect, eq: mockEq, in: mockIn, maybeSingle: mockMaybeSingle };
     });
 
-    const { getByText, findByText } = await render(
+    const { getByText, unmount } = await render(
       <QueryClientProvider client={queryClient}>
         <PublicDashboardScreen />
       </QueryClientProvider>
@@ -99,15 +99,18 @@ describe('PublicDashboardScreen', () => {
 
     // Test Clicks
     const heroBtn = getByText('Simulan Ngayon');
-    fireEvent.press(heroBtn);
+    await fireEvent.press(heroBtn);
     expect(mockNavigate).toHaveBeenCalledWith('PublicTriage');
 
     const caseWidget = getByText('Test Case 1');
-    fireEvent.press(caseWidget);
+    await fireEvent.press(caseWidget);
     expect(mockNavigate).toHaveBeenCalledWith('CaseDetails', { caseId: 'test-case-id' });
     
     const seeAll = getByText('Tingnan Lahat');
-    fireEvent.press(seeAll);
+    await fireEvent.press(seeAll);
     expect(mockNavigate).toHaveBeenCalledWith('Cases');
+
+    unmount();
+    queryClient.clear();
   });
 });

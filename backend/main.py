@@ -1,4 +1,6 @@
 from typing import Any, Optional
+import re
+import unicodedata
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File, Form, status
@@ -487,7 +489,7 @@ def document_templates() -> dict[str, Any]:
 def document_interactive_draft(
     body: InteractiveDraftBody,
     req: Request,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     try:
         # Check for Authorization header but don't strictly require it
         user_profile = {}
@@ -612,8 +614,15 @@ def list_user_documents(
 
 
 class DocumentExportBody(BaseModel):
-    content: str
-    title: str = "Document"
+    content: str = Field(min_length=1)
+    title: str = Field(default="Document", min_length=1, max_length=160)
+
+
+def _safe_download_filename(title: str, extension: str) -> str:
+    """Create an ASCII-only attachment name that cannot break HTTP headers."""
+    normalized = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("ascii")
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "_", normalized).strip("._-") or "Document"
+    return f"{stem[:100]}.{extension}"
 
 from fastapi.responses import StreamingResponse
 import io
@@ -623,9 +632,7 @@ def document_export_pdf(body: DocumentExportBody) -> StreamingResponse:
     try:
         from document_export_service import convert_markdown_to_pdf
         pdf_buffer = convert_markdown_to_pdf(body.content)
-        headers = {
-            'Content-Disposition': f'attachment; filename="{body.title.replace(" ", "_")}.pdf"'
-        }
+        headers = {"Content-Disposition": f'attachment; filename="{_safe_download_filename(body.title, "pdf")}"'}
         return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
     except Exception as exc:
         import traceback
@@ -637,9 +644,7 @@ def document_export_docx(body: DocumentExportBody) -> StreamingResponse:
     try:
         from document_export_service import convert_markdown_to_docx
         docx_buffer = convert_markdown_to_docx(body.content)
-        headers = {
-            'Content-Disposition': f'attachment; filename="{body.title.replace(" ", "_")}.docx"'
-        }
+        headers = {"Content-Disposition": f'attachment; filename="{_safe_download_filename(body.title, "docx")}"'}
         return StreamingResponse(docx_buffer, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers=headers)
     except Exception as exc:
         import traceback
@@ -743,7 +748,6 @@ def triage_analyze(body: TriageAnalyzeBody) -> dict[str, Any]:
             opposing_party_type=body.opposingPartyType or "",
             urgency=body.urgency or "",
             province=body.province or "",
-            income=body.income or "",
             deadline_str=deadline_str,
             evidence=body.evidence or "",
             outcome=body.outcome or "",

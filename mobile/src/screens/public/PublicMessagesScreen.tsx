@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,15 +10,6 @@ import { theme } from '../../shared/theme';
 import { MessageThreadSkeleton } from '../../components/ui/Skeleton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-type ThreadItem = {
-  id: string;
-  name: string;
-  caseTitle: string;
-  preview: string;
-  time: string;
-  unread: number;
-};
 
 export default function PublicMessagesScreen() {
   const navigation = useNavigation<NavigationProp>();

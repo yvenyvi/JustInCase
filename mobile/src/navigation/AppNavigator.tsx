@@ -17,6 +17,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../shared/theme';
 
 const Tab = createBottomTabNavigator();
+const AdminDashboard = () => <ScreenShell title="Admin Dashboard" subtitle="Admin overview will be wired here." />;
+const AdminVerifications = () => <ScreenShell title="Attorney Verifications" subtitle="Review queue goes here." />;
+const AdminCases = () => <ScreenShell title="Case Management" subtitle="Admin case management goes here." />;
+const AdminSettings = () => <ScreenShell title="Settings" subtitle="System settings go here." />;
 
 export function AppNavigator() {
   const { role } = useMobileAuth();
@@ -60,10 +64,10 @@ export function AppNavigator() {
   if (role === 'admin') {
     return (
       <Tab.Navigator screenOptions={{ headerShown: false }}>
-        <Tab.Screen name="Dashboard" children={() => <ScreenShell title="Admin Dashboard" subtitle="Admin overview will be wired here." />} />
-        <Tab.Screen name="Verifications" children={() => <ScreenShell title="Attorney Verifications" subtitle="Review queue goes here." />} />
-        <Tab.Screen name="Cases" children={() => <ScreenShell title="Case Management" subtitle="Admin case management goes here." />} />
-        <Tab.Screen name="Settings" children={() => <ScreenShell title="Settings" subtitle="System settings go here." />} />
+        <Tab.Screen name="Dashboard" component={AdminDashboard} />
+        <Tab.Screen name="Verifications" component={AdminVerifications} />
+        <Tab.Screen name="Cases" component={AdminCases} />
+        <Tab.Screen name="Settings" component={AdminSettings} />
       </Tab.Navigator>
     );
   }

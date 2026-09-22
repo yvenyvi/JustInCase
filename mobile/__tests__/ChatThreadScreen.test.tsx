@@ -2,7 +2,8 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import ChatThreadScreen from '../src/screens/shared/ChatThreadScreen';
 import { mobileSupabase } from '../src/shared/supabase';
-import { Keyboard } from 'react-native';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock navigation
 const mockNavigate = jest.fn();
@@ -38,8 +39,6 @@ jest.mock('../src/shared/supabase', () => ({
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 describe('ChatThreadScreen', () => {
   beforeEach(() => {
@@ -107,9 +106,9 @@ describe('ChatThreadScreen', () => {
     });
 
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
-    const { getByText, getByPlaceholderText } = await render(
+    const { getByText, getByPlaceholderText, getByLabelText, unmount } = await render(
       <QueryClientProvider client={queryClient}>
         <ChatThreadScreen />
       </QueryClientProvider>
@@ -122,13 +121,21 @@ describe('ChatThreadScreen', () => {
 
     // Find the input and simulate typing
     const input = getByPlaceholderText('Mag-type ng mensahe...');
-    fireEvent.changeText(input, 'This is a test message');
-    
-    // The Ionicons "send" button is wrapped in a pressable, but it doesn't have text.
-    // However, the test won't crash if we find it by testId, or we can just find the input and submit if we added one.
-    // React Testing Library allows finding by parent, but let's just make sure the component doesn't crash on render.
-    // If we want to simulate the press, we could add a testID to the button in the source code.
-    // Without modifying source code, we can find the Pressable by checking its child's props or something,
-    // The test completes without errors, verifying the component handles the events
+    await fireEvent.changeText(input, 'This is a test message');
+    await waitFor(() => {
+      expect(getByLabelText('Send message').props.accessibilityState.disabled).toBe(false);
+    });
+    await fireEvent.press(getByLabelText('Send message'));
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalledWith({
+        thread_id: 'real-thread-id',
+        sender_id: 'test-client-id',
+        content: 'This is a test message',
+      });
+    });
+
+    unmount();
+    queryClient.clear();
   });
 });

@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 import { ProfileSkeleton } from '../../components/ui/Skeleton';
 import * as ImagePicker from 'expo-image-picker';
@@ -40,7 +40,6 @@ interface UserProfile {
 
 export default function PublicProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const queryClient = useQueryClient();
 
   const { data: profileData, isLoading, refetch } = useQuery({
     queryKey: ['publicProfile'],
@@ -144,14 +143,6 @@ export default function PublicProfileScreen() {
       }
     }
   };
-
-  const fullAddress = [
-    profile?.street_address,
-    profile?.barangay,
-    profile?.city_municipality,
-    profile?.province,
-    profile?.region,
-  ].filter(Boolean).join(', ') || 'Not specified';
 
   // Some fields like sex, id_number, expiration_date may only be in auth metadata
   const sex = profile?.sex || authMeta?.sex;

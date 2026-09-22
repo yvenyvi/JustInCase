@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, Pressable, Platform, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState, useEffect } from 'react';
+import { StyleSheet, Text, View, FlatList, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
@@ -25,7 +25,7 @@ export default function MyDocumentsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     if (!session?.access_token) {
       setIsLoading(false);
       return;
@@ -50,13 +50,13 @@ export default function MyDocumentsScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [session?.access_token]);
 
   useEffect(() => {
     if (isFocused) {
       fetchDocuments();
     }
-  }, [isFocused, session]);
+  }, [fetchDocuments, isFocused]);
 
   const handleDocumentPress = (doc: UserDocument) => {
     navigation.navigate('PublicDocumentResult', { 

@@ -58,7 +58,7 @@ const LandingView = () => {
       <section className={styles.heroSection}>
         <nav className={styles.navbar}>
           <div className={styles.logo}>
-            <img src="/logo.png" alt="LAYA Logo" className={styles.logoIcon} style={{ width: '48px', height: '48px' }} />
+            <img src="/logo-mark.png" alt="LAYA bird and justice scales emblem" className={styles.logoIcon} style={{ width: '52px', height: '44px', objectFit: 'contain' }} />
             <span className={styles.logoText}>LAYA</span>
           </div>
           <div className={styles.navLinks}>
@@ -302,7 +302,7 @@ const LandingView = () => {
           <div className={styles.footerContent}>
             <div className={styles.footerBrand}>
               <div className={styles.logo}>
-                <img src="/logo.png" alt="LAYA Logo" className={styles.logoIcon} style={{ width: '48px', height: '48px' }} />
+                <img src="/logo-mark.png" alt="LAYA bird and justice scales emblem" className={styles.logoIcon} style={{ width: '52px', height: '44px', objectFit: 'contain' }} />
                 <span className={styles.logoText}>LAYA</span>
               </div>
               <p className={styles.footerDesc}>A secure triage and matching engine that connects marginalized Filipinos directly with volunteer legal professionals.</p>

@@ -1,7 +1,6 @@
 import React from 'react';
-import { render, fireEvent, waitFor, cleanup } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import RegisterScreen from '../src/screens/auth/RegisterScreen';
-import { mobileSupabase } from '../src/shared/supabase';
 
 // Mock vector icons
 jest.mock('@expo/vector-icons', () => ({
@@ -55,10 +54,6 @@ global.fetch = jest.fn(() =>
 ) as jest.Mock;
 
 describe('RegisterScreen', () => {
-  afterEach(async () => {
-    await cleanup();
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -81,7 +76,7 @@ describe('RegisterScreen', () => {
     );
 
     const nextButton = getByText('NEXT STEP');
-    fireEvent.press(nextButton);
+    await fireEvent.press(nextButton);
 
     await waitFor(() => {
       expect(getByText('Email is required')).toBeTruthy();
@@ -95,7 +90,7 @@ describe('RegisterScreen', () => {
     );
 
     const loginLink = await findByTestId('login-link');
-    fireEvent.press(loginLink);
+    await fireEvent.press(loginLink);
 
     expect(mockGoBack).toHaveBeenCalled();
   });
@@ -108,11 +103,11 @@ describe('RegisterScreen', () => {
     const emailInput = await findByPlaceholderText('example@email.com');
     const passwordInput = await findByPlaceholderText('••••••••');
 
-    fireEvent.changeText(emailInput, 'test@example.com');
-    fireEvent.changeText(passwordInput, 'password123');
+    await fireEvent.changeText(emailInput, 'test@example.com');
+    await fireEvent.changeText(passwordInput, 'password123');
 
     const nextButton = await findByText('NEXT STEP');
-    fireEvent.press(nextButton);
+    await fireEvent.press(nextButton);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalled();

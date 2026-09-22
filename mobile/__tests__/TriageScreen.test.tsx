@@ -1,8 +1,6 @@
 import React from 'react';
-import { render, fireEvent, waitFor, cleanup } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import TriageScreen from '../src/screens/public/TriageScreen';
-import * as DocumentPicker from 'expo-document-picker';
-import { mobileSupabase } from '../src/shared/supabase';
 
 // Mock vector icons
 jest.mock('@expo/vector-icons', () => ({
@@ -64,10 +62,6 @@ global.fetch = jest.fn(() =>
 ) as jest.Mock;
 
 describe('TriageScreen', () => {
-  afterEach(async () => {
-    await cleanup();
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -77,7 +71,7 @@ describe('TriageScreen', () => {
       <TriageScreen />
     );
 
-    expect(getByText('AI Triage Intake')).toBeTruthy();
+    expect(getByText('Legal Help Assessment')).toBeTruthy();
     expect(getByPlaceholderText('Ilarawan ang iyong problema...')).toBeTruthy();
   });
 
@@ -87,12 +81,12 @@ describe('TriageScreen', () => {
     );
 
     const input = getByPlaceholderText('Ilarawan ang iyong problema...');
-    fireEvent.changeText(input, 'I have a labor issue.');
+    await fireEvent.changeText(input, 'I have a labor issue.');
 
     await waitFor(() => {
       expect(getByTestId('send-button').props.accessibilityState.disabled).toBe(false);
     });
-    fireEvent.press(getByTestId('send-button'));
+    await fireEvent.press(getByTestId('send-button'));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalled();
@@ -109,21 +103,22 @@ describe('TriageScreen', () => {
     );
 
     const input = getByPlaceholderText('Ilarawan ang iyong problema...');
-    fireEvent.changeText(input, 'I have a labor issue.');
+    await fireEvent.changeText(input, 'I have a labor issue.');
     await waitFor(() => {
       expect(getByTestId('send-button').props.accessibilityState.disabled).toBe(false);
     });
-    fireEvent.press(getByTestId('send-button'));
+    await fireEvent.press(getByTestId('send-button'));
 
     await waitFor(() => {
       expect(getByText('Tell me more')).toBeTruthy();
     });
 
     const optionBtn = getByText('Tell me more');
-    fireEvent.press(optionBtn);
+    await fireEvent.press(optionBtn);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledTimes(2);
+      expect(getByText('Finish')).toBeTruthy();
     });
   });
 });

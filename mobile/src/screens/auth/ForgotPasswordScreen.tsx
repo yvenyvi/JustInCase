@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Platform, Image, Alert } from 'react-native';
+import { StyleSheet, Text, View, Image, Alert } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../components/ui/Button';
 import { InputField } from '../../components/ui/InputField';
 import { Card } from '../../components/ui/Card';
@@ -60,7 +59,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
       <View style={styles.topSection}>
         <View style={styles.logoContainer}>
-          <Image source={require('../../assets/logo.png')} style={styles.appLogo} />
+          <Image source={require('../../assets/logo-mark.png')} style={styles.appLogo} accessibilityLabel="LAYA bird and justice scales emblem" />
         </View>
         <Text style={styles.brandTitle}>LAYA</Text>
         <Text style={styles.brandSlogan}>Empower Your Rights. Free Your Future.</Text>
@@ -105,7 +104,7 @@ const styles = StyleSheet.create({
   
   topSection: { alignItems: 'center', paddingTop: 80, paddingBottom: 40 },
   logoContainer: { marginBottom: 12 },
-  appLogo: { width: 130, height: 130, resizeMode: 'contain' },
+  appLogo: { width: 150, height: 108, resizeMode: 'contain' },
   brandTitle: { ...theme.typography.heading, color: theme.colors.textPrimary, fontSize: 32, letterSpacing: 2 },
   brandSlogan: { ...theme.typography.body, color: theme.colors.textSecondary, fontSize: 16, marginTop: 4, letterSpacing: 0.5 },
   

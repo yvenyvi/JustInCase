@@ -10,6 +10,8 @@ import { MobileAuthProvider } from './src/shared/MobileAuthContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 
 const toastConfig = {
   success: (props: any) => (
@@ -35,8 +37,6 @@ const toastConfig = {
     </View>
   ),
 };
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -40,7 +40,7 @@ const TermsAndConditionsGate: React.FC = () => {
         gap: '0.75rem',
         flexShrink: 0,
       }}>
-        <img src="/logo.png" alt="LAYA" style={{ width: 28, height: 28 }} />
+        <img src="/logo-mark.png" alt="LAYA emblem" style={{ width: 32, height: 28, objectFit: 'contain' }} />
         <span style={{
           fontFamily: 'var(--font-family-display)',
           fontSize: '1.15rem',

@@ -13,6 +13,8 @@ Tests validate:
 
 TEMPLATES_ENDPOINT = "/api/documents/templates"
 GENERATE_ENDPOINT  = "/api/documents/generate"
+PDF_EXPORT_ENDPOINT = "/api/documents/export/pdf"
+DOCX_EXPORT_ENDPOINT = "/api/documents/export/docx"
 
 
 def _get_templates(client) -> list:
@@ -57,17 +59,22 @@ def test_each_template_has_required_fields_list(client):
         assert isinstance(tmpl["required_fields"], list)
 
 
-def test_generate_without_template_returns_error(client):
+def test_generate_requires_authentication(client):
     r = client.post(GENERATE_ENDPOINT, json={"values": {}})
+    assert r.status_code == 403
+
+
+def test_generate_without_template_returns_error(auth_client):
+    r = auth_client.post(GENERATE_ENDPOINT, json={"values": {}})
     assert r.status_code in (400, 422), f"Expected 4xx, got {r.status_code}"
 
 
-def test_generate_with_valid_template_id_returns_non_500(client):
-    templates = _get_templates(client)
+def test_generate_with_valid_template_id_returns_non_500(auth_client):
+    templates = _get_templates(auth_client)
     if not templates:
         return
 
-    r = client.post(GENERATE_ENDPOINT, json={
+    r = auth_client.post(GENERATE_ENDPOINT, json={
         "templateId": templates[0]["id"],
         "values": {},
     })
@@ -75,12 +82,12 @@ def test_generate_with_valid_template_id_returns_non_500(client):
     assert r.status_code in (200, 400), f"Unexpected status: {r.status_code}"
 
 
-def test_generate_200_response_contains_content_key(client):
-    templates = _get_templates(client)
+def test_generate_200_response_contains_content_key(auth_client):
+    templates = _get_templates(auth_client)
     if not templates:
         return
 
-    r = client.post(GENERATE_ENDPOINT, json={
+    r = auth_client.post(GENERATE_ENDPOINT, json={
         "templateId": templates[0]["id"],
         "values": {},
     })
@@ -90,12 +97,12 @@ def test_generate_200_response_contains_content_key(client):
         assert has_content, f"Expected a content key, got: {list(body.keys())}"
 
 
-def test_generate_by_slug_returns_non_500(client):
-    templates = _get_templates(client)
+def test_generate_by_slug_returns_non_500(auth_client):
+    templates = _get_templates(auth_client)
     if not templates:
         return
 
-    r = client.post(GENERATE_ENDPOINT, json={
+    r = auth_client.post(GENERATE_ENDPOINT, json={
         "templateSlug": templates[0]["slug"],
         "values": {},
     })
@@ -103,13 +110,67 @@ def test_generate_by_slug_returns_non_500(client):
     assert r.status_code in (200, 400)
 
 
-def test_generate_content_type_is_json(client):
-    templates = _get_templates(client)
+def test_generate_content_type_is_json(auth_client):
+    templates = _get_templates(auth_client)
     if not templates:
         return
 
-    r = client.post(GENERATE_ENDPOINT, json={
+    r = auth_client.post(GENERATE_ENDPOINT, json={
         "templateId": templates[0]["id"],
         "values": {},
     })
     assert "application/json" in r.headers.get("content-type", "")
+
+
+def test_pdf_export_returns_downloadable_pdf(client):
+    response = client.post(PDF_EXPORT_ENDPOINT, json={
+        "title": "Demand Letter",
+        "content": "# Demand Letter\n\nThis is a test document.",
+    })
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
+    assert "Demand_Letter.pdf" in response.headers["content-disposition"]
+    assert response.content.startswith(b"%PDF")
+
+
+def test_docx_export_returns_downloadable_document(client):
+    response = client.post(DOCX_EXPORT_ENDPOINT, json={
+        "title": "Affidavit",
+        "content": "# Affidavit\n\nThis is a test document.",
+    })
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+    assert "Affidavit.docx" in response.headers["content-disposition"]
+    assert response.content.startswith(b"PK")
+
+
+def test_document_exports_reject_empty_content(client):
+    for endpoint in (PDF_EXPORT_ENDPOINT, DOCX_EXPORT_ENDPOINT):
+        response = client.post(endpoint, json={"title": "Empty", "content": ""})
+        assert response.status_code == 422
+
+
+def test_docx_export_safely_removes_forbidden_control_characters(client):
+    response = client.post(DOCX_EXPORT_ENDPOINT, json={
+        "title": "Safe Export",
+        "content": "Valid Filipino text\x08 remains exportable.",
+    })
+
+    assert response.status_code == 200
+    assert response.content.startswith(b"PK")
+
+
+def test_export_uses_header_safe_filename_for_unicode_title(client):
+    response = client.post(PDF_EXPORT_ENDPOINT, json={
+        "title": "Kasunduang Ābisyo\r\nunsafe",
+        "content": "Ligtas na nilalaman.",
+    })
+
+    assert response.status_code == 200
+    disposition = response.headers["content-disposition"]
+    assert "\r" not in disposition and "\n" not in disposition
+    disposition.encode("ascii")
