@@ -11,6 +11,7 @@ import { theme } from '../../shared/theme';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { API_BASE_URL } from '../../shared/api';
 import { searchLegalSources } from '../../shared/legalResearch';
+import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 
 type CaseDetailsRouteProp = RouteProp<RootStackParamList, 'CaseDetails'>;
 
@@ -156,14 +157,21 @@ export default function CaseDetailsScreen() {
     enabled: !!caseId
   });
 
-  const { data: timeLogs = [], isLoading: isLoadingLogs } = useQuery({
+  const {
+    data: timeLogs = [],
+    isLoading: isLoadingLogs,
+    isError: isTimeLogsError,
+    refetch: refetchTimeLogs,
+  } = useQuery({
     queryKey: ['caseTimeLogs', caseId],
     queryFn: async () => {
-      const { data: tLogs } = await mobileSupabase
+      const { data: tLogs, error: timeLogsError } = await mobileSupabase
         .from('pro_bono_logs')
         .select('id, hours, description, created_at, is_verified')
         .eq('case_id', caseId)
         .order('created_at', { ascending: false });
+
+      if (timeLogsError) throw timeLogsError;
 
       if (tLogs) {
         return tLogs.map((l: any) => ({
@@ -363,36 +371,49 @@ export default function CaseDetailsScreen() {
 
   const handleVerify = async (logId: string) => {
     try {
-      if (!currentUser) return;
-      await mobileSupabase
+      if (!currentUser || !c || !isClient) return;
+      const { data: updatedLog, error } = await mobileSupabase
         .from('pro_bono_logs')
         .update({ 
           is_verified: true,
           verified_by: currentUser.id,
           verified_at: new Date().toISOString()
         })
-        .eq('id', logId);
+        .eq('id', logId)
+        .eq('case_id', c.id)
+        .select('id')
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!updatedLog) throw new Error('This time log is no longer available.');
       
       Toast.show({ type: 'success', text1: 'Accepted', text2: 'You have verified this time log.' });
-      fetchTimeLogs();
-    } catch (err) {
-      console.error('Error verifying log:', err);
+      await fetchTimeLogs();
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Verification failed', text2: err?.message || 'Please try again.' });
     }
   };
 
-  const handleRejectLog = async (logId: string) => {
+  const handleRejectLog = (log: TimeLog) => {
     setConfirmConfig({
       visible: true,
-      title: "Reject Hours",
-      message: "Are you sure you want to reject and delete this time log?",
-      confirmText: "Reject",
+      title: "Reject submitted hours?",
+      message: `This ${log.hours}-hour entry will be removed and will not count toward the attorney's recorded service. Ask the attorney to submit a corrected entry if needed.`,
+      confirmText: "Reject Hours",
       onConfirm: async () => {
         try {
-          await mobileSupabase.from('pro_bono_logs').delete().eq('id', logId);
+          if (!c || !isClient) return;
+          const { error } = await mobileSupabase
+            .from('pro_bono_logs')
+            .delete()
+            .eq('id', log.id)
+            .eq('case_id', c.id);
+
+          if (error) throw error;
           Toast.show({ type: 'info', text1: 'Rejected', text2: 'The time log has been rejected and removed.' });
-          fetchTimeLogs();
-        } catch (err) {
-          console.error('Error rejecting log:', err);
+          await fetchTimeLogs();
+        } catch (err: any) {
+          Toast.show({ type: 'error', text1: 'Rejection failed', text2: err?.message || 'Please try again.' });
         }
       }
     });
@@ -511,9 +532,9 @@ export default function CaseDetailsScreen() {
   const handleWithdrawCase = () => {
     setConfirmConfig({
       visible: true,
-      title: "Kanselahin ang Kaso",
-      message: "Sigurado ka bang gusto mong kanselahin ang kasong ito?",
-      confirmText: "Kanselahin",
+      title: "Cancel this case?",
+      message: "The case will be marked as withdrawn and the assigned attorney will be notified. You will need to start a new request if you need help again.",
+      confirmText: "Cancel Case",
       onConfirm: async () => {
         setIsSubmitting(true);
         try {
@@ -754,10 +775,19 @@ export default function CaseDetailsScreen() {
           </View>
         </View>
 
-        {timeLogs.length > 0 && (
+        {(isClient || timeLogs.length > 0) && (
           <View style={{ marginTop: 32 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginLeft: 8, marginRight: 8 }}>
-              <Text style={[styles.sectionLabel, { marginBottom: 0, marginLeft: 0 }]}>TIME LOGS</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={[styles.sectionLabel, { marginBottom: 0, marginLeft: 0 }]}>HOURS FOR YOUR REVIEW</Text>
+                {isClient && timeLogs.some(log => !log.isVerified) && (
+                  <View style={{ marginLeft: 8, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: '#FEF3C7' }}>
+                    <Text style={{ color: '#B45309', fontSize: 11, fontWeight: '700' }}>
+                      {timeLogs.filter(log => !log.isVerified).length} pending
+                    </Text>
+                  </View>
+                )}
+              </View>
               {timeLogs.some(l => l.isVerified) && (
                 <Pressable onPress={() => setIsTimeLogsExpanded(!isTimeLogsExpanded)} style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ color: theme.colors.primary, fontSize: 13, fontWeight: '700', marginRight: 4 }}>
@@ -768,6 +798,17 @@ export default function CaseDetailsScreen() {
               )}
             </View>
             <View style={styles.card}>
+              {isTimeLogsError ? (
+                <View style={{ alignItems: 'center', paddingVertical: 20, paddingHorizontal: 16 }}>
+                  <Text style={{ textAlign: 'center', color: theme.colors.textSecondary, marginBottom: 10 }}>
+                    Could not load the attorney's submitted hours.
+                  </Text>
+                  <Pressable accessibilityRole="button" onPress={() => void refetchTimeLogs()}>
+                    <Text style={{ color: theme.colors.primary, fontWeight: '700' }}>Try Again</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
               {timeLogs.filter(l => isTimeLogsExpanded || !l.isVerified).map((log, index) => (
                 <View key={log.id} style={[styles.logItem, index > 0 && styles.logItemBorder, { flexDirection: 'column', alignItems: 'stretch' }]}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -783,7 +824,7 @@ export default function CaseDetailsScreen() {
                       </View>
                     ) : isClient ? (
                       <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <Pressable style={[styles.verifyBtn, { backgroundColor: '#FEE2E2', paddingVertical: 6, paddingHorizontal: 12 }]} onPress={() => handleRejectLog(log.id)}>
+                        <Pressable style={[styles.verifyBtn, { backgroundColor: '#FEE2E2', paddingVertical: 6, paddingHorizontal: 12 }]} onPress={() => handleRejectLog(log)}>
                           <Text style={[styles.verifyBtnText, { color: '#DC2626' }]}>Reject</Text>
                         </Pressable>
                         <Pressable style={[styles.verifyBtn, { paddingVertical: 6, paddingHorizontal: 12 }]} onPress={() => handleVerify(log.id)}>
@@ -801,7 +842,17 @@ export default function CaseDetailsScreen() {
                 </View>
               ))}
               {timeLogs.filter(l => isTimeLogsExpanded || !l.isVerified).length === 0 && (
-                <Text style={{ textAlign: 'center', color: theme.colors.textSecondary, paddingVertical: 12 }}>No pending time logs.</Text>
+                <View style={{ alignItems: 'center', paddingVertical: 20, paddingHorizontal: 16 }}>
+                  <Ionicons name="checkmark-circle-outline" size={28} color={theme.colors.success} />
+                  <Text style={{ textAlign: 'center', color: theme.colors.textSecondary, marginTop: 8 }}>
+                    No hours are waiting for your approval.
+                  </Text>
+                  <Text style={{ textAlign: 'center', color: theme.typography.caption.color, fontSize: 12, marginTop: 4 }}>
+                    Hours submitted by your attorney will appear here for you to accept or reject.
+                  </Text>
+                </View>
+              )}
+                </>
               )}
             </View>
           </View>
@@ -868,23 +919,18 @@ export default function CaseDetailsScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Confirmation Modal */}
-      <Modal visible={confirmConfig.visible} transparent animationType="slide" statusBarTranslucent>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxWidth: 320, alignSelf: 'center', width: '100%' }]}>
-            <Text style={[styles.modalTitle, { marginBottom: 12 }]}>{confirmConfig.title}</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 15, lineHeight: 22, marginBottom: 24 }}>{confirmConfig.message}</Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
-              <Pressable style={{ paddingHorizontal: 16, paddingVertical: 10 }} onPress={() => setConfirmConfig(c => ({...c, visible: false}))}>
-                <Text style={{ color: theme.colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
-              </Pressable>
-              <Pressable style={{ backgroundColor: '#DC2626', paddingHorizontal: 16, paddingVertical: 10, borderRadius: theme.borderRadius.md }} onPress={() => { setConfirmConfig(c => ({...c, visible: false})); confirmConfig.onConfirm(); }}>
-                <Text style={{ color: '#FFF', fontWeight: '600' }}>{confirmConfig.confirmText || 'Confirm'}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ConfirmationDialog
+        visible={confirmConfig.visible}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmLabel={confirmConfig.confirmText || 'Confirm'}
+        cancelLabel="Keep It"
+        onCancel={() => setConfirmConfig(config => ({ ...config, visible: false }))}
+        onConfirm={() => {
+          setConfirmConfig(config => ({ ...config, visible: false }));
+          void confirmConfig.onConfirm();
+        }}
+      />
 
       {/* Client Review Modal */}
       <Modal visible={isReviewModalVisible} transparent animationType="slide" statusBarTranslucent>

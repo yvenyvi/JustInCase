@@ -377,7 +377,13 @@ CREATE POLICY "pro_bono_logs_update" ON public.pro_bono_logs
 DROP POLICY IF EXISTS "pro_bono_logs_delete" ON public.pro_bono_logs;
 CREATE POLICY "pro_bono_logs_delete" ON public.pro_bono_logs
   FOR DELETE TO authenticated
-  USING ( attorney_id = auth.uid() );
+  USING (
+    attorney_id = auth.uid()
+    OR EXISTS (
+      SELECT 1 FROM public.cases
+      WHERE cases.id = pro_bono_logs.case_id AND cases.client_id = auth.uid()
+    )
+  );
 
 -- ==========================================
 -- DOCUMENT TABLES

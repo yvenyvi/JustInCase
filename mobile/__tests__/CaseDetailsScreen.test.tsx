@@ -103,6 +103,16 @@ describe('CaseDetailsScreen', () => {
       
       if (table === 'cases') {
         chain.single = mockSingleCase;
+      } else if (table === 'pro_bono_logs') {
+        chain.order = jest.fn().mockResolvedValue({
+          data: [{
+            id: 'pending-log-id',
+            hours: 3,
+            description: 'Reviewed evidence and discussed next steps.',
+            created_at: '2026-09-23T00:00:00Z',
+            is_verified: false,
+          }],
+        });
       } else {
         // Other tables return empty array by default
         chain.order = jest.fn().mockResolvedValue({ data: [] });
@@ -113,7 +123,7 @@ describe('CaseDetailsScreen', () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
-    const { getByText, unmount } = await render(
+    const { getByText, queryByText, unmount } = await render(
       <QueryClientProvider client={queryClient}>
         <CaseDetailsScreen />
       </QueryClientProvider>
@@ -123,6 +133,26 @@ describe('CaseDetailsScreen', () => {
     await waitFor(() => {
       expect(getByText('Test Case Title')).toBeTruthy();
     });
+
+    expect(getByText('HOURS FOR YOUR REVIEW')).toBeTruthy();
+    expect(getByText('1 pending')).toBeTruthy();
+    expect(getByText('Accept')).toBeTruthy();
+    expect(getByText('Reject')).toBeTruthy();
+
+    await fireEvent.press(getByText('Reject'));
+    expect(getByText('Reject submitted hours?')).toBeTruthy();
+    expect(getByText("This 3-hour entry will be removed and will not count toward the attorney's recorded service. Ask the attorney to submit a corrected entry if needed.")).toBeTruthy();
+    expect(getByText('This action cannot be undone.')).toBeTruthy();
+    expect(getByText('Reject Hours')).toBeTruthy();
+
+    await fireEvent.press(getByText('Keep It'));
+    await waitFor(() => expect(queryByText('Reject submitted hours?')).toBeNull());
+
+    await fireEvent.press(getByText('Cancel Case'));
+    expect(getByText('Cancel this case?')).toBeTruthy();
+    expect(getByText('The case will be marked as withdrawn and the assigned attorney will be notified. You will need to start a new request if you need help again.')).toBeTruthy();
+    expect(getByText('This action cannot be undone.')).toBeTruthy();
+    expect(getByText('Keep It')).toBeTruthy();
 
     // Check if the "Message Attorney" button is present and click it
     const msgBtn = getByText('Message Attorney');

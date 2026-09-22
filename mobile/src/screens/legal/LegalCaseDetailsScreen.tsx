@@ -54,7 +54,6 @@ export default function LegalCaseDetailsScreen() {
   const [logHours, setLogHours] = useState('');
   const [logDesc, setLogDesc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmConfig, setConfirmConfig] = useState({ visible: false, title: '', message: '', confirmText: '', onConfirm: () => {} });
   
   // Close Case Modal State
   const [isCloseModalVisible, setIsCloseModalVisible] = useState(false);
@@ -903,24 +902,6 @@ export default function LegalCaseDetailsScreen() {
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
-
-      {/* Confirmation Modal */}
-      <Modal visible={confirmConfig.visible} transparent animationType="slide" statusBarTranslucent>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxWidth: 320, alignSelf: 'center', width: '100%' }]}>
-            <Text style={[styles.modalTitle, { marginBottom: 12 }]}>{confirmConfig.title}</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 15, lineHeight: 22, marginBottom: 24 }}>{confirmConfig.message}</Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
-              <Pressable style={{ paddingHorizontal: 16, paddingVertical: 10 }} onPress={() => setConfirmConfig(c => ({...c, visible: false}))}>
-                <Text style={{ color: theme.colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
-              </Pressable>
-              <Pressable style={{ backgroundColor: '#DC2626', paddingHorizontal: 16, paddingVertical: 10, borderRadius: theme.borderRadius.md }} onPress={() => { setConfirmConfig(c => ({...c, visible: false})); confirmConfig.onConfirm(); }}>
-                <Text style={{ color: '#FFF', fontWeight: '600' }}>{confirmConfig.confirmText || 'Confirm'}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
       </Modal>
 
       {/* Update Status Modal */}
