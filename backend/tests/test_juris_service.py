@@ -1,3 +1,5 @@
+import json
+
 import httpx
 
 import juris_service
@@ -20,9 +22,31 @@ def test_redaction_removes_direct_identifiers():
 def test_planner_failure_never_forwards_case_narrative(monkeypatch):
     monkeypatch.setattr(juris_service, "call_groq", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("offline")))
     query = juris_service.plan_research_query("Juan Dela Cruz was dismissed after submitting private document contents")
-    assert query == "Philippine law legal research"
+    assert query == "Philippine labor law illegal dismissal unpaid wages employee remedies"
     assert "Juan" not in query
     assert "document contents" not in query
+
+
+def test_planner_excludes_stored_source_provenance(monkeypatch):
+    captured = {}
+
+    def fake_call(**kwargs):
+        captured["input"] = kwargs["messages"][1]["content"]
+        return '{"query":"illegal dismissal and unpaid wage remedies"}'
+
+    monkeypatch.setattr(juris_service, "call_groq", fake_call)
+    case_json = json.dumps({
+        "summary": "Employee was dismissed and has unpaid wages.",
+        "ai_assessment": "Research termination and wage remedies.",
+        "legal_sources": [{"summary": "x" * 9000, "url": "https://example.test"}],
+    })
+
+    query = juris_service.plan_research_query(case_json, "similar jurisprudence")
+
+    assert query == "illegal dismissal and unpaid wage remedies"
+    assert "Employee was dismissed" in captured["input"]
+    assert "example.test" not in captured["input"]
+    assert len(captured["input"]) < 1000
 
 
 def test_normalizes_and_filters_low_relevance(monkeypatch):

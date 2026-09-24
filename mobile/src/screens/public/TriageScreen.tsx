@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Keyboard, KeyboardEvent } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Keyboard, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,33 @@ interface Message {
   options?: string[];
 }
 
+class TriageRequestError extends Error {
+  status: number;
+
+  constructor(status: number) {
+    super(`Triage request failed with status ${status}`);
+    this.status = status;
+  }
+}
+
+export function getTriageErrorMessage(error: unknown): string {
+  if (error instanceof TriageRequestError) {
+    if (error.status === 401 || error.status === 403) {
+      return 'Nag-expire ang inyong session. Mag-login muli bago ipagpatuloy ang assessment.';
+    }
+    if (error.status === 400 || error.status === 422) {
+      return 'Hindi namin maproseso ang impormasyong ipinadala. Pakisuri ito at subukang muli.';
+    }
+    if (error.status === 429) {
+      return 'Maraming gumagamit ng AI assessment ngayon. Maghintay sandali at subukang muli.';
+    }
+    if (error.status >= 500) {
+      return 'Pansamantalang hindi available ang AI assessment. Naka-save ang usapan sa screen; pakisubukang muli makalipas ang ilang sandali.';
+    }
+  }
+  return 'Hindi makakonekta sa assessment service. Tingnan ang inyong internet connection at subukang muli.';
+}
+
 export default function TriageScreen() {
   const navigation = useNavigation<any>();
   const { session } = useMobileAuth();
@@ -28,8 +55,6 @@ export default function TriageScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const keyboardHeightRef = useRef(300);
   const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
   const handlePickDocument = async () => {
@@ -41,8 +66,8 @@ export default function TriageScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setSelectedFile(result.assets[0]);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      console.log('[Triage] Document picker unavailable');
       Toast.show({ type: 'error', text1: 'Error', text2: 'Hindi mabuksan ang dokumento.' });
     }
   };
@@ -97,7 +122,7 @@ export default function TriageScreen() {
         });
       }
 
-      if (!response.ok) throw new Error('Network response was not ok');
+      if (!response.ok) throw new TriageRequestError(response.status);
 
       const data = await response.json();
       const reply = data.response || '';
@@ -112,8 +137,8 @@ export default function TriageScreen() {
           }
           const triageData = JSON.parse(jsonStr);
           navigation.navigate('PublicTriageResult', { result: triageData });
-        } catch (e) {
-          console.error("Failed to parse triage JSON", e);
+        } catch {
+          console.log('[Triage] Invalid assessment response received');
           setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: 'Nagkaproblema sa pagproseso ng iyong kaso. Pakisubukang muli.' }]);
         }
       } else {
@@ -123,8 +148,8 @@ export default function TriageScreen() {
         if (optionsMatch) {
           try {
             extractedOptions = JSON.parse(optionsMatch[1]);
-          } catch (e) {
-            console.error("Failed to parse options", e);
+          } catch {
+            console.log('[Triage] Invalid response options received');
           }
         }
         // Always strip OPTIONS from the text so it never shows to the user
@@ -133,8 +158,9 @@ export default function TriageScreen() {
         setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: questionText, options: extractedOptions.length > 0 ? extractedOptions : undefined }]);
       }
     } catch (error) {
-      console.error(error);
-      setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: 'Paumanhin, mayroong error sa system ngayon. Pakisubukang muli.' }]);
+      const status = error instanceof TriageRequestError ? error.status : 'connection';
+      console.log(`[Triage] Request unavailable (${status})`);
+      setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: getTriageErrorMessage(error) }]);
     } finally {
       setIsLoading(false);
     }
@@ -145,22 +171,14 @@ export default function TriageScreen() {
   }, [messages, isLoading]);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', (e: KeyboardEvent) => {
-      const h = e.endCoordinates.height;
-      keyboardHeightRef.current = h;
-      setKeyboardHeight(h);
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
       setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     });
-    const willHideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardHeight(0));
-    const didHideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
-    
-    return () => { showSub.remove(); willHideSub.remove(); didHideSub.remove(); };
+    return () => showSub.remove();
   }, []);
 
-  const handleInputFocus = () => setKeyboardHeight(keyboardHeightRef.current);
-
   return (
-    <View style={[styles.container, { paddingBottom: keyboardHeight > 0 ? keyboardHeight + insets.bottom : 0 }]}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <View style={styles.header}>
         <Pressable onPress={() => navigation.reset({ index: 0, routes: [{ name: 'PublicHome' }] })} style={styles.backBtn}>
           <Ionicons name="close" size={24} color="#64748B" />
@@ -181,6 +199,8 @@ export default function TriageScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={styles.chatScroll}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       >
         <View style={styles.heroSection}>
           <View style={styles.iconContainer}>
@@ -208,7 +228,7 @@ export default function TriageScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.inputAreaWrapper}>
+      <View style={[styles.inputAreaWrapper, { paddingBottom: Math.max(insets.bottom, 8) }]}>
         {!isLoading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && messages[messages.length - 1].options && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer} contentContainerStyle={styles.optionsContent}>
             {messages[messages.length - 1].options!.map((opt: string, idx: number) => (
@@ -237,7 +257,6 @@ export default function TriageScreen() {
             placeholderTextColor="#94A3B8"
             value={inputText}
             onChangeText={setInputText}
-            onFocus={handleInputFocus}
             multiline
             maxLength={1000}
           />
@@ -246,7 +265,7 @@ export default function TriageScreen() {
           </Pressable>
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

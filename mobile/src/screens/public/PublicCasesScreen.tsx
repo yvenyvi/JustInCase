@@ -7,6 +7,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
+import { isClosedCaseStatus, isCompletedCaseStatus } from '../../shared/caseStatus';
 import { CaseCardSkeleton } from '../../components/ui/Skeleton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -83,8 +84,8 @@ export default function PublicCasesScreen() {
     }
   };
 
-  const activeCases = cases.filter(c => !c.status.includes('Closed') && c.status !== 'Withdrawn' && c.status !== 'Dropped');
-  const completedCases = cases.filter(c => c.status.includes('Closed') || c.status === 'Resolved');
+  const activeCases = cases.filter(c => !isClosedCaseStatus(c.status));
+  const completedCases = cases.filter(c => isCompletedCaseStatus(c.status));
   const withdrawnCases = cases.filter(c => c.status === 'Withdrawn' || c.status === 'Dropped');
   
   let filteredCases = activeCases;

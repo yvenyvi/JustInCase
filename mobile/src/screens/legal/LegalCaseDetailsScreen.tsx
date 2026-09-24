@@ -8,13 +8,15 @@ import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
 import { searchLegalSources } from '../../shared/legalResearch';
+import { formatAssessmentContent, formatDetailItems } from '../../shared/aiAssessmentFormatting';
+import { CaseStatus, isClosedCaseStatus } from '../../shared/caseStatus';
 
 type LegalCaseDetailsRouteProp = RouteProp<RootStackParamList, 'LegalCaseDetails'>;
 
 type CaseData = {
   id: string;
   title: string;
-  status: string;
+  status: CaseStatus;
   assignedTo: string | null;
   attorneyId: string | null;
   clientId: string | null;
@@ -54,6 +56,7 @@ export default function LegalCaseDetailsScreen() {
   const [logHours, setLogHours] = useState('');
   const [logDesc, setLogDesc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResearching, setIsResearching] = useState(false);
   
   // Close Case Modal State
   const [isCloseModalVisible, setIsCloseModalVisible] = useState(false);
@@ -438,7 +441,8 @@ export default function LegalCaseDetailsScreen() {
   };
 
   const handleFindSimilarCases = async () => {
-    if (!c) return;
+    if (!c || isResearching) return;
+    setIsResearching(true);
     try {
       const research = await searchLegalSources(c.description, ['jurisprudence'], 8);
       navigation.navigate('PublicRightsLibrary', {
@@ -446,13 +450,15 @@ export default function LegalCaseDetailsScreen() {
       });
     } catch (error: any) {
       Toast.show({ type: 'error', text1: 'Research unavailable', text2: error?.message || 'Please try again.' });
+    } finally {
+      setIsResearching(false);
     }
   };
 
   const getStatusColor = (status: string) => {
-    if (status.includes('Closed') || status === 'Withdrawn' || status === 'Dropped') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
+    if (isClosedCaseStatus(status)) return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
     if (status === 'Demand Sent' || status === 'Hearing Scheduled') return { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' };
-    if (status === 'In Progress' || status === 'Accepted') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
+    if (status === 'In Progress') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
     return { bg: '#FEF3C7', text: theme.colors.warning, border: '#FDE68A' };
   };
 
@@ -475,7 +481,7 @@ export default function LegalCaseDetailsScreen() {
   const colors = getStatusColor(c.status);
   const isAssigned = c.attorneyId === currentUser?.id;
   const isAvailable = c.attorneyId === null;
-  const isCaseClosed = c.status.includes('Closed') || c.status === 'Withdrawn' || c.status === 'Dropped';
+  const isCaseClosed = isClosedCaseStatus(c.status);
 
   // Real AI Parsing (Fallback to old logic if not JSON)
   let parsedDesc: any = { concern: c.description, opposing: '', urgency: '', location: '', income: '', deadline: '', evidence: 'None', outcome: '' };
@@ -522,6 +528,9 @@ export default function LegalCaseDetailsScreen() {
     };
   }
 
+  const assessmentContent = formatAssessmentContent(aiData?.ai_assessment);
+  const missingDetailItems = formatDetailItems(aiData?.missing_details || 'None identified');
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -562,13 +571,37 @@ export default function LegalCaseDetailsScreen() {
                 <Text style={styles.aiLabel}>Primary Issue</Text>
                 <Text style={styles.aiValue}>{aiData?.primary_issue || parsedDesc.concern || 'Not specified'}</Text>
               </View>
+              <View style={styles.aiDivider} />
               <View style={styles.aiRow}>
-                <Text style={styles.aiLabel}>AI Assessment</Text>
-                <Text style={styles.aiValue}>{aiData?.ai_assessment || 'No assessment available.'}</Text>
+                <Text style={styles.aiLabel}>Legal Observations</Text>
+                {assessmentContent.observations.map((observation, index) => (
+                  <View key={`observation-${index}`} style={styles.insightListItem}>
+                    <View style={styles.insightBullet} />
+                    <Text style={styles.insightListText}>{observation}</Text>
+                  </View>
+                ))}
               </View>
-              <View style={styles.aiRow}>
+              {assessmentContent.nextSteps.length > 0 && (
+                <View style={styles.aiRow}>
+                  <Text style={styles.aiLabel}>Suggested Next Steps</Text>
+                  {assessmentContent.nextSteps.map((step, index) => (
+                    <View key={`step-${index}`} style={styles.stepListItem}>
+                      <View style={styles.stepNumber}>
+                        <Text style={styles.stepNumberText}>{index + 1}</Text>
+                      </View>
+                      <Text style={styles.insightListText}>{step}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <View style={[styles.aiRow, styles.aiRowLast]}>
                 <Text style={styles.aiLabel}>Missing Details</Text>
-                <Text style={[styles.aiValue, { color: '#B45309' }]}>{aiData?.missing_details || 'None identified'}</Text>
+                {missingDetailItems.map((detail, index) => (
+                  <View key={`missing-${index}`} style={styles.missingDetailItem}>
+                    <Ionicons name="alert-circle-outline" size={16} color="#B45309" />
+                    <Text style={styles.missingDetailText}>{detail}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           )}
@@ -624,29 +657,33 @@ export default function LegalCaseDetailsScreen() {
           {(isAvailable || (isAssigned && c.status === 'Pending Triage')) && (
             <>
               <Pressable 
-                style={[styles.actionBtn, styles.actionBtnPrimary, { width: '100%' }]} 
+                style={[
+                  styles.actionBtn,
+                  styles.actionBtnPrimary,
+                  isAssigned && c.status === 'Pending Triage' ? styles.halfWidthAction : styles.fullWidthAction,
+                ]}
                 onPress={handleAcceptCase}
               >
-                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
                 <Text style={styles.actionBtnTextPrimary}>Accept Case</Text>
               </Pressable>
 
               {isAssigned && c.status === 'Pending Triage' && (
                 <Pressable 
-                  style={[styles.actionBtn, { backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FECACA', width: '100%' }]} 
+                  style={[styles.actionBtn, styles.actionBtnDanger, styles.halfWidthAction]}
                   onPress={() => setIsWithdrawModalVisible(true)}
                 >
-                  <Ionicons name="close-circle" size={20} color="#DC2626" style={{ marginRight: 8 }} />
-                  <Text style={[styles.actionBtnTextPrimary, { color: '#DC2626' }]}>Decline Request</Text>
+                  <Ionicons name="close-circle-outline" size={20} color="#DC2626" />
+                  <Text style={styles.actionBtnTextDanger}>Decline Request</Text>
                 </Pressable>
               )}
             </>
           )}
 
-          {isAssigned && c.status !== 'Pending Triage' && !c.status.includes('Closed') && c.status !== 'Withdrawn' && c.status !== 'Dropped' && (
+          {isAssigned && c.status !== 'Pending Triage' && !isClosedCaseStatus(c.status) && (
             <>
               <Pressable 
-                style={[styles.actionBtn, styles.actionBtnPrimary, { width: '100%' }]} 
+                style={[styles.actionBtn, styles.actionBtnPrimary, styles.fullWidthAction]}
                 onPress={() => navigation.navigate('ChatThread', { threadId: c.id, threadName: c.clientName || 'Client' })}
               >
                 <Ionicons name="chatbubbles" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
@@ -655,14 +692,14 @@ export default function LegalCaseDetailsScreen() {
               
               <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
                 <Pressable 
-                  style={[styles.actionBtn, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: '#CBD5E1' }]} 
+                  style={[styles.actionBtn, styles.flexAction, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: '#CBD5E1' }]}
                   onPress={() => setIsWithdrawModalVisible(true)}
                 >
                   <Ionicons name="close-circle" size={20} color="#64748B" style={{ marginRight: 8 }} />
                   <Text style={[styles.actionBtnTextPrimary, { color: theme.colors.textSecondary }]}>Withdraw</Text>
                 </Pressable>
                 
-                <Pressable style={[styles.actionBtn, { backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#CCFBF1' }]} onPress={() => setIsLogModalVisible(true)}>
+                <Pressable style={[styles.actionBtn, styles.flexAction, { backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#CCFBF1' }]} onPress={() => setIsLogModalVisible(true)}>
                   <Ionicons name="time" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                   <Text style={styles.actionBtnText}>Log Hours</Text>
                 </Pressable>
@@ -687,9 +724,9 @@ export default function LegalCaseDetailsScreen() {
             </View>
             </>
           )}
-          <Pressable style={styles.actionBtn} onPress={handleFindSimilarCases} accessibilityRole="button" accessibilityHint="Opens de-identified jurisprudence research">
-            <Ionicons name="search" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
-            <Text style={styles.actionBtnText}>Research Similar Cases</Text>
+          <Pressable style={[styles.actionBtn, styles.actionBtnResearch, styles.fullWidthAction, isResearching && { opacity: 0.65 }]} onPress={handleFindSimilarCases} disabled={isResearching} accessibilityRole="button" accessibilityHint="Opens de-identified jurisprudence research" accessibilityState={{ disabled: isResearching, busy: isResearching }}>
+            {isResearching ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <Ionicons name="search-outline" size={20} color={theme.colors.primary} />}
+            <Text style={styles.actionBtnText}>{isResearching ? 'Finding Similar Cases…' : 'Research Similar Cases'}</Text>
           </Pressable>
         </View>
 
@@ -742,7 +779,7 @@ export default function LegalCaseDetailsScreen() {
 
       {/* Log Hours Modal */}
       <Modal visible={isLogModalVisible} transparent animationType="slide" statusBarTranslucent>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior="padding">
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Log Attorney Hours</Text>
@@ -788,7 +825,7 @@ export default function LegalCaseDetailsScreen() {
 
       {/* Withdraw Modal */}
       <Modal visible={isWithdrawModalVisible} transparent animationType="slide" statusBarTranslucent>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior="padding">
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Withdraw / Decline Case</Text>
@@ -797,7 +834,7 @@ export default function LegalCaseDetailsScreen() {
               </Pressable>
             </View>
             
-            <ScrollView style={styles.modalBody}>
+            <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
               <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
                 Under Philippine law, withdrawal requires valid justifiable cause. Select a ground below:
               </Text>
@@ -847,7 +884,7 @@ export default function LegalCaseDetailsScreen() {
 
       {/* Close Case Modal */}
       <Modal visible={isCloseModalVisible} transparent animationType="slide" statusBarTranslucent>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior="padding">
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Finalize & Close Case</Text>
@@ -856,7 +893,7 @@ export default function LegalCaseDetailsScreen() {
               </Pressable>
             </View>
             
-            <ScrollView style={styles.modalBody}>
+            <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
               <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
                 Select the final outcome of this case. This action cannot be undone.
               </Text>
@@ -978,9 +1015,19 @@ const styles = StyleSheet.create({
   aiTitle: { color: '#7C3AED', fontSize: 16, fontWeight: '800', marginLeft: 8 },
   aiDescription: { color: '#8B5CF6', fontSize: 13, marginBottom: 16 },
   aiContent: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, padding: 16, borderWidth: 1, borderColor: '#EDE9FE' },
-  aiRow: { marginBottom: 12 },
-  aiLabel: { color: '#8B5CF6', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  aiValue: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '500', lineHeight: 20 },
+  aiRow: { marginBottom: 18 },
+  aiRowLast: { marginBottom: 0 },
+  aiDivider: { height: 1, backgroundColor: '#EDE9FE', marginBottom: 18 },
+  aiLabel: { color: '#7C3AED', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 9 },
+  aiValue: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '500', lineHeight: 21 },
+  insightListItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 9 },
+  insightBullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#8B5CF6', marginTop: 7, marginRight: 10 },
+  insightListText: { flex: 1, color: theme.colors.textPrimary, fontSize: 14, fontWeight: '500', lineHeight: 21 },
+  stepListItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+  stepNumber: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  stepNumberText: { color: '#7C3AED', fontSize: 11, fontWeight: '800' },
+  missingDetailItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#FFFBEB', borderRadius: 10, padding: 10, marginBottom: 7 },
+  missingDetailText: { flex: 1, color: '#92400E', fontSize: 13, fontWeight: '600', lineHeight: 19 },
 
   card: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 20, marginBottom: 8, borderWidth: 1, borderColor: theme.colors.border },
   sectionLabel: { color: theme.colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 16 },
@@ -989,10 +1036,16 @@ const styles = StyleSheet.create({
   infoValue: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
   
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
-  actionBtn: { flex: 1, backgroundColor: '#F0FDFA', borderRadius: theme.borderRadius.lg, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#CCFBF1' },
-  actionBtnPrimary: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-  actionBtnText: { color: theme.colors.primary, fontSize: 14, fontWeight: '700' },
-  actionBtnTextPrimary: { color: theme.colors.surface, fontSize: 14, fontWeight: '800' },
+  actionBtn: { minHeight: 54, backgroundColor: '#F0FDFA', borderRadius: theme.borderRadius.lg, paddingVertical: 14, paddingHorizontal: 14, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#CCFBF1' },
+  halfWidthAction: { flexGrow: 1, flexBasis: '46%' },
+  flexAction: { flex: 1 },
+  fullWidthAction: { flexGrow: 0, flexBasis: '100%', width: '100%' },
+  actionBtnPrimary: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 6, elevation: 2 },
+  actionBtnDanger: { backgroundColor: '#FFF7F7', borderColor: '#FECACA' },
+  actionBtnResearch: { backgroundColor: '#F0FDFA', borderColor: '#99F6E4' },
+  actionBtnText: { flexShrink: 1, color: theme.colors.primary, fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  actionBtnTextPrimary: { flexShrink: 1, color: theme.colors.surface, fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  actionBtnTextDanger: { flexShrink: 1, color: '#DC2626', fontSize: 14, fontWeight: '800', textAlign: 'center' },
   
   logItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
   logItemBorder: { borderTopWidth: 1, borderTopColor: theme.colors.secondary },

@@ -30,45 +30,47 @@ export default function TriageLawyerSelectionScreen() {
   const result = useMemo(() => route.params?.result || {}, [route.params?.result]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingLawyers, setIsLoadingLawyers] = useState(true);
+  const [matchError, setMatchError] = useState('');
   const [lawyers, setLawyers] = useState<any[]>([]);
-  const [selectedLawyerId, setSelectedLawyerId] = useState<string | null>(null);
+  const [selectedLawyerId, setSelectedLawyerId] = useState<string | null | undefined>(undefined);
 
 
   useEffect(() => {
     const fetchLawyers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/lawyers`);
+        setIsLoadingLawyers(true);
+        setMatchError('');
+        const response = await fetch(`${API_BASE_URL}/api/lawyers/match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category_of_law: result.category_of_law,
+            case_subcategory: result.case_subcategory,
+            primary_issue: result.primary_issue,
+            case_summary: result.case_summary,
+            location: result.location,
+            urgency: result.urgency,
+            lawyer_preference: result.lawyer_preference,
+            limit: 3,
+          }),
+        });
+        if (!response.ok) throw new Error(`Attorney matching failed (${response.status})`);
         const resultData = await response.json();
         
         if (resultData.lawyers && resultData.lawyers.length > 0) {
-          let sorted = [...resultData.lawyers];
-          
-          // Sort by recommended lawyer first, then location match
-          sorted.sort((a: any, b: any) => {
-            if (result.recommended_lawyer_id) {
-              if (a.id === result.recommended_lawyer_id) return -1;
-              if (b.id === result.recommended_lawyer_id) return 1;
-            }
-            const aLocMatch = a.city_municipality && result.location && a.city_municipality.toLowerCase().includes(result.location.toLowerCase());
-            const bLocMatch = b.city_municipality && result.location && b.city_municipality.toLowerCase().includes(result.location.toLowerCase());
-            if (aLocMatch && !bLocMatch) return -1;
-            if (!aLocMatch && bLocMatch) return 1;
-            return 0;
-          });
-
-          // Take top 3
-          const topLawyers = sorted.slice(0, 3);
-          setLawyers(topLawyers);
-          
-          // Auto-select recommended lawyer if present in top 3, else select the first one
-          if (result.recommended_lawyer_id && topLawyers.find(l => l.id === result.recommended_lawyer_id)) {
-            setSelectedLawyerId(result.recommended_lawyer_id);
-          } else {
-            setSelectedLawyerId(topLawyers[0].id);
-          }
+          setLawyers(resultData.lawyers);
+          setSelectedLawyerId(undefined);
+        } else {
+          setLawyers([]);
+          setSelectedLawyerId(null);
         }
-      } catch (error) {
-        console.error('Failed to fetch lawyers:', error);
+      } catch {
+        console.log('[Attorney matching] Service unavailable');
+        setMatchError('Hindi makuha ang personalized matches ngayon. Maaari pa ring i-post ang kaso sa open network.');
+        setSelectedLawyerId(null);
+      } finally {
+        setIsLoadingLawyers(false);
       }
     };
     fetchLawyers();
@@ -88,13 +90,20 @@ export default function TriageLawyerSelectionScreen() {
 
       const fullDescriptionObject = {
         summary: result.primary_issue,
+        case_summary: result.case_summary || result.primary_issue,
         category_of_law: result.category_of_law || category,
+        case_subcategory: result.case_subcategory,
+        chronology: result.chronology || [],
+        important_dates: result.important_dates || [],
         urgency: result.urgency,
         location: result.location,
         opposingParty: result.opposing_party,
         evidence: result.evidence,
+        desired_outcome: result.desired_outcome,
+        safety_risks: result.safety_risks || [],
         lawyer_preference: result.lawyer_preference,
         ai_assessment: result.ai_assessment,
+        missing_details: result.missing_details,
         legal_sources: result.legal_sources || []
       };
 
@@ -149,16 +158,23 @@ export default function TriageLawyerSelectionScreen() {
       <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose attorney']} current={2} />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {lawyers.length > 0 ? (
+        {isLoadingLawyers ? (
+          <View style={styles.emptyLawyerState}>
+            <ActivityIndicator color={theme.colors.primary} size="large" />
+            <Text style={[styles.emptyLawyerDesc, { marginTop: 14 }]}>Hinahanap ang mga abogadong tugma sa inyong kaso...</Text>
+          </View>
+        ) : lawyers.length > 0 ? (
           <View style={styles.lawyerListContainer}>
             <Text style={styles.sectionHeaderTitle}>Pumili ng Inyong Abogado</Text>
             <Text style={styles.sectionHeaderDesc}>Ayon sa pagsusuri ng aming AI, heto ang mga abogadong pinaka-angkop na hawakan ang iyong kaso.</Text>
             
-            {lawyers.map((lawyer) => {
+            {!!matchError && <Text style={styles.matchError}>{matchError}</Text>}
+
+            {lawyers.map((lawyer, index) => {
               const hasValidImage = lawyer.selfie_url && lawyer.selfie_url.includes('http');
               const initial = (lawyer.first_name && lawyer.first_name.length > 0) ? lawyer.first_name[0].toUpperCase() : 'A';
               const isSelected = selectedLawyerId === lawyer.id;
-              const isRecommended = result.recommended_lawyer_id === lawyer.id;
+              const isRecommended = index === 0;
               
               return (
               <Pressable 
@@ -169,7 +185,7 @@ export default function TriageLawyerSelectionScreen() {
                 {isRecommended && (
                   <View style={styles.recommendedBadge}>
                     <Ionicons name="sparkles" size={12} color="#FFFFFF" />
-                    <Text style={styles.recommendedBadgeText}>AI Recommended Match</Text>
+                    <Text style={styles.recommendedBadgeText}>Best Overall Fit</Text>
                   </View>
                 )}
                 
@@ -210,10 +226,12 @@ export default function TriageLawyerSelectionScreen() {
                   </View>
                 </View>
 
-                {isRecommended && result.recommendation_reason && (
+                {!!lawyer.match_reasons?.length && (
                   <View style={styles.reasonContainer}>
                     <Ionicons name="chatbubbles-outline" size={16} color="#4F46E5" />
-                    <Text style={styles.reasonText}>{result.recommendation_reason}</Text>
+                    <View style={{ flex: 1 }}>
+                      {lawyer.match_reasons.map((reason: string) => <Text key={reason} style={styles.reasonText}>• {reason}</Text>)}
+                    </View>
                   </View>
                 )}
               </Pressable>
@@ -245,16 +263,17 @@ export default function TriageLawyerSelectionScreen() {
           <View style={styles.emptyLawyerState}>
             <Ionicons name="earth" size={48} color={theme.colors.primary} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyLawyerTitle}>I-post sa Open Network</Text>
-            <Text style={styles.emptyLawyerDesc}>Walang direktang abogado na nahanap ang AI para sa lokasyon at isyu na ito. Huwag mag-alala, maaari natin itong i-post sa buong network upang makita ng mga available na abogado.</Text>
+            <Text style={styles.emptyLawyerDesc}>Walang direktang abogado na nahanap ng matching system para sa lokasyon at isyu na ito. Huwag mag-alala, maaari natin itong i-post sa buong network upang makita ng mga available na abogado.</Text>
+            {!!matchError && <Text style={styles.matchError}>{matchError}</Text>}
           </View>
         )}
       </ScrollView>
 
       <View style={styles.footer}>
         <Pressable 
-          style={[styles.btnPrimary, isSubmitting && styles.btnDisabled]} 
+          style={[styles.btnPrimary, (isSubmitting || selectedLawyerId === undefined) && styles.btnDisabled]}
           onPress={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || selectedLawyerId === undefined}
         >
           {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.btnPrimaryText}>{selectedLawyerId ? 'Ipadala ang Kaso sa Abogado' : 'I-post ang Kaso'}</Text>}
         </Pressable>
@@ -311,6 +330,7 @@ const styles = StyleSheet.create({
   
   reasonContainer: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', gap: 8 },
   reasonText: { flex: 1, fontSize: 14, color: '#4F46E5', fontStyle: 'italic', lineHeight: 20 },
+  matchError: { color: '#B45309', backgroundColor: '#FFFBEB', borderRadius: 12, padding: 12, marginBottom: 16, fontSize: 13, lineHeight: 19 },
 
   dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 16, marginHorizontal: 12 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#CBD5E1' },

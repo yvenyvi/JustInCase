@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Keyboard } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Keyboard, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,8 +24,6 @@ export default function DocumentGeneratorScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const keyboardHeightRef = useRef(300);
 
   const sendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -98,23 +96,14 @@ export default function DocumentGeneratorScreen() {
   }, [messages, isLoading]);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-      const h = e.endCoordinates.height;
-      keyboardHeightRef.current = h;
-      setKeyboardHeight(h);
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
       setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     });
-    // Snap to 0 instantly before/when it hides to prevent the huge gap
-    const willHideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardHeight(0));
-    const didHideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
-    
-    return () => { showSub.remove(); willHideSub.remove(); didHideSub.remove(); };
+    return () => showSub.remove();
   }, []);
 
-  const handleInputFocus = () => setKeyboardHeight(keyboardHeightRef.current);
-
   return (
-    <View style={[styles.container, { paddingBottom: keyboardHeight > 0 ? keyboardHeight + insets.bottom : 0 }]}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#64748B" />
@@ -137,6 +126,8 @@ export default function DocumentGeneratorScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={styles.chatScroll}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       >
         <View style={styles.heroSection}>
           <View style={styles.iconContainer}>
@@ -164,14 +155,13 @@ export default function DocumentGeneratorScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.inputArea}>
+      <View style={[styles.inputArea, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <TextInput
           style={styles.textInput}
           placeholder="Ilarawan ang iyong sitwasyon..."
           placeholderTextColor="#94A3B8"
           value={inputText}
           onChangeText={setInputText}
-          onFocus={handleInputFocus}
           multiline
           maxLength={1000}
         />
@@ -186,7 +176,7 @@ export default function DocumentGeneratorScreen() {
           <Ionicons name="send" size={20} color="#FFFFFF" />
         </Pressable>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

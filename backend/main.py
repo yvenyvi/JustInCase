@@ -1,4 +1,5 @@
 from typing import Any, Optional
+import logging
 import re
 import unicodedata
 
@@ -20,6 +21,9 @@ from kampi_service import generate_kampi_reply
 from legal_registration_service import upload_legal_verification_asset
 from triage_service import analyze_triage_case
 from juris_service import search_legal_sources
+from lawyer_matching_service import rank_lawyers
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="JusticeLink Backend", version="1.0.0")
 
@@ -126,7 +130,10 @@ class InteractiveDraftBody(BaseModel):
 
 
 class LegalResearchBody(BaseModel):
-    query: str = Field(min_length=2, max_length=6000)
+    # Case descriptions are stored as structured intake JSON and can exceed the
+    # planner's 6,000-character context window. Accept the complete case record
+    # here; plan_research_query still truncates and de-identifies it before Juris.
+    query: str = Field(min_length=2, max_length=20000)
     datasets: list[str] = Field(default_factory=lambda: ["jurisprudence", "republic-acts"])
     year: Optional[int] = None
     limit: int = Field(default=5, ge=1, le=10)
@@ -165,6 +172,17 @@ class TriageAnalyzeBody(BaseModel):
     evidence: Optional[str] = ""
     outcome: Optional[str] = ""
     availableLawyers: Optional[list[LawyerInfo]] = Field(default_factory=list)
+
+
+class LawyerMatchBody(BaseModel):
+    category_of_law: str = Field(default="General Practice", max_length=200)
+    case_subcategory: str = Field(default="", max_length=200)
+    primary_issue: str = Field(default="", max_length=2000)
+    case_summary: str = Field(default="", max_length=4000)
+    location: str = Field(default="", max_length=200)
+    urgency: str = Field(default="Medium", max_length=20)
+    lawyer_preference: str = Field(default="Any", max_length=20)
+    limit: int = Field(default=3, ge=1, le=10)
 
 
 @app.get("/health")
@@ -697,44 +715,58 @@ def document_generate(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to generate document draft right now.") from exc
 
 
-@app.get("/api/lawyers")
-def get_lawyers() -> dict[str, Any]:
-    try:
-        resp = httpx.get(
-            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,selfie_url,expertise,pro_bono_logs!pro_bono_logs_attorney_id_fkey(hours,is_verified),cases!cases_attorney_id_fkey(feedback_rating)",
+def _fetch_lawyers_for_matching() -> list[dict[str, Any]]:
+    resp = httpx.get(
+            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,province,selfie_url,expertise,pro_bono_logs!pro_bono_logs_attorney_id_fkey(hours,is_verified),cases!cases_attorney_id_fkey(feedback_rating,status)",
             headers={
                 "apikey": config.supabase_service_role_key,
                 "Authorization": f"Bearer {config.supabase_service_role_key}",
             },
             timeout=10,
         )
-        resp.raise_for_status()
-        lawyers_data = resp.json()
-        
-        # Filter lawyers who have < 60 verified pro-bono hours
-        filtered_lawyers = []
-        for l in lawyers_data:
-            logs = l.get("pro_bono_logs") or []
-            total_hours = sum(float(log.get("hours", 0)) for log in logs if log.get("is_verified"))
-            if total_hours < 60:
-                l.pop("pro_bono_logs", None) # clean up before sending to client
-                
-                cases_data = l.get("cases") or []
-                ratings = [c.get("feedback_rating") for c in cases_data if c.get("feedback_rating") is not None]
-                if ratings:
-                    l["rating"] = round(sum(ratings) / len(ratings), 1)
-                    l["review_count"] = len(ratings)
-                else:
-                    l["rating"] = None
-                    l["review_count"] = 0
-                
-                l.pop("cases", None)
-                filtered_lawyers.append(l)
-                
-        # Limit to 20 after filtering
-        return {"lawyers": filtered_lawyers[:20]}
+    resp.raise_for_status()
+    lawyers_data = resp.json()
+    for lawyer in lawyers_data:
+        logs = lawyer.pop("pro_bono_logs", None) or []
+        lawyer["verified_pro_bono_hours"] = sum(
+            float(log.get("hours", 0)) for log in logs if log.get("is_verified")
+        )
+        cases_data = lawyer.get("cases") or []
+        ratings = [case.get("feedback_rating") for case in cases_data if case.get("feedback_rating") is not None]
+        lawyer["rating"] = round(sum(ratings) / len(ratings), 1) if ratings else None
+        lawyer["review_count"] = len(ratings)
+    return lawyers_data
+
+
+@app.get("/api/lawyers")
+def get_lawyers() -> dict[str, Any]:
+    try:
+        lawyers = _fetch_lawyers_for_matching()
+        public_lawyers = []
+        for lawyer in lawyers:
+            if lawyer["verified_pro_bono_hours"] >= 60:
+                continue
+            public_lawyers.append({
+                key: value for key, value in lawyer.items()
+                if key not in {"cases", "verified_pro_bono_hours"}
+            })
+        return {"lawyers": public_lawyers[:20]}
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to fetch lawyers.") from exc
+
+
+@app.post("/api/lawyers/match")
+def match_lawyers(body: LawyerMatchBody) -> dict[str, Any]:
+    try:
+        lawyers = _fetch_lawyers_for_matching()
+        matches = rank_lawyers(body.model_dump(), lawyers, limit=body.limit)
+        return {"lawyers": matches, "method": "deterministic-v1"}
+    except Exception as exc:
+        logger.exception("Attorney matching failed")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Attorney matching is temporarily unavailable.",
+        ) from exc
 
 
 @app.post("/api/triage/analyze")
@@ -805,11 +837,11 @@ def triage_interactive(
         history_dicts[-1]['content'] += extracted_text
 
     try:
-        from triage_service import generate_interactive_triage, ground_triage_result
+        from triage_service import generate_interactive_triage, ground_triage_result, normalize_triage_result
         reply = generate_interactive_triage(history=history_dicts)
         if reply.startswith("TRIAGE_RESULT:"):
             raw_json = reply[len("TRIAGE_RESULT:"):].strip()
-            result = json.loads(raw_json)
+            result = normalize_triage_result(json.loads(raw_json))
             try:
                 research = search_legal_sources(
                     f"{result.get('category_of_law', '')} {result.get('primary_issue', '')}",
@@ -824,7 +856,11 @@ def triage_interactive(
             reply = "TRIAGE_RESULT: " + json.dumps(result)
         return {"response": reply}
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        logger.exception("Interactive triage request failed")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI triage is temporarily unavailable. Please try again shortly.",
+        ) from exc
 
 
 @app.post("/api/cases/{case_id}/summarize")

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Keyboard } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Keyboard, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
@@ -21,8 +21,6 @@ export default function ChatThreadScreen() {
 
   const [message, setMessage] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const keyboardHeightRef = useRef(300);
   const [isUploading, setIsUploading] = useState(false);
   
   const queryClient = useQueryClient();
@@ -176,19 +174,11 @@ export default function ChatThreadScreen() {
   }, [resolvedThreadId, userId, threadId, queryClient]);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-      const h = e.endCoordinates.height;
-      keyboardHeightRef.current = h;
-      setKeyboardHeight(h);
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
       setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     });
-    const willHideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardHeight(0));
-    const didHideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
-    
-    return () => { showSub.remove(); willHideSub.remove(); didHideSub.remove(); };
+    return () => showSub.remove();
   }, []);
-
-  const handleInputFocus = () => setKeyboardHeight(keyboardHeightRef.current);
 
   const handleAttach = async () => {
     try {
@@ -296,7 +286,7 @@ export default function ChatThreadScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: keyboardHeight > 0 ? keyboardHeight + insets.bottom : 0 }]}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#64748B" />
@@ -320,6 +310,8 @@ export default function ChatThreadScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         >
           <Text style={styles.dateSeparator}>Today</Text>
           
@@ -367,7 +359,6 @@ export default function ChatThreadScreen() {
           placeholderTextColor="#94A3B8"
           value={message}
           onChangeText={setMessage}
-          onFocus={handleInputFocus}
           multiline
         />
         <Pressable
@@ -381,7 +372,7 @@ export default function ChatThreadScreen() {
           <Ionicons name="send" size={20} color={message.trim() ? theme.colors.surface : theme.colors.textSecondary} />
         </Pressable>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

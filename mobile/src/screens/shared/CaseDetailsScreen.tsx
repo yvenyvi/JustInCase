@@ -11,6 +11,7 @@ import { theme } from '../../shared/theme';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { API_BASE_URL } from '../../shared/api';
 import { searchLegalSources } from '../../shared/legalResearch';
+import { CaseStatus, isClosedCaseStatus } from '../../shared/caseStatus';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 
 type CaseDetailsRouteProp = RouteProp<RootStackParamList, 'CaseDetails'>;
@@ -18,7 +19,7 @@ type CaseDetailsRouteProp = RouteProp<RootStackParamList, 'CaseDetails'>;
 type CaseData = {
   id: string;
   title: string;
-  status: string;
+  status: CaseStatus;
   assignedTo: string | null;
   attorneyId: string | null;
   clientId: string | null;
@@ -55,6 +56,7 @@ export default function CaseDetailsScreen() {
   const [confirmConfig, setConfirmConfig] = useState({ visible: false, title: '', message: '', confirmText: '', onConfirm: () => {} });
 
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [isResearching, setIsResearching] = useState(false);
   const [isTimeLogsExpanded, setIsTimeLogsExpanded] = useState(false);
   
   // Feedback State
@@ -420,7 +422,8 @@ export default function CaseDetailsScreen() {
   };
 
   const handleFindSimilarCases = async () => {
-    if (!c) return;
+    if (!c || isResearching) return;
+    setIsResearching(true);
     try {
       const research = await searchLegalSources(c.description, ['jurisprudence'], 8);
       navigation.navigate('PublicRightsLibrary' as never, {
@@ -428,6 +431,8 @@ export default function CaseDetailsScreen() {
       } as never);
     } catch (error: any) {
       Toast.show({ type: 'error', text1: 'Research unavailable', text2: error?.message || 'Please try again.' });
+    } finally {
+      setIsResearching(false);
     }
   };
 
@@ -438,16 +443,16 @@ export default function CaseDetailsScreen() {
   }, [isFocused, fetchCaseDetails]);
 
   useEffect(() => {
-    const isCaseClosed = !!c?.status && (c.status.includes('Closed') || c.status === 'Resolved' || c.status === 'Dropped');
+    const isCaseClosed = !!c?.status && isClosedCaseStatus(c.status);
     if (c && isClient && isCaseClosed && (c.feedbackRating === null || c.feedbackRating === undefined)) {
       setIsReviewModalVisible(true);
     }
   }, [c, isClient]);
 
   const getStatusColor = (status: string) => {
-    if (status.includes('Closed') || status === 'Withdrawn' || status === 'Dropped') return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
+    if (isClosedCaseStatus(status)) return { bg: theme.colors.secondary, text: theme.colors.textSecondary, border: theme.colors.border };
     if (status === 'Demand Sent' || status === 'Hearing Scheduled') return { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' };
-    if (status === 'In Progress' || status === 'Accepted') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
+    if (status === 'In Progress') return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
     return { bg: '#FEF3C7', text: theme.colors.warning, border: '#FDE68A' };
   };
 
@@ -494,7 +499,7 @@ export default function CaseDetailsScreen() {
   }
 
   const colors = getStatusColor(c.status);
-  const isCaseClosed = c.status.includes('Closed') || c.status === 'Withdrawn' || c.status === 'Dropped' || c.status === 'Resolved';
+  const isCaseClosed = isClosedCaseStatus(c.status);
 
   // Parse description
   let parsedDesc: any = { concern: c.description, opposing: '', urgency: '', location: '', income: '', deadline: '', evidence: '', outcome: '' };
@@ -726,9 +731,9 @@ export default function CaseDetailsScreen() {
           </View>
         )}
 
-        <Pressable style={[styles.actionBtn, { marginTop: 12 }]} onPress={handleFindSimilarCases} accessibilityRole="button" accessibilityHint="Opens de-identified jurisprudence research">
-          <Ionicons name="search" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.actionBtnText}>Research Similar Cases</Text>
+        <Pressable style={[styles.actionBtn, { marginTop: 12 }, isResearching && { opacity: 0.65 }]} onPress={handleFindSimilarCases} disabled={isResearching} accessibilityRole="button" accessibilityHint="Opens de-identified jurisprudence research" accessibilityState={{ disabled: isResearching, busy: isResearching }}>
+          {isResearching ? <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 8 }} /> : <Ionicons name="search" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />}
+          <Text style={styles.actionBtnText}>{isResearching ? 'Finding Similar Cases…' : 'Research Similar Cases'}</Text>
         </Pressable>
 
         <View style={{ marginTop: 32 }}>
@@ -875,7 +880,7 @@ export default function CaseDetailsScreen() {
 
       {/* Log Hours Modal */}
       <Modal visible={isLogModalVisible} transparent animationType="slide" statusBarTranslucent>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior="padding">
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Log Attorney Hours</Text>
@@ -934,7 +939,7 @@ export default function CaseDetailsScreen() {
 
       {/* Client Review Modal */}
       <Modal visible={isReviewModalVisible} transparent animationType="slide" statusBarTranslucent>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior="padding">
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Rate Your Attorney</Text>

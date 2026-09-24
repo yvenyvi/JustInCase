@@ -80,10 +80,13 @@ function Start-DevEnvironment {
         $pythonExe = "python" # fallback
     }
     
+    # A reload supervisor can outlive its saved launcher PID on Windows and
+    # reclaim port 8000 after restart. Use one server process so stop/restart
+    # always replaces the code that is actually serving requests.
     $backend = Start-Process $pythonExe `
-        -ArgumentList "-m uvicorn main:app --host 0.0.0.0 --port 8000 --reload" `
+        -ArgumentList "-m uvicorn main:app --host 0.0.0.0 --port 8000" `
         -WorkingDirectory $BACKEND `
-        -PassThru -WindowStyle Normal
+        -PassThru -WindowStyle Hidden
 
     Start-Sleep -Milliseconds 1500
 
@@ -91,7 +94,7 @@ function Start-DevEnvironment {
     $expo = Start-Process "cmd" `
         -ArgumentList "/k npm start -- -c" `
         -WorkingDirectory $MOBILE `
-        -PassThru -WindowStyle Normal
+        -PassThru -WindowStyle Hidden
 
     "$($backend.Id)`n$($expo.Id)" | Set-Content $PID_FILE
 

@@ -88,7 +88,7 @@ BEGIN
                 'case_accepted',
                 NEW.id
             );
-        ELSIF NEW.status LIKE 'Closed%' OR NEW.status IN ('Resolved', 'Dropped', 'Withdrawn') THEN
+        ELSIF NEW.status::text LIKE 'Closed%' OR NEW.status::text IN ('Dropped', 'Withdrawn') THEN
             INSERT INTO public.notifications (user_id, title, body, type, reference_id)
             VALUES (
                 NEW.client_id,

@@ -9,6 +9,55 @@ from gemini_client import call_gemini
 logger = logging.getLogger(__name__)
 
 
+def _clean_text(value: Any, fallback: str = "") -> str:
+    if not isinstance(value, str):
+        return fallback
+    return " ".join(value.split()).strip() or fallback
+
+
+def _clean_text_list(value: Any) -> list[str]:
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, list):
+        return []
+    return [cleaned for item in value if (cleaned := _clean_text(item))]
+
+
+def normalize_triage_result(result: dict[str, Any]) -> dict[str, Any]:
+    """Return a stable case profile while retaining compatibility with current clients."""
+    category = _clean_text(result.get("category_of_law"), "General Practice")
+    primary_issue = _clean_text(
+        result.get("primary_issue") or result.get("case_summary"),
+        "Legal concern requiring attorney review.",
+    )
+    preference = _clean_text(result.get("lawyer_preference"), "Any").title()
+    if preference not in {"Pro Bono", "Private", "Any"}:
+        preference = "Any"
+
+    urgency = _clean_text(result.get("urgency"), "Medium").title()
+    if urgency not in {"High", "Medium", "Low"}:
+        urgency = "Medium"
+
+    return {
+        **result,
+        "category_of_law": category,
+        "case_subcategory": _clean_text(result.get("case_subcategory")),
+        "primary_issue": primary_issue,
+        "case_summary": _clean_text(result.get("case_summary"), primary_issue),
+        "chronology": _clean_text_list(result.get("chronology")),
+        "important_dates": _clean_text_list(result.get("important_dates")),
+        "opposing_party": _clean_text(result.get("opposing_party")),
+        "location": _clean_text(result.get("location")),
+        "evidence": _clean_text(result.get("evidence"), "None stated"),
+        "desired_outcome": _clean_text(result.get("desired_outcome")),
+        "urgency": urgency,
+        "safety_risks": _clean_text_list(result.get("safety_risks")),
+        "lawyer_preference": preference,
+        "ai_assessment": _clean_text(result.get("ai_assessment")),
+        "missing_details": _clean_text(result.get("missing_details"), "None"),
+    }
+
+
 def analyze_triage_case(
     description: str,
     opposing_party_type: str = "",
@@ -117,13 +166,19 @@ Step 3: If you have enough information to form a reasonable case summary (even i
 Step 4: Once you have ALL the necessary information, you must output a final assessment. Prefix your response strictly with 'TRIAGE_RESULT: ' followed immediately by a valid JSON object containing:
 {
   "category_of_law": "The most appropriate legal category (e.g., Labor Law, Family Law, Criminal Defense, Civil Law, Property Law)",
+  "case_subcategory": "A more specific issue type such as Illegal Dismissal, Child Support, or Boundary Dispute",
   "primary_issue": "A concise 1-2 sentence summary of the legal issue",
+  "case_summary": "A neutral, attorney-ready summary containing only facts supplied or reasonably inferred from the conversation",
+  "chronology": ["Important events in chronological order; use an empty list if no sequence was provided"],
+  "important_dates": ["Dates or deadlines stated by the user; use an empty list when none were provided"],
   "ai_assessment": "The AI's qualitative thoughts on the case's legal viability, strength, and strategy",
   "missing_details": "What crucial information the client failed to provide that the attorney should ask for",
   "urgency": "High/Medium/Low (Determine this yourself based on context, DO NOT ask the user)",
   "opposing_party": "The opposing party type",
   "location": "The province/city",
   "evidence": "Evidence available",
+  "desired_outcome": "The remedy or result requested by the user",
+  "safety_risks": ["Immediate safety, liberty, eviction, limitation, or deadline risks; use an empty list when none are apparent"],
   "lawyer_preference": "Must be EXACTLY 'Pro Bono', 'Private', or 'Any'."
 }
 """
@@ -168,7 +223,7 @@ def generate_interactive_triage(history: list[dict[str, Any]]) -> str:
 def ground_triage_result(result: dict[str, Any], legal_sources: list[dict[str, Any]]) -> dict[str, Any]:
     """Refine only the legal assessment fields using retrieved, source-linked law."""
     if not legal_sources:
-        return result
+        return normalize_triage_result(result)
     from juris_service import sources_prompt
     prompt = (
         "Review this Philippine legal triage assessment using the supplied research aids. "
@@ -189,6 +244,6 @@ def ground_triage_result(result: dict[str, Any], legal_sources: list[dict[str, A
         )
         raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         grounded = json.loads(raw)
-        return {**result, **{key: grounded[key] for key in ("category_of_law", "primary_issue", "ai_assessment", "missing_details") if key in grounded}}
+        return normalize_triage_result({**result, **{key: grounded[key] for key in ("category_of_law", "case_subcategory", "primary_issue", "case_summary", "ai_assessment", "missing_details") if key in grounded}})
     except Exception:
-        return result
+        return normalize_triage_result(result)

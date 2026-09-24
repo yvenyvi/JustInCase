@@ -19,6 +19,16 @@ _cache: dict[tuple[str, str, int | None, int], tuple[float, list[dict[str, Any]]
 _cache_lock = threading.Lock()
 _CACHE_TTL_SECONDS = 900
 
+_CASE_RESEARCH_FIELDS = (
+    "category_of_law",
+    "case_subcategory",
+    "primary_issue",
+    "case_summary",
+    "summary",
+    "ai_assessment",
+    "desired_outcome",
+)
+
 
 def redact_personal_information(value: str) -> str:
     """Best-effort local guard applied before text can become a Juris URL."""
@@ -34,12 +44,44 @@ def redact_personal_information(value: str) -> str:
     return text[:500]
 
 
+def extract_researchable_case_text(value: str) -> str:
+    """Remove stored provenance and other non-issue metadata from case JSON."""
+    text = value or ""
+    try:
+        payload = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        return text
+    if not isinstance(payload, dict):
+        return text
+    relevant = [str(payload.get(field) or "").strip() for field in _CASE_RESEARCH_FIELDS]
+    return "\n".join(item for item in relevant if item) or text
+
+
+def fallback_research_query(value: str, purpose: str) -> str:
+    """Return an issue-only query without forwarding user-authored text."""
+    lowered = value.lower()
+    topic_rules = (
+        (("animal abuse", "animal welfare", "veterinary"), "animal welfare cruelty civil liability damages"),
+        (("dismiss", "unpaid wage", "salary", "overtime", "employment", "labor"), "labor law illegal dismissal unpaid wages employee remedies"),
+        (("custody", "annulment", "child support", "family law"), "family law custody support separation remedies"),
+        (("violence against women", "vawc", "domestic violence"), "violence against women and children protection remedies"),
+        (("fraud", "theft", "assault", "criminal"), "criminal law liability complaint and victim remedies"),
+        (("land", "property", "tenant", "lease"), "property law ownership lease and possession remedies"),
+        (("contract", "breach", "debt", "loan"), "contract breach obligations and damages remedies"),
+    )
+    for keywords, topic in topic_rules:
+        if any(keyword in lowered for keyword in keywords):
+            return f"Philippine {topic}"[:500]
+    return f"Philippine law {purpose}"[:500]
+
+
 def plan_research_query(text: str, purpose: str = "legal research") -> str:
     """Create a short issue-only query. Raw text goes only to the configured LLM, never Juris."""
     # Privacy takes precedence over relevance if the planner is unavailable:
     # never forward a partially-redacted case narrative to an external API.
-    fallback = f"Philippine law {purpose}"[:500]
-    if not text.strip():
+    researchable_text = extract_researchable_case_text(text)
+    fallback = fallback_research_query(researchable_text, purpose)
+    if not researchable_text.strip():
         return fallback
     try:
         raw = call_groq(
@@ -54,7 +96,7 @@ def plan_research_query(text: str, purpose: str = "legal research") -> str:
                         '{"query":"..."}.'
                     ),
                 },
-                {"role": "user", "content": f"Purpose: {purpose}\nInput: {text[:6000]}"},
+                {"role": "user", "content": f"Purpose: {purpose}\nInput: {researchable_text[:6000]}"},
             ],
             model=config.groq_model,
             temperature=0.0,
@@ -115,7 +157,7 @@ def search_dataset(query: str, dataset: str, year: int | None = None, limit: int
     last_error: Exception | None = None
     for attempt in range(2):
         try:
-            response = httpx.get(JURIS_SEARCH_URL, params=params, timeout=8.0)
+            response = httpx.get(JURIS_SEARCH_URL, params=params, timeout=15.0)
             if response.status_code == 503 and attempt == 0:
                 continue
             response.raise_for_status()

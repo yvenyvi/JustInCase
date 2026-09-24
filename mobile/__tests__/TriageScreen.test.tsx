@@ -121,4 +121,22 @@ describe('TriageScreen', () => {
       expect(getByText('Finish')).toBeTruthy();
     });
   });
+
+  it('shows an intuitive outage message without exposing a raw network error', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: () => Promise.resolve({ detail: 'AI triage is temporarily unavailable.' }),
+    });
+    const view = await render(<TriageScreen />);
+
+    await fireEvent.changeText(view.getByPlaceholderText('Ilarawan ang iyong problema...'), 'I have a labor issue.');
+    await waitFor(() => expect(view.getByTestId('send-button').props.accessibilityState.disabled).toBe(false));
+    await fireEvent.press(view.getByTestId('send-button'));
+
+    await waitFor(() => {
+      expect(view.getByText('Pansamantalang hindi available ang AI assessment. Naka-save ang usapan sa screen; pakisubukang muli makalipas ang ilang sandali.')).toBeTruthy();
+      expect(view.queryByText('Network response was not ok')).toBeNull();
+    });
+  });
 });
