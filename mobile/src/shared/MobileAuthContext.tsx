@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { Session, User } from '@supabase/supabase-js';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { mobileSupabase } from './supabase';
 import type { Role } from '../navigation/types';
@@ -26,11 +27,21 @@ const roleMap: Record<string, Role> = {
 };
 
 export function MobileAuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [role, setRole] = useState<Role | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
+  const activeUserIdRef = useRef<string | null | undefined>(undefined);
+
+  const clearAccountCacheIfNeeded = (nextSession: Session | null) => {
+    const nextUserId = nextSession?.user?.id ?? null;
+    if (activeUserIdRef.current !== undefined && activeUserIdRef.current !== nextUserId) {
+      queryClient.clear();
+    }
+    activeUserIdRef.current = nextUserId;
+  };
 
   const resolveRole = async (userId: string) => {
     const { data, error } = await mobileSupabase
@@ -67,6 +78,7 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
         }
 
         const nextSession = data.session ?? null;
+        clearAccountCacheIfNeeded(nextSession);
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
 
@@ -89,6 +101,7 @@ export function MobileAuthProvider({ children }: { children: React.ReactNode }) 
         return;
       }
 
+      clearAccountCacheIfNeeded(nextSession);
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 

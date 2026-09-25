@@ -10,6 +10,7 @@ import { theme } from '../../shared/theme';
 import { ProfileSkeleton } from '../../components/ui/Skeleton';
 import * as ImagePicker from 'expo-image-picker';
 import { API_BASE_URL } from '../../shared/api';
+import { useMobileAuth } from '../../shared/MobileAuthContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -40,11 +41,11 @@ interface UserProfile {
 
 export default function PublicProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useMobileAuth();
 
   const { data: profileData, isLoading, refetch } = useQuery({
-    queryKey: ['publicProfile'],
+    queryKey: ['publicProfile', user?.id],
     queryFn: async () => {
-      const { data: { user } } = await mobileSupabase.auth.getUser();
       if (!user) throw new Error("Not logged in");
 
       const authMeta = user.user_metadata || {};
@@ -60,7 +61,8 @@ export default function PublicProfileScreen() {
         profile: { ...data, email: user.email || data.email } as UserProfile,
         authMeta
       };
-    }
+    },
+    enabled: Boolean(user?.id),
   });
 
   const profile = profileData?.profile || null;

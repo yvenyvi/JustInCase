@@ -10,6 +10,7 @@ import { theme } from '../../shared/theme';
 import { ProfileSkeleton } from '../../components/ui/Skeleton';
 import * as ImagePicker from 'expo-image-picker';
 import { API_BASE_URL } from '../../shared/api';
+import { useMobileAuth } from '../../shared/MobileAuthContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -47,6 +48,7 @@ interface UserProfile {
 export default function LegalProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
+  const { user } = useMobileAuth();
   const EXPERTISE_OPTIONS = [
     'Civil Law', 'Criminal Law', 'Family Law', 
     'Corporate and Commercial Law', 'Labor and Employment Law', 
@@ -60,9 +62,8 @@ export default function LegalProfileScreen() {
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'about'>('overview');
 
   const { data: profile, isLoading, refetch } = useQuery({
-    queryKey: ['legalProfile'],
+    queryKey: ['legalProfile', user?.id],
     queryFn: async () => {
-      const { data: { user } } = await mobileSupabase.auth.getUser();
       if (!user) throw new Error("Not logged in");
 
       const { data, error } = await mobileSupabase
@@ -91,7 +92,8 @@ export default function LegalProfileScreen() {
       }
 
       return { ...data, email: user.email || data.email, rating, review_count, reviews } as UserProfile;
-    }
+    },
+    enabled: Boolean(user?.id),
   });
 
   useFocusEffect(
