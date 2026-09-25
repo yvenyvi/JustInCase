@@ -21,7 +21,7 @@ export function DashboardHeader({ eyebrow, name, subtitle, isLoading }: Props) {
           {isLoading ? (
             <ActivityIndicator size="small" color={theme.colors.primary} style={styles.loader} />
           ) : (
-            <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+            <Text style={styles.name} numberOfLines={2} ellipsizeMode="tail">{name}</Text>
           )}
         </View>
         <NotificationBell />
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   identity: { flex: 1, minWidth: 0 },
   eyebrow: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },
-  name: { color: theme.colors.textPrimary, fontSize: 23, lineHeight: 29, fontWeight: '800' },
+  name: { color: theme.colors.textPrimary, fontSize: 22, lineHeight: 27, fontWeight: '800' },
   loader: { alignSelf: 'flex-start', height: 29 },
   subtitle: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 10 },
 });

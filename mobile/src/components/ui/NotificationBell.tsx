@@ -1,58 +1,60 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { mobileSupabase } from '../../shared/supabase';
 import { theme } from '../../shared/theme';
+import { useMobileAuth } from '../../shared/MobileAuthContext';
 
 export function NotificationBell() {
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
+  const { role, user } = useMobileAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const channelInstanceId = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
-  useEffect(() => {
-    fetchUnreadCount();
-
-    // Subscribe to new notifications for this user
-    let channel: any = null;
-    mobileSupabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        channel = mobileSupabase.channel('public:notifications')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, () => {
-            fetchUnreadCount(); // Refresh count on any insert/update
-          })
-          .subscribe();
-      }
-    });
-
-    return () => {
-      if (channel) {
-        mobileSupabase.removeChannel(channel);
-      }
-    };
-  }, [isFocused]); // Refresh count when the screen comes into focus too
-
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async (userId?: string) => {
     try {
-      const { data: { user } } = await mobileSupabase.auth.getUser();
-      if (!user) return;
+      const resolvedUserId = userId || user?.id;
+      if (!resolvedUserId) {
+        setUnreadCount(0);
+        return;
+      }
 
-      const { count } = await mobileSupabase
+      const { count, error } = await mobileSupabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
+        .eq('user_id', resolvedUserId)
         .eq('is_read', false);
 
+      if (error) throw error;
       setUnreadCount(count || 0);
     } catch (err) {
       console.error('Error fetching unread count:', err);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (isFocused) void fetchUnreadCount();
+  }, [fetchUnreadCount, isFocused]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = mobileSupabase
+      .channel(`notifications-bell:${user.id}:${channelInstanceId.current}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, () => {
+        void fetchUnreadCount(user.id);
+      })
+      .subscribe();
+
+    return () => {
+      void mobileSupabase.removeChannel(channel);
+    };
+  }, [fetchUnreadCount, user?.id]);
 
   const navigateToNotifications = () => {
-    // Navigate based on the current context, assuming we're inside a stack that has access to Notifications
-    // The screen name is mapped in RootNavigator
-    navigation.navigate('PublicNotifications');
+    navigation.navigate(role === 'legal' ? 'LegalNotifications' : 'PublicNotifications');
   };
 
   return (

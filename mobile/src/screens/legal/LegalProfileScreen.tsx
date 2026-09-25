@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Image, Modal, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Image, Modal, RefreshControl, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -11,6 +11,8 @@ import { ProfileSkeleton } from '../../components/ui/Skeleton';
 import * as ImagePicker from 'expo-image-picker';
 import { API_BASE_URL } from '../../shared/api';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
+import { formatPersonName } from '../../shared/personName';
+import { uploadProfilePhoto } from '../../shared/profilePhotoUpload';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -159,42 +161,34 @@ export default function LegalProfileScreen() {
     
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      alert('We need gallery access to upload your avatar.');
+      Alert.alert('Gallery access needed', 'Allow photo access in your device settings to choose a profile picture.');
       return;
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
-      quality: 0.8,
+      aspect: [1, 1],
+      quality: 1,
     });
 
     if (!result.canceled && result.assets[0].uri) {
+      const asset = result.assets[0];
+      if ((asset.width && asset.width < 256) || (asset.height && asset.height < 256)) {
+        Alert.alert('Photo is too small', 'Please choose a profile photo that is at least 256 × 256 pixels.');
+        return;
+      }
       setIsUploadingAvatar(true);
       try {
         const { data: { user } } = await mobileSupabase.auth.getUser();
         if (!user) throw new Error("Not logged in");
 
-        const formData = new FormData();
-        formData.append('email', profile.email);
-        formData.append('kind', 'selfie');
-        formData.append('file', {
-          uri: result.assets[0].uri,
-          name: 'avatar.jpg',
-          type: 'image/jpeg',
-        } as any);
-
-        const response = await fetch(`${API_BASE_URL}/api/legal-registration/upload-proof`, {
-          method: 'POST',
-          body: formData,
+        const newAvatarUrl = await uploadProfilePhoto({
+          assetUri: asset.uri,
+          email: profile.email,
+          mimeType: asset.mimeType,
+          uploadUrl: `${API_BASE_URL}/api/legal-registration/upload-proof`,
         });
-        
-        const payload = await response.json();
-        if (!response.ok) {
-           throw new Error(payload?.detail || 'Upload Failed');
-        }
-
-        const newAvatarUrl = payload.url;
         
         const { error } = await mobileSupabase.rpc('users_update_own_profile', {
           p_selfie_url: newAvatarUrl,
@@ -204,16 +198,17 @@ export default function LegalProfileScreen() {
         
         await refetch();
       } catch (err: any) {
-        console.error(err);
-        alert(err.message || 'Failed to update profile picture');
+        Alert.alert(
+          'Photo upload failed',
+          err?.message || 'We could not update your profile picture. Check your connection and try again.',
+        );
       } finally {
         setIsUploadingAvatar(false);
       }
     }
   };
 
-  const fullName = [profile?.first_name, profile?.middle_name, profile?.last_name, profile?.suffix]
-    .filter(Boolean).join(' ');
+  const fullName = formatPersonName(profile?.first_name, profile?.middle_name, profile?.last_name, profile?.suffix);
 
   const InfoRow = ({ icon, label, value }: { icon: string; label: string; value: string }) => (
     <View style={styles.infoRow}>
@@ -251,7 +246,7 @@ export default function LegalProfileScreen() {
           <View style={styles.profileHeader}>
             <Pressable style={styles.avatar} onPress={changeAvatar} disabled={isUploadingAvatar}>
               {profile.selfie_url ? (
-                <Image source={{ uri: profile.selfie_url }} style={{ width: '100%', height: '100%', borderRadius: 999 }} />
+                <Image source={{ uri: profile.selfie_url }} style={{ width: '100%', height: '100%', borderRadius: 999 }} resizeMode="cover" />
               ) : (
                 <Text style={styles.avatarText}>{profile.first_name?.[0]}{profile.last_name?.[0]}</Text>
               )}

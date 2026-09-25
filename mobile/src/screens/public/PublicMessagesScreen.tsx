@@ -8,6 +8,7 @@ import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 import { MessageThreadSkeleton } from '../../components/ui/Skeleton';
+import { formatPersonName } from '../../shared/personName';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -48,7 +49,7 @@ export default function PublicMessagesScreen() {
             .maybeSingle();
 
           const attorney = t.cases.attorney;
-          const name = attorney ? `Atty. ${attorney.first_name} ${attorney.last_name}`.trim() : 'LAYA Support';
+          const name = attorney ? `Atty. ${formatPersonName(attorney.first_name, attorney.last_name)}` : 'LAYA Support';
           
           return {
             id: t.id,
@@ -105,7 +106,10 @@ export default function PublicMessagesScreen() {
         <View style={styles.emptyState}>
           <Ionicons name="chatbubbles-outline" size={48} color="#CBD5E1" />
           <Text style={styles.emptyTitle}>Walang mensahe</Text>
-          <Text style={styles.emptySubtitle}>Wala ka pang thread ng mensahe sa ngayon.</Text>
+          <Text style={styles.emptySubtitle}>Magkakaroon ka ng conversation dito kapag tinanggap na ng abogado ang iyong kaso.</Text>
+          <Pressable style={styles.emptyAction} onPress={() => navigation.navigate('PublicTriage')} accessibilityRole="button">
+            <Text style={styles.emptyActionText}>Simulan ang legal assessment</Text>
+          </Pressable>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -150,6 +154,8 @@ const styles = StyleSheet.create({
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },
   emptySubtitle: { color: theme.colors.textSecondary, fontSize: 15, textAlign: 'center' },
+  emptyAction: { marginTop: 20, backgroundColor: theme.colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: theme.borderRadius.xl },
+  emptyActionText: { color: theme.colors.surface, fontSize: 14, fontWeight: '700' },
   scrollContent: { padding: 24, paddingBottom: 40 },
   threadCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
   threadCardUnread: { backgroundColor: '#F0FDFA', borderColor: '#CCFBF1' },

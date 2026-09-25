@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
+import { Platform, StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { mobileSupabase } from '../../shared/supabase';
@@ -72,7 +72,7 @@ export default function LegalNotificationsScreen() {
     }
 
     if (type === 'message' && reference_id) {
-      navigation.navigate('LegalChatThread' as never, { threadId: reference_id, threadName: 'Message Thread' } as never);
+      navigation.navigate('ChatThread' as never, { threadId: reference_id, threadName: 'Message Thread' } as never);
     } else if (['verify_hours', 'case_accepted', 'case_closed'].includes(type || '') && reference_id) {
       navigation.navigate('LegalCaseDetails' as never, { caseId: reference_id } as never);
     }
@@ -137,15 +137,16 @@ export default function LegalNotificationsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View>
-              <Text style={styles.headerTitle}>Notifications</Text>
-              <Text style={styles.headerSubtitle}>Alerts and updates</Text>
-            </View>
-            <Pressable onPress={markAllAsRead} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="checkmark-done" size={24} color={theme.colors.primary} />
-            </Pressable>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Back">
+          <Ionicons name="arrow-back" size={24} color={theme.colors.textSecondary} />
+        </Pressable>
+        <View style={styles.headerCopy}>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerSubtitle}>Alerts and updates</Text>
         </View>
+        <Pressable onPress={markAllAsRead} style={styles.headerAction} accessibilityRole="button" accessibilityLabel="Mark all notifications as read">
+          <Ionicons name="checkmark-done" size={24} color={theme.colors.primary} />
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -174,9 +175,12 @@ export default function LegalNotificationsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-  headerTitle: { color: theme.colors.textPrimary, fontSize: 28, fontWeight: '800', marginBottom: 4 },
-  headerSubtitle: { color: theme.colors.textSecondary, fontSize: 15 },
+  header: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  headerCopy: { flex: 1, marginHorizontal: 12 },
+  headerAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '800', marginBottom: 2 },
+  headerSubtitle: { color: theme.colors.textSecondary, fontSize: 13 },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyTitle: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 8 },

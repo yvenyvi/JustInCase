@@ -15,6 +15,7 @@ export type RootStackParamList = {
   PublicRightsLibrary: { initialTab?: 'guides' | 'cases' | 'laws'; query?: string; initialSources?: any[] } | undefined;
   PublicLegislationTracker: undefined;
   PublicNotifications: undefined;
+  LegalNotifications: undefined;
   ChatThread: { threadId: string; threadName: string };
   CaseDetails: { caseId: string };
   LegalCaseDetails: { caseId: string };

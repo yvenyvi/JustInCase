@@ -8,27 +8,29 @@ import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 import { DashboardHeader } from '../../components/ui/DashboardHeader';
+import { formatPersonName } from '../../shared/personName';
+import { useMobileAuth } from '../../shared/MobileAuthContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function LegalDashboardScreen() {
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
+  const { user } = useMobileAuth();
 
   const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['legalDashboard'],
+    queryKey: ['legalDashboard', user?.id],
     queryFn: async () => {
-      const { data: { user } } = await mobileSupabase.auth.getUser();
       if (!user) throw new Error("Not logged in");
 
       // Fetch user name
       const { data: userData } = await mobileSupabase
         .from('users')
-        .select('first_name')
+        .select('first_name, last_name')
         .eq('id', user.id)
         .single();
       
-      const firstName = userData?.first_name || 'Attorney';
+      const attorneyName = formatPersonName(userData?.first_name, userData?.last_name) || 'Attorney';
 
       // Fetch active cases for this attorney
       const { data: activeData, count, error: activeError } = await mobileSupabase
@@ -108,7 +110,7 @@ export default function LegalDashboardScreen() {
       }
 
       return {
-        firstName,
+        attorneyName,
         activeCasesCount,
         activeCases,
         directRequests: directData || [],
@@ -116,11 +118,12 @@ export default function LegalDashboardScreen() {
         proBonoHours: pBono,
         privateHours: pPrivate
       };
-    }
+    },
+    enabled: Boolean(user?.id),
   });
 
   const {
-    firstName = '',
+    attorneyName = '',
     activeCasesCount = 0,
     activeCases = [],
     directRequests = [],
@@ -182,8 +185,8 @@ export default function LegalDashboardScreen() {
       
       <DashboardHeader
         eyebrow="Attorney workspace"
-        name={`Atty. ${firstName || 'Attorney'}`}
-        subtitle={directRequests.length > 0 ? `${directRequests.length} request${directRequests.length === 1 ? '' : 's'} need your review.` : 'Your cases and research tools are ready.'}
+        name={`Atty. ${attorneyName || 'Attorney'}`}
+        subtitle={directRequests.length > 0 ? `${directRequests.length} request${directRequests.length === 1 ? ' needs' : 's need'} your review.` : 'Your cases and research tools are ready.'}
         isLoading={isLoading}
       />
 

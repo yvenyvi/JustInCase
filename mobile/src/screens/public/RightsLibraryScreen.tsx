@@ -40,6 +40,7 @@ export default function RightsLibraryScreen() {
   const [researchResults, setResearchResults] = useState<LegalSource[]>(route.params?.initialSources || []);
   const [isResearching, setIsResearching] = useState(false);
   const [researchError, setResearchError] = useState<string | null>(null);
+  const [expandedSourceId, setExpandedSourceId] = useState<string | null>(null);
   const hasRunInitialResearch = useRef(false);
   const initialQuery = route.params?.query as string | undefined;
   const hasInitialSources = Boolean(route.params?.initialSources?.length);
@@ -48,6 +49,7 @@ export default function RightsLibraryScreen() {
     if (activeTab === 'guides' || searchTerm.trim().length < 2) return;
     setIsResearching(true);
     setResearchError(null);
+    setExpandedSourceId(null);
     try {
       const dataset = activeTab === 'cases' ? 'jurisprudence' : 'republic-acts';
       const data = await searchLegalSources(searchTerm.trim(), [dataset], 8);
@@ -205,7 +207,7 @@ export default function RightsLibraryScreen() {
         </Text>
         <View style={styles.libraryTabs}>
           {(['guides', 'cases', 'laws'] as const).map(tab => (
-            <Pressable key={tab} style={[styles.libraryTab, activeTab === tab && styles.libraryTabActive]} onPress={() => { setActiveTab(tab); setResearchResults([]); setResearchError(null); }}>
+            <Pressable key={tab} style={[styles.libraryTab, activeTab === tab && styles.libraryTabActive]} onPress={() => { setActiveTab(tab); setResearchResults([]); setResearchError(null); setExpandedSourceId(null); }}>
               <Text style={[styles.libraryTabText, activeTab === tab && styles.libraryTabTextActive]}>{tab === 'guides' ? 'Rights Guides' : tab === 'cases' ? 'Cases' : 'Laws'}</Text>
             </Pressable>
           ))}
@@ -219,18 +221,28 @@ export default function RightsLibraryScreen() {
         <ScrollView contentContainerStyle={styles.researchContent} showsVerticalScrollIndicator={false}>
           {researchError ? (
             <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color="#CBD5E1" /><Text style={styles.emptyTitle}>{researchError}</Text><Pressable style={styles.trackerBtn} onPress={runResearch}><Text style={styles.trackerBtnText}>Retry</Text></Pressable></View>
-          ) : researchResults.length > 0 ? researchResults.map(source => (
-            <View key={`${source.dataset}-${source.id}`} style={styles.sourceCard}>
-              <Text style={styles.sourceCitation}>{source.citation || (source.dataset === 'jurisprudence' ? 'Supreme Court decision' : 'Republic Act')}</Text>
-              <Text style={styles.sourceTitle}>{source.title}</Text>
-              {!!source.summary && <Text style={styles.sourceSummary}>{source.summary}</Text>}
-              <Text style={styles.aiNotice}>AI-generated research aid — verify against the authoritative source.</Text>
-              <View style={styles.sourceActions}>
-                <Pressable onPress={() => openUrl(source.url)}><Text style={styles.sourceLink}>View on Juris</Text></Pressable>
-                {!!source.source_url && <Pressable onPress={() => openUrl(source.source_url)}><Text style={styles.sourceLink}>Authoritative source</Text></Pressable>}
+          ) : researchResults.length > 0 ? researchResults.map(source => {
+            const sourceId = `${source.dataset}-${source.id}`;
+            const isExpanded = expandedSourceId === sourceId;
+            return (
+              <View key={sourceId} style={styles.sourceCard}>
+                <Text style={styles.sourceCitation}>{source.citation || (source.dataset === 'jurisprudence' ? 'Supreme Court decision' : 'Republic Act')}</Text>
+                <Text style={styles.sourceTitle} numberOfLines={isExpanded ? undefined : 3}>{source.title}</Text>
+                {!!source.summary && <Text style={styles.sourceSummary} numberOfLines={isExpanded ? undefined : 4}>{source.summary}</Text>}
+                {(source.title.length > 120 || (source.summary?.length || 0) > 240) && (
+                  <Pressable style={styles.expandSourceButton} onPress={() => setExpandedSourceId(isExpanded ? null : sourceId)} accessibilityRole="button">
+                    <Text style={styles.expandSourceText}>{isExpanded ? 'Show less' : 'Show full result'}</Text>
+                    <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={theme.colors.primary} />
+                  </Pressable>
+                )}
+                <Text style={styles.aiNotice}>AI-generated research aid — verify against the authoritative source.</Text>
+                <View style={styles.sourceActions}>
+                  <Pressable onPress={() => openUrl(source.url)}><Text style={styles.sourceLink}>View on Juris</Text></Pressable>
+                  {!!source.source_url && <Pressable onPress={() => openUrl(source.source_url)}><Text style={styles.sourceLink}>Authoritative source</Text></Pressable>}
+                </View>
               </View>
-            </View>
-          )) : (
+            );
+          }) : (
             <View style={styles.emptyState}><Ionicons name="search-outline" size={48} color="#CBD5E1" /><Text style={styles.emptyTitle}>Search {activeTab === 'cases' ? 'Supreme Court cases' : 'Republic Acts'}</Text><Text style={styles.emptySubtitle}>Use a citation, doctrine, or plain-language legal question.</Text></View>
           )}
         </ScrollView>
@@ -366,6 +378,8 @@ const styles = StyleSheet.create({
   sourceCitation: { color: theme.colors.primary, fontSize: 12, fontWeight: '800', marginBottom: 5 },
   sourceTitle: { color: theme.colors.textPrimary, fontSize: 17, fontWeight: '800', lineHeight: 23 },
   sourceSummary: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 10 },
+  expandSourceButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 10, paddingVertical: 4 },
+  expandSourceText: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   aiNotice: { color: theme.colors.warning, fontSize: 11, lineHeight: 16, marginTop: 12 },
   sourceActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 18, marginTop: 14 },
   sourceLink: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },

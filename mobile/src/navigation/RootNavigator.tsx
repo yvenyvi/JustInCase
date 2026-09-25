@@ -15,6 +15,7 @@ import DocumentResultScreen from '../screens/public/DocumentResultScreen';
 import RightsLibraryScreen from '../screens/public/RightsLibraryScreen';
 import LegislationTrackerScreen from '../screens/public/LegislationTrackerScreen';
 import NotificationsScreen from '../screens/public/NotificationsScreen';
+import LegalNotificationsScreen from '../screens/legal/LegalNotificationsScreen';
 import MyDocumentsScreen from '../screens/public/MyDocumentsScreen';
 import ChatThreadScreen from '../screens/shared/ChatThreadScreen';
 import CaseDetailsScreen from '../screens/shared/CaseDetailsScreen';
@@ -61,6 +62,7 @@ export function RootNavigator() {
           {/* Shared Screens (Public, Legal, Admin) */}
           <Stack.Screen name="PublicAttorneyProfile" component={PublicAttorneyProfileScreen} />
           <Stack.Screen name="PublicNotifications" component={NotificationsScreen} />
+          {role === 'legal' && <Stack.Screen name="LegalNotifications" component={LegalNotificationsScreen} />}
           <Stack.Screen name="ChatThread" component={ChatThreadScreen} />
           <Stack.Screen name="CaseDetails" component={CaseDetailsScreen} />
           <Stack.Screen name="LegalCaseDetails" component={LegalCaseDetailsScreen} />
