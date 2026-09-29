@@ -87,8 +87,11 @@ describe('TriageLawyerSelectionScreen', () => {
     const view = await render(<TriageLawyerSelectionScreen />);
     await waitFor(() => expect(view.getByText('Atty. Test Lawyer')).toBeTruthy());
     await fireEvent.press(view.getByText('Atty. Test Lawyer'));
-    await waitFor(() => expect(view.getByText('Ipadala ang Kaso sa Abogado')).toBeTruthy());
-    await fireEvent.press(view.getByText('Ipadala ang Kaso sa Abogado'));
+    await waitFor(() => expect(view.getByText('Send assistance request')).toBeTruthy());
+    await fireEvent.press(view.getByText('Send assistance request'));
+    expect(insert).not.toHaveBeenCalled();
+    expect(view.getByText('This requests legal assistance through JusticeLink. It does not file charges with a court or prosecutor.')).toBeTruthy();
+    await fireEvent.press(view.getByText('Confirm and send'));
 
     await waitFor(() => expect(insert).toHaveBeenCalledTimes(1));
     const payload = insert.mock.calls[0][0];

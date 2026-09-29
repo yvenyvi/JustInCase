@@ -49,7 +49,7 @@ describe('TriageResultScreen', () => {
   it('renders the AI result correctly', async () => {
     const { getByText } = await render(<TriageResultScreen />);
 
-    expect(getByText('Review Your Case')).toBeTruthy();
+    expect(getByText('Review your concern')).toBeTruthy();
     expect(getByText('Labor Law')).toBeTruthy();
     expect(getByText('High')).toBeTruthy();
     expect(getByText('Illegal Dismissal')).toBeTruthy();
@@ -59,11 +59,13 @@ describe('TriageResultScreen', () => {
   it('navigates to Lawyer Selection when primary button is pressed', async () => {
     const { getByText } = await render(<TriageResultScreen />);
 
-    const nextButton = getByText('Kumpirmahin at Pumili ng Abogado');
-    fireEvent.press(nextButton);
+    const nextButton = getByText('Find an attorney');
+    await fireEvent.press(nextButton);
+    expect(mockNavigate).not.toHaveBeenCalled();
+    await fireEvent.press(getByText('No preference'));
 
     expect(mockNavigate).toHaveBeenCalledWith('PublicTriageLawyerSelection', {
-      result: mockRoute.params.result,
+      result: { ...mockRoute.params.result, intent: 'seek_attorney', lawyer_preference: 'Any' },
     });
   });
 
@@ -71,15 +73,16 @@ describe('TriageResultScreen', () => {
     const view = await render(<TriageResultScreen />);
 
     await act(async () => {
-      fireEvent.press(view.getByTestId('edit-case-profile'));
+      await fireEvent.press(view.getByTestId('edit-case-profile'));
     });
     await waitFor(() => expect(view.getByTestId('location-input')).toBeTruthy());
     await act(async () => {
-      fireEvent.changeText(view.getByTestId('location-input'), 'Quezon City');
-      fireEvent.changeText(view.getByTestId('desired-outcome-input'), 'Back pay and reinstatement');
+      await fireEvent.changeText(view.getByTestId('location-input'), 'Quezon City');
+      await fireEvent.changeText(view.getByTestId('desired-outcome-input'), 'Back pay and reinstatement');
     });
     await waitFor(() => expect(view.getByDisplayValue('Quezon City')).toBeTruthy());
-    fireEvent.press(view.getByText('Kumpirmahin at Pumili ng Abogado'));
+    await fireEvent.press(view.getByText('Find an attorney'));
+    await fireEvent.press(view.getByText('Pro Bono'));
 
     expect(mockNavigate).toHaveBeenCalledWith('PublicTriageLawyerSelection', {
       result: expect.objectContaining({
@@ -92,8 +95,8 @@ describe('TriageResultScreen', () => {
   it('resets navigation when cancel button is pressed', async () => {
     const { getByText } = await render(<TriageResultScreen />);
 
-    const cancelButton = getByText('Kanselahin');
-    fireEvent.press(cancelButton);
+    const cancelButton = getByText('Finish for now');
+    await fireEvent.press(cancelButton);
 
     expect(mockReset).toHaveBeenCalledWith({
       index: 0,

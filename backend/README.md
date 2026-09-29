@@ -105,6 +105,29 @@ Sample payload:
 }
 ```
 
+## Flexible mobile triage
+
+`POST /api/triage/interactive` accepts form fields `history` (JSON user/assistant
+messages), `action` (`continue` or `assess`), and optional multipart `files`.
+Responses include `reply`, `suggestions`, `intent` (`undecided`, `guidance_only`,
+`seek_attorney`), `review_ready`, and `assessment` (null unless explicitly requested
+and ready). The `response` field and requests omitting `action` retain the legacy
+web contract. `processed_user_content`, when present, retains extracted document
+context in the mobile client's temporary conversation for later turns.
+
+Conversation requests do not perform Juris retrieval. Explicit assessment requests
+retrieve de-identified sources and keep the user's factual summary and intent intact.
+Histories exceeding 200 messages or 60,000 characters return HTTP 400 without silent
+truncation. Invalid AI responses return a recoverable HTTP 503.
+
+Optional `TRIAGE_MODEL` in `backend/.env` overrides the triage and grounding model;
+it defaults to `GROQ_MODEL`. No database migration is needed. Assessment review does
+not create a case; mobile submission requires an attorney/network selection and
+confirmation before creating a legal assistance request.
+
+Run synthetic live-model checks with `python backend/scripts/evaluate_flexible_triage.py`.
+This calls the configured providers but does not use account data or submit cases.
+
 ## Document Generator (Phase 1)
 
 Run the migration script in Supabase SQL Editor (or MCP SQL tool):

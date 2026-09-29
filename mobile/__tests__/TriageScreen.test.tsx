@@ -66,6 +66,40 @@ describe('TriageScreen', () => {
     jest.clearAllMocks();
   });
 
+  it('offers review without navigating until explicitly requested', async () => {
+    const assessment = { primary_issue: 'Unpaid wages', intent: 'seek_attorney' };
+    (fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => ({
+      reply: 'We can prepare your concern for attorney review.', intent: 'seek_attorney',
+      review_ready: true, suggestions: [], assessment: null,
+    }) }).mockResolvedValueOnce({ ok: true, json: async () => ({
+      reply: 'Your concern is ready for review.', intent: 'seek_attorney',
+      review_ready: true, suggestions: [], assessment,
+    }) });
+    const view = await render(<TriageScreen />);
+    await fireEvent.changeText(view.getByPlaceholderText('Ilarawan ang iyong problema...'), 'I want an attorney for unpaid wages.');
+    await fireEvent.press(view.getByTestId('send-button'));
+    await waitFor(() => expect(view.getByText('Review and find an attorney')).toBeTruthy());
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect((fetch as jest.Mock).mock.calls[0][1].body).toContain('action=continue');
+    await fireEvent.press(view.getByTestId('review-assessment'));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('PublicTriageResult', expect.objectContaining({ result: assessment })));
+    expect((fetch as jest.Mock).mock.calls[1][1].body).toContain('action=assess');
+  });
+
+  it('retries failed turns without duplicating the user message', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 503 });
+    const view = await render(<TriageScreen />);
+    await fireEvent.changeText(view.getByPlaceholderText('Ilarawan ang iyong problema...'), 'My salary is unpaid.');
+    await fireEvent.press(view.getByTestId('send-button'));
+    await waitFor(() => expect(view.getByText('Retry')).toBeTruthy());
+    await fireEvent.press(view.getByText('Retry'));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    const body = (fetch as jest.Mock).mock.calls[1][1].body;
+    const history = JSON.parse(new URLSearchParams(body).get('history')!);
+    expect(history.filter((message: any) => message.content === 'My salary is unpaid.')).toHaveLength(1);
+    expect(history.some((message: any) => message.content.includes('Pansamantalang'))).toBe(false);
+  });
+
   it('renders correctly', async () => {
     const { getByText, getByPlaceholderText } = await render(
       <TriageScreen />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View, Pressable, Platform, ActivityIndicator, Image, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { mobileSupabase } from '../../shared/supabase';
@@ -7,6 +7,8 @@ import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
 import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
+import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
+import { ProfileAvatar } from '../../components/ui/ProfileAvatar';
 
 const CASE_FIELD_MAX_LENGTH = 100;
 
@@ -30,6 +32,8 @@ export default function TriageLawyerSelectionScreen() {
   const result = useMemo(() => route.params?.result || {}, [route.params?.result]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmingSubmission, setConfirmingSubmission] = useState(false);
+  const submissionInFlight = React.useRef(false);
   const [isLoadingLawyers, setIsLoadingLawyers] = useState(true);
   const [matchError, setMatchError] = useState('');
   const [lawyers, setLawyers] = useState<any[]>([]);
@@ -77,6 +81,9 @@ export default function TriageLawyerSelectionScreen() {
   }, [result]);
 
   const handleSubmit = async () => {
+    if (submissionInFlight.current || selectedLawyerId === undefined) return;
+    submissionInFlight.current = true;
+    setConfirmingSubmission(false);
     setIsSubmitting(true);
     try {
       const { data: { session } } = await mobileSupabase.auth.getSession();
@@ -104,7 +111,10 @@ export default function TriageLawyerSelectionScreen() {
         lawyer_preference: result.lawyer_preference,
         ai_assessment: result.ai_assessment,
         missing_details: result.missing_details,
-        legal_sources: result.legal_sources || []
+        legal_sources: result.legal_sources || [],
+        intent: 'seek_attorney',
+        possible_options: result.possible_options || [],
+        practical_steps: result.practical_steps || [],
       };
 
       // The database enum is ONLY 'Pro Bono' or 'Private'. If 'Any', we store null.
@@ -132,13 +142,14 @@ export default function TriageLawyerSelectionScreen() {
 
       if (error) throw error;
 
-      Toast.show({ type: 'success', text1: 'Success', text2: 'Naipadala na ang iyong kaso.' });
+      Toast.show({ type: 'success', text1: 'Request sent', text2: 'Naipadala na ang iyong request para sa legal assistance.' });
       navigation.reset({ index: 0, routes: [{ name: 'PublicHome' }] });
     } catch (error: any) {
       console.warn('Case submission failed:', error?.message || 'Unknown database error');
       Toast.show({ type: 'error', text1: 'Error', text2: 'Nabigo ang pag-submit ng kaso.' });
     } finally {
       setIsSubmitting(false);
+      submissionInFlight.current = false;
     }
   };
 
@@ -155,7 +166,7 @@ export default function TriageLawyerSelectionScreen() {
         <Text style={styles.headerTitle}>Pumili ng Abogado</Text>
         <View style={{ width: 44 }} />
       </View>
-      <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose attorney']} current={2} />
+      <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose next steps']} current={2} />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {isLoadingLawyers ? (
@@ -171,8 +182,6 @@ export default function TriageLawyerSelectionScreen() {
             {!!matchError && <Text style={styles.matchError}>{matchError}</Text>}
 
             {lawyers.map((lawyer, index) => {
-              const hasValidImage = lawyer.selfie_url && lawyer.selfie_url.includes('http');
-              const initial = (lawyer.first_name && lawyer.first_name.length > 0) ? lawyer.first_name[0].toUpperCase() : 'A';
               const isSelected = selectedLawyerId === lawyer.id;
               const isRecommended = index === 0;
               
@@ -190,13 +199,7 @@ export default function TriageLawyerSelectionScreen() {
                 )}
                 
                 <View style={styles.cardHeader}>
-                  {hasValidImage ? (
-                    <Image source={{ uri: lawyer.selfie_url }} style={styles.lawyerAvatarModern} />
-                  ) : (
-                    <View style={[styles.lawyerAvatarModern, styles.avatarFallback]}>
-                      <Text style={styles.avatarFallbackText}>{initial}</Text>
-                    </View>
-                  )}
+                  <ProfileAvatar uri={lawyer.selfie_url} firstName={lawyer.first_name} lastName={lawyer.last_name} style={[styles.lawyerAvatarModern, styles.avatarFallback]} textStyle={styles.avatarFallbackText} />
                   
                   <View style={styles.lawyerInfo}>
                     <Text style={[styles.lawyerName, isSelected && styles.selectedTextPrimary]}>Atty. {lawyer.first_name} {lawyer.last_name}</Text>
@@ -272,10 +275,10 @@ export default function TriageLawyerSelectionScreen() {
       <View style={styles.footer}>
         <Pressable 
           style={[styles.btnPrimary, (isSubmitting || selectedLawyerId === undefined) && styles.btnDisabled]}
-          onPress={handleSubmit}
+          onPress={() => setConfirmingSubmission(true)}
           disabled={isSubmitting || selectedLawyerId === undefined}
         >
-          {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.btnPrimaryText}>{selectedLawyerId ? 'Ipadala ang Kaso sa Abogado' : 'I-post ang Kaso'}</Text>}
+          {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.btnPrimaryText}>{selectedLawyerId ? 'Send assistance request' : 'Share request with attorney network'}</Text>}
         </Pressable>
         <Pressable 
           style={[styles.btnSecondary, isSubmitting && styles.btnDisabled]} 
@@ -285,6 +288,17 @@ export default function TriageLawyerSelectionScreen() {
           <Text style={styles.btnSecondaryText}>Kanselahin</Text>
         </Pressable>
       </View>
+      <ConfirmationDialog
+        visible={confirmingSubmission}
+        variant="info"
+        title="Send legal assistance request?"
+        message={selectedLawyerId ? 'Your reviewed concern and assessment will be shared with the selected attorney.' : 'Your reviewed concern and assessment will be visible to registered attorneys in the open network.'}
+        notice="This requests legal assistance through JusticeLink. It does not file charges with a court or prosecutor."
+        confirmLabel="Confirm and send"
+        cancelLabel="Review again"
+        onCancel={() => setConfirmingSubmission(false)}
+        onConfirm={handleSubmit}
+      />
     </View>
   );
 }

@@ -19,6 +19,20 @@ _cache: dict[tuple[str, str, int | None, int], tuple[float, list[dict[str, Any]]
 _cache_lock = threading.Lock()
 _CACHE_TTL_SECONDS = 900
 
+_SEARCH_STOP_WORDS = {
+    "a", "an", "and", "for", "in", "law", "legal", "of", "on", "or", "philippine", "the", "to", "with",
+}
+_SEARCH_TERM_GROUPS = (
+    {
+        "dismissal", "dismissed", "terminate", "terminated", "termination", "fired",
+        "labor", "employment", "employed", "employee", "employer", "workplace",
+    },
+    {"wage", "wages", "salary", "pay", "compensation"},
+    {"custody", "child", "minor", "parental"},
+    {"lease", "tenant", "landlord", "rent", "rental"},
+    {"fraud", "fraudulent", "scam", "deceit"},
+)
+
 _CASE_RESEARCH_FIELDS = (
     "category_of_law",
     "case_subcategory",
@@ -137,6 +151,34 @@ def _normalize_item(dataset: str, item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _expanded_search_terms(query: str) -> set[str]:
+    terms = {
+        token for token in re.findall(r"[a-z0-9]+", query.lower())
+        if len(token) >= 3 and token not in _SEARCH_STOP_WORDS
+    }
+    expanded = set(terms)
+    for group in _SEARCH_TERM_GROUPS:
+        if terms.intersection(group):
+            expanded.update(group)
+    return expanded
+
+
+def _local_relevance_score(query: str, item: dict[str, Any]) -> float:
+    """Use transparent lexical signals to correct obviously weak API ordering."""
+    title = f"{item.get('citation') or ''} {item.get('title') or ''}".lower()
+    summary = str(item.get("summary") or "").lower()
+    terms = _expanded_search_terms(query)
+    title_hits = sum(1 for term in terms if term in title)
+    summary_hits = sum(1 for term in terms if term in summary)
+    phrase_bonus = 4 if query.lower().strip() in f"{title} {summary}" else 0
+    api_score = float(item.get("score") or 0)
+    return (title_hits * 4) + summary_hits + phrase_bonus + api_score
+
+
+def _rank_items(query: str, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(items, key=lambda item: _local_relevance_score(query, item), reverse=True)
+
+
 def search_dataset(query: str, dataset: str, year: int | None = None, limit: int = 5) -> list[dict[str, Any]]:
     if dataset not in VALID_DATASETS:
         raise ValueError("Unsupported Juris dataset.")
@@ -167,6 +209,7 @@ def search_dataset(query: str, dataset: str, year: int | None = None, limit: int
                 raw_items = []
             items = [_normalize_item(dataset, item) for item in raw_items if isinstance(item, dict)]
             items = [item for item in items if item["id"] and item["url"] and (item["score"] is None or item["score"] >= 0.2)]
+            items = _rank_items(safe_query, items)
             with _cache_lock:
                 _cache[key] = (now, items)
             return items

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Image, Modal, RefreshControl, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, ActivityIndicator, Modal, RefreshControl, Alert } from 'react-native';
+import { ProfileAvatar } from '../../components/ui/ProfileAvatar';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -245,11 +246,7 @@ export default function LegalProfileScreen() {
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <Pressable style={styles.avatar} onPress={changeAvatar} disabled={isUploadingAvatar}>
-              {profile.selfie_url ? (
-                <Image source={{ uri: profile.selfie_url }} style={{ width: '100%', height: '100%', borderRadius: 999 }} resizeMode="cover" />
-              ) : (
-                <Text style={styles.avatarText}>{profile.first_name?.[0]}{profile.last_name?.[0]}</Text>
-              )}
+              <ProfileAvatar uri={profile.selfie_url} firstName={profile.first_name} lastName={profile.last_name} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: theme.colors.primary }} textStyle={styles.avatarText} />
               {isUploadingAvatar ? (
                 <View style={{ position: 'absolute', backgroundColor: 'rgba(0,0,0,0.5)', width: '100%', height: '100%', borderRadius: 999, justifyContent: 'center', alignItems: 'center' }}>
                   <ActivityIndicator color="#FFF" />

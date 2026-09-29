@@ -806,13 +806,18 @@ def triage_analyze(body: TriageAnalyzeBody) -> dict[str, Any]:
 @app.post("/api/triage/interactive")
 def triage_interactive(
     history: str = Form(...),
-    files: list[UploadFile] = File(None)
+    files: list[UploadFile] = File(None),
+    action: str | None = Form(None),
 ):
     import json
     try:
         history_dicts = json.loads(history)
+        from triage_service import _normalize_chat_history
+        history_dicts = _normalize_chat_history(history_dicts)
+        if not history_dicts or action not in {None, "continue", "assess"}:
+            raise ValueError("Invalid conversation action")
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid history format")
+        raise HTTPException(status_code=400, detail="Invalid or oversized conversation. Shorten the message or start a new assessment.")
         
     extracted_text = ""
     if files:
@@ -837,11 +842,19 @@ def triage_interactive(
         history_dicts[-1]['content'] += extracted_text
 
     try:
-        from triage_service import generate_interactive_triage, ground_triage_result, normalize_triage_result
-        reply = generate_interactive_triage(history=history_dicts)
-        if reply.startswith("TRIAGE_RESULT:"):
+        from triage_service import generate_interactive_triage, ground_triage_result, normalize_triage_result, parse_triage_turn
+        # Check again after extraction; never silently truncate evidence or earlier turns.
+        try:
+            _normalize_chat_history(history_dicts)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="The attached document or conversation is too long. Please use a shorter document.") from exc
+        reply = generate_interactive_triage(history=history_dicts) if action is None else generate_interactive_triage(history=history_dicts, action=action)
+        turn = parse_triage_turn(reply, action) if action else None
+        result = turn["assessment"] if turn else None
+        if turn is None and reply.startswith("TRIAGE_RESULT:"):
             raw_json = reply[len("TRIAGE_RESULT:"):].strip()
             result = normalize_triage_result(json.loads(raw_json))
+        if result is not None:
             try:
                 research = search_legal_sources(
                     f"{result.get('category_of_law', '')} {result.get('primary_issue', '')}",
@@ -854,7 +867,15 @@ def triage_interactive(
                 result["legal_sources"] = []
                 result["research_unavailable"] = True
             reply = "TRIAGE_RESULT: " + json.dumps(result)
+        if turn is not None:
+            turn["assessment"] = result
+            turn["response"] = reply if result else "QUESTION: " + turn["reply"] + ("\nOPTIONS: " + json.dumps(turn["suggestions"]) if turn["suggestions"] else "")
+            # Client retains extracted evidence in its temporary history for subsequent turns.
+            turn["processed_user_content"] = history_dicts[-1]["content"] if extracted_text else None
+            return turn
         return {"response": reply}
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.exception("Interactive triage request failed")
         raise HTTPException(

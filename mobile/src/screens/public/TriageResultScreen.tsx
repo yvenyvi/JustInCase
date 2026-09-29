@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View, Pressable, Platform, Linking, TextInput } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Pressable, Platform, Linking, TextInput, Modal, ScrollView, Keyboard } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -12,6 +13,15 @@ export default function TriageResultScreen() {
   const initialResult = useMemo(() => route.params?.result || {}, [route.params?.result]);
   const [result, setResult] = useState(initialResult);
   const [isEditing, setIsEditing] = useState(false);
+  const [choosingPreference, setChoosingPreference] = useState(false);
+  const [selectedPreference, setSelectedPreference] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
+  useEffect(() => {
+    setResult(initialResult);
+    setIsEditing(false);
+    setChoosingPreference(false);
+    setSelectedPreference(null);
+  }, [initialResult]);
 
   const updateField = (field: string, value: string) => {
     setResult((current: any) => ({ ...current, [field]: value }));
@@ -25,7 +35,19 @@ export default function TriageResultScreen() {
   };
 
   const handleNext = () => {
-    navigation.navigate('PublicTriageLawyerSelection', { result });
+    if (!result.lawyer_preference || (result.lawyer_preference === 'Any' && !result.lawyer_preference_provided)) {
+      Keyboard.dismiss();
+      setSelectedPreference(null);
+      setChoosingPreference(true);
+      return;
+    }
+    navigation.navigate('PublicTriageLawyerSelection', { result: { ...result, intent: 'seek_attorney' } });
+  };
+
+  const continueDiscussion = () => {
+    if (route.params?.conversation) {
+      navigation.navigate('PublicTriage', { conversation: route.params.conversation, correction: result });
+    } else navigation.goBack();
   };
 
   const handleCancel = () => {
@@ -41,7 +63,7 @@ export default function TriageResultScreen() {
         <Text style={styles.headerTitle}>Assessment Result</Text>
         <View style={{ width: 44 }} />
       </View>
-      <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose attorney']} current={1} />
+      <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose next steps']} current={1} />
 
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
@@ -54,33 +76,14 @@ export default function TriageResultScreen() {
       >
         <View style={styles.resultHeader}>
           <Ionicons name="checkmark-circle" size={48} color="#059669" />
-          <Text style={styles.resultTitle}>Review Your Case</Text>
-          <Text style={styles.reviewHint}>Suriin at itama ang detalye bago pumili ng abogado.</Text>
+          <Text style={styles.resultTitle}>Review your concern</Text>
+          <Text style={styles.reviewHint}>Suriin at itama ang detalye. Ikaw ang magpapasya sa susunod na hakbang.</Text>
         </View>
-
-        {!!result.legal_sources?.length && (
-          <View style={styles.aiResultCard}>
-            <Text style={styles.aiResultTitle}>Legal sources</Text>
-            <Text style={styles.sourceNote}>Juris summaries are AI-generated research aids. Verify the authoritative text.</Text>
-            {result.legal_sources.map((source: any) => (
-              <View key={`${source.dataset}-${source.id}`} style={styles.sourceItem}>
-                <Text style={styles.sourceTitle}>{source.title}</Text>
-                {!!source.citation && <Text style={styles.aiDetailLabel}>{source.citation}</Text>}
-                <View style={styles.sourceLinks}>
-                  <Pressable onPress={() => Linking.openURL(source.url)}><Text style={styles.sourceLink}>Juris record</Text></Pressable>
-                  {!!source.source_url && <Pressable onPress={() => Linking.openURL(source.source_url)}><Text style={styles.sourceLink}>Authoritative source</Text></Pressable>}
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {result.research_unavailable && <Text style={styles.sourceNote}>External legal sources could not be verified. The assessment was completed using the existing guidance.</Text>}
 
         <View style={styles.aiResultCard}>
           <View style={styles.aiResultHeader}>
             <Ionicons name="bulb-outline" size={24} color={theme.colors.primary} />
-            <Text style={[styles.aiResultTitle, { flex: 1 }]}>Case Profile</Text>
+            <Text style={[styles.aiResultTitle, { flex: 1 }]}>Concern summary</Text>
             <Pressable testID="edit-case-profile" onPress={() => setIsEditing(value => !value)} style={styles.editButton}>
               <Ionicons name={isEditing ? 'checkmark' : 'create-outline'} size={16} color={theme.colors.primary} />
               <Text style={styles.editButtonText}>{isEditing ? 'Done' : 'Edit'}</Text>
@@ -107,7 +110,7 @@ export default function TriageResultScreen() {
           </View>
 
           <View style={styles.aiDetailRow}>
-            <Text style={styles.aiDetailLabel}>Tiyak na Uri ng Kaso:</Text>
+            <Text style={styles.aiDetailLabel}>Tiyak na Uri ng Concern:</Text>
             {isEditing ? <TextInput style={styles.editInput} value={result.case_subcategory || ''} onChangeText={value => updateField('case_subcategory', value)} /> : <Text style={styles.aiDetailValue}>{result.case_subcategory || 'Hindi tinukoy'}</Text>}
           </View>
           
@@ -119,7 +122,7 @@ export default function TriageResultScreen() {
           </View>
 
           <View style={styles.aiDetailRow}>
-            <Text style={styles.aiDetailLabel}>Buod ng Kaso:</Text>
+            <Text style={styles.aiDetailLabel}>Buod ng Concern:</Text>
             {isEditing ? (
               <TextInput testID="case-summary-input" style={[styles.editInput, styles.tallInput]} value={result.case_summary || result.primary_issue || ''} onChangeText={value => updateField('case_summary', value)} multiline />
             ) : <Text style={styles.aiDetailValue}>{result.case_summary || result.primary_issue}</Text>}
@@ -168,19 +171,6 @@ export default function TriageResultScreen() {
           </View>
 
           <View style={styles.aiDetailRow}>
-            <Text style={styles.aiDetailLabel}>Uri ng Abogado:</Text>
-            {isEditing ? (
-              <View style={styles.choiceRow}>
-                {['Pro Bono', 'Private', 'Any'].map(value => (
-                  <Pressable key={value} onPress={() => updateField('lawyer_preference', value)} style={[styles.choiceChip, result.lawyer_preference === value && styles.choiceChipSelected]}>
-                    <Text style={[styles.choiceText, result.lawyer_preference === value && styles.choiceTextSelected]}>{value}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : <Text style={styles.aiDetailValue}>{result.lawyer_preference || 'Any'}</Text>}
-          </View>
-
-          <View style={styles.aiDetailRow}>
             <Text style={styles.aiDetailLabel}>AI Assessment:</Text>
             <Text style={styles.aiDetailValue}>{result.ai_assessment}</Text>
           </View>
@@ -193,6 +183,36 @@ export default function TriageResultScreen() {
           )}
         </View>
 
+        {!!result.legal_sources?.length && (
+          <View style={styles.aiResultCard}>
+            <Text style={styles.aiResultTitle}>Legal sources</Text>
+            <Text style={styles.sourceNote}>Juris summaries are AI-generated research aids. Verify the authoritative text.</Text>
+            {result.legal_sources.map((source: any) => (
+              <View key={`${source.dataset}-${source.id}`} style={styles.sourceItem}>
+                <Text style={styles.sourceTitle}>{source.title}</Text>
+                {!!source.citation && <Text style={styles.aiDetailLabel}>{source.citation}</Text>}
+                <View style={styles.sourceLinks}>
+                  <Pressable onPress={() => Linking.openURL(source.url)}><Text style={styles.sourceLink}>Juris record</Text></Pressable>
+                  {!!source.source_url && <Pressable onPress={() => Linking.openURL(source.source_url)}><Text style={styles.sourceLink}>Authoritative source</Text></Pressable>}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+        {result.research_unavailable && <Text style={styles.sourceNote}>External legal sources could not be verified. The assessment was completed using the existing guidance.</Text>}
+
+        {result.intent !== 'seek_attorney' && !!result.possible_options?.length && (
+          <View style={styles.aiResultCard}>
+            <Text style={styles.aiResultTitle}>Possible options</Text>
+            {result.possible_options.map((item: string, index: number) => <Text key={index} style={styles.listItem}>• {item}</Text>)}
+          </View>
+        )}
+        {!!result.practical_steps?.length && (
+          <View style={styles.aiResultCard}>
+            <Text style={styles.aiResultTitle}>Preparation and next steps</Text>
+            {result.practical_steps.map((item: string, index: number) => <Text key={index} style={styles.listItem}>• {item}</Text>)}
+          </View>
+        )}
       </KeyboardAwareScrollView>
 
       <View style={styles.footer}>
@@ -200,15 +220,47 @@ export default function TriageResultScreen() {
           style={styles.btnPrimary} 
           onPress={handleNext}
         >
-          <Text style={styles.btnPrimaryText}>Kumpirmahin at Pumili ng Abogado</Text>
+          <Text style={styles.btnPrimaryText}>{result.intent === 'seek_attorney' ? 'Review and find an attorney' : 'Find an attorney'}</Text>
         </Pressable>
+        <Pressable style={styles.btnSecondary} onPress={continueDiscussion}><Text style={styles.btnSecondaryText}>Continue discussing</Text></Pressable>
         <Pressable 
           style={styles.btnSecondary} 
           onPress={handleCancel}
         >
-          <Text style={styles.btnSecondaryText}>Kanselahin</Text>
+          <Text style={styles.btnSecondaryText}>Finish for now</Text>
         </Pressable>
       </View>
+      <Modal visible={choosingPreference} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setChoosingPreference(false)}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close service preference" onPress={() => setChoosingPreference(false)} />
+          <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 16) + 16 }]} accessibilityViewIsModal>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Attorney service preference</Text>
+              <Pressable style={styles.modalCloseBtn} accessibilityLabel="Close service preference" onPress={() => setChoosingPreference(false)}><Ionicons name="close" size={24} color={theme.colors.textSecondary} /></Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.preferenceHint}>Choose the type of legal assistance you prefer. This helps us find suitable attorneys.</Text>
+              {[
+                { label: 'Pro Bono', value: 'Pro Bono', detail: 'Request assistance without attorney fees, subject to eligibility and availability.' },
+                { label: 'Private', value: 'Private', detail: 'Discuss a paid engagement and fees directly with the attorney.' },
+                { label: 'No preference', value: 'Any', detail: 'Consider attorneys offering either type of assistance.' },
+              ].map(option => (
+                <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{ checked: selectedPreference === option.value }} style={[styles.preferenceOption, selectedPreference === option.value && styles.choiceChipSelected]} onPress={() => setSelectedPreference(option.value)}>
+                  <Ionicons name={selectedPreference === option.value ? 'radio-button-on' : 'radio-button-off'} size={22} color={selectedPreference === option.value ? theme.colors.primary : theme.colors.textSecondary} />
+                  <View style={{ flex: 1 }}><Text style={styles.preferenceLabel}>{option.label}</Text><Text style={styles.preferenceDescription}>{option.detail}</Text></View>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable accessibilityRole="button" disabled={!selectedPreference} style={[styles.btnPrimary, !selectedPreference && { opacity: 0.5 }]} onPress={() => {
+              if (!selectedPreference) return;
+              const reviewedResult = { ...result, intent: 'seek_attorney', lawyer_preference: selectedPreference, lawyer_preference_provided: true };
+              setResult(reviewedResult);
+              setChoosingPreference(false);
+              navigation.navigate('PublicTriageLawyerSelection', { result: reviewedResult });
+            }}><Text style={styles.btnPrimaryText}>Find matching attorneys</Text></Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -249,6 +301,15 @@ const styles = StyleSheet.create({
   sourceLink: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
 
   footer: { padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: 'transparent', gap: 12 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'flex-end' },
+  modalContent: { maxHeight: '85%', backgroundColor: theme.colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, gap: 16 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  modalTitle: { flex: 1, color: theme.colors.textPrimary, fontSize: 20, fontWeight: '800' },
+  modalCloseBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  preferenceHint: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 21, marginBottom: 16 },
+  preferenceOption: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: theme.borderRadius.md, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.background, marginBottom: 12 },
+  preferenceLabel: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700' },
+  preferenceDescription: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 4 },
   btnPrimary: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.xl, paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', ...theme.shadows.medium },
   btnPrimaryText: { color: theme.colors.surface, fontSize: 16, fontWeight: '800' },
   btnSecondary: { backgroundColor: theme.colors.secondary, borderRadius: theme.borderRadius.xl, paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },

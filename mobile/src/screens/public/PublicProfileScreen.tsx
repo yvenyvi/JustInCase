@@ -8,6 +8,7 @@ import { mobileSupabase } from '../../shared/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { theme } from '../../shared/theme';
 import { ProfileSkeleton } from '../../components/ui/Skeleton';
+import { ProfileAvatar } from '../../components/ui/ProfileAvatar';
 import * as ImagePicker from 'expo-image-picker';
 import { API_BASE_URL } from '../../shared/api';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
@@ -175,11 +176,7 @@ export default function PublicProfileScreen() {
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <Pressable style={styles.avatar} onPress={changeAvatar} disabled={isUploadingAvatar}>
-              {profile.selfie_url ? (
-                <Image source={{ uri: profile.selfie_url }} style={{ width: '100%', height: '100%', borderRadius: 999 }} resizeMode="cover" />
-              ) : (
-                <Text style={styles.avatarText}>{profile.first_name?.[0]}{profile.last_name?.[0]}</Text>
-              )}
+              <ProfileAvatar uri={profile.selfie_url} firstName={profile.first_name} lastName={profile.last_name} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: theme.colors.primary }} textStyle={styles.avatarText} />
               {isUploadingAvatar ? (
                 <View style={{ position: 'absolute', backgroundColor: 'rgba(0,0,0,0.5)', width: '100%', height: '100%', borderRadius: 999, justifyContent: 'center', alignItems: 'center' }}>
                   <ActivityIndicator color="#FFF" />

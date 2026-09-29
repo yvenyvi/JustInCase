@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Image, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { ProfileAvatar } from '../../components/ui/ProfileAvatar';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -148,11 +149,7 @@ export default function PublicAttorneyProfileScreen() {
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <View style={styles.avatar}>
-              {profile.selfie_url ? (
-                <Image source={{ uri: profile.selfie_url }} style={{ width: '100%', height: '100%', borderRadius: 999 }} />
-              ) : (
-                <Text style={styles.avatarText}>{profile.first_name?.[0]}{profile.last_name?.[0]}</Text>
-              )}
+              <ProfileAvatar uri={profile.selfie_url} firstName={profile.first_name} lastName={profile.last_name} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: theme.colors.primary }} textStyle={styles.avatarText} />
             </View>
             <Text style={styles.name}>Atty. {fullName}</Text>
             <Text style={styles.email}>{profile.email}</Text>

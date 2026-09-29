@@ -65,11 +65,13 @@ def call_gemini(
             
         return parts[0].get("text", "")
     except requests.exceptions.RequestException as e:
-        logger.error(f"Gemini API request failed: {e}")
+        # requests exceptions include the API key in the URL; never log/propagate it.
+        status = e.response.status_code if e.response is not None else "connection"
+        logger.warning("Gemini API request failed (%s)", status)
         # Log response body if available for better debugging
         if hasattr(e, 'response') and e.response is not None:
-            logger.error(f"Response body: {e.response.text}")
-        raise
+            logger.debug("Gemini error status: %s", e.response.status_code)
+        raise RuntimeError(f"Gemini service unavailable ({status})") from None
 
 def call_gemini_vision(
     prompt: str,

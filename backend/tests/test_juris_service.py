@@ -65,6 +65,34 @@ def test_normalizes_and_filters_low_relevance(monkeypatch):
     assert result[0]["dataset"] == "jurisprudence"
 
 
+def test_locally_reranks_results_by_issue_relevance(monkeypatch):
+    class Response:
+        status_code = 200
+        def raise_for_status(self): pass
+        def json(self):
+            return {"items": [
+                {
+                    "id": "administrative",
+                    "score": .95,
+                    "case_title": "Office of the Court Administrator v. Process Server",
+                    "facts": "A process server failed to liquidate a travel cash advance.",
+                    "url": "https://juris.ph/administrative",
+                },
+                {
+                    "id": "labor",
+                    "score": .55,
+                    "case_title": "Worker v. Employer",
+                    "facts": "An employee was terminated from employment without lawful cause.",
+                    "url": "https://juris.ph/labor",
+                },
+            ]}
+
+    monkeypatch.setattr(juris_service.httpx, "get", lambda *args, **kwargs: Response())
+    result = juris_service.search_dataset("illegal dismissal due process", "jurisprudence")
+
+    assert [item["id"] for item in result] == ["labor", "administrative"]
+
+
 def test_cache_avoids_duplicate_request(monkeypatch):
     calls = 0
     class Response:

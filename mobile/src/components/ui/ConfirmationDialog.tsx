@@ -9,7 +9,8 @@ type ConfirmationDialogProps = {
   message: string;
   confirmLabel: string;
   cancelLabel?: string;
-  variant?: 'danger' | 'warning';
+  variant?: 'danger' | 'warning' | 'info';
+  notice?: string;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -21,13 +22,14 @@ export function ConfirmationDialog({
   confirmLabel,
   cancelLabel = 'Keep It',
   variant = 'danger',
+  notice = 'This action cannot be undone.',
   onCancel,
   onConfirm,
 }: ConfirmationDialogProps) {
   const isDanger = variant === 'danger';
-  const accent = isDanger ? '#DC2626' : '#B45309';
-  const iconBackground = isDanger ? '#FEF2F2' : '#FFFBEB';
-  const borderColor = isDanger ? '#FECACA' : '#FDE68A';
+  const accent = variant === 'info' ? theme.colors.primary : isDanger ? '#DC2626' : '#B45309';
+  const iconBackground = variant === 'info' ? theme.colors.primaryLight : isDanger ? '#FEF2F2' : '#FFFBEB';
+  const borderColor = variant === 'info' ? theme.colors.border : isDanger ? '#FECACA' : '#FDE68A';
 
   return (
     <Modal
@@ -52,7 +54,7 @@ export function ConfirmationDialog({
 
           <View style={[styles.notice, { backgroundColor: iconBackground, borderColor }]}>
             <Ionicons name="information-circle-outline" size={18} color={accent} />
-            <Text style={[styles.noticeText, { color: accent }]}>This action cannot be undone.</Text>
+            <Text style={[styles.noticeText, { color: accent }]}>{notice}</Text>
           </View>
 
           <View style={styles.actions}>

@@ -100,7 +100,7 @@ export default function PublicDashboardScreen() {
         >
           <View style={styles.heroContent}>
             <Text style={styles.heroTitle}>Kailangan mo ba ng legal na tulong?</Text>
-            <Text style={styles.heroSubtitle}>Sagutin ang ilang katanungan para mahanap ang tamang abogado para sa iyo.</Text>
+            <Text style={styles.heroSubtitle}>Ikuwento ang concern mo, unawain ang iyong mga opsyon, at humingi ng tulong ng abogado kung nais mo.</Text>
             <View style={styles.heroBtn}>
               <Text style={styles.heroBtnText}>Simulan Ngayon</Text>
               <Ionicons name="arrow-forward" size={16} color={theme.colors.primary} />

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, ActivityIndicator, Keyboard, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import * as DocumentPicker from 'expo-document-picker';
@@ -9,12 +9,15 @@ import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
 import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
+import { File, UploadType } from 'expo-file-system';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   fileName?: string;
   options?: string[];
+  apiContent?: string;
+  localOnly?: boolean;
 }
 
 class TriageRequestError extends Error {
@@ -32,7 +35,7 @@ export function getTriageErrorMessage(error: unknown): string {
       return 'Nag-expire ang inyong session. Mag-login muli bago ipagpatuloy ang assessment.';
     }
     if (error.status === 400 || error.status === 422) {
-      return 'Hindi namin maproseso ang impormasyong ipinadala. Pakisuri ito at subukang muli.';
+      return 'Hindi namin maproseso ang usapan o dokumento. Subukan ang mas maikling dokumento o magsimula ng bagong assessment kung mahaba na ang usapan.';
     }
     if (error.status === 429) {
       return 'Maraming gumagamit ng AI assessment ngayon. Maghintay sandali at subukang muli.';
@@ -46,16 +49,44 @@ export function getTriageErrorMessage(error: unknown): string {
 
 export default function TriageScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { session } = useMobileAuth();
   
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Magandang araw po! Nandito po ako para makinig at tumulong sa inyo. Kung may legal na problema po kayo, huwag kayong mag-atubiling mag-kwento — ligtas po kayo dito. Ano po ang maitutulong ko sa inyo?' }
+    { role: 'assistant', content: 'Magandang araw! Ano ang concern na gusto mong pag-usapan? Maaari kitang tulungang unawain ang iyong mga opsyon o maghanda para sa tulong ng abogado.' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState('continue');
+  const [loadingSlow, setLoadingSlow] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  const [reviewReady, setReviewReady] = useState(false);
+  const [intent, setIntent] = useState('undecided');
+  const [canRetry, setCanRetry] = useState(false);
+  const pendingRequest = useRef<{ history: Message[]; file: DocumentPicker.DocumentPickerAsset | null; action: string } | null>(null);
+  const requestInFlight = useRef(false);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    const timer = setTimeout(() => setLoadingSlow(true), 12000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (route.params?.conversation) {
+      const resumed: Message[] = route.params.conversation;
+      const correction = route.params.correction;
+      setMessages(correction ? [...resumed, {
+        role: 'user', content: 'I reviewed my concern details. I would like to continue discussing.',
+        apiContent: 'These are my reviewed details and corrections. Keep my stated intent unless I change it: ' + JSON.stringify(correction),
+      }] : resumed);
+      setReviewReady(false);
+      setCanRetry(false);
+      pendingRequest.current = null;
+    }
+  }, [route.params?.conversation, route.params?.correction]);
 
   const handlePickDocument = async () => {
     try {
@@ -72,21 +103,32 @@ export default function TriageScreen() {
     }
   };
 
-  const sendMessage = async (overrideText?: string | any) => {
+  const sendMessage = async (overrideText?: string | any, action = 'continue', retry = false) => {
+    if (requestInFlight.current) return;
     const textToSend = typeof overrideText === 'string' ? overrideText : inputText;
-    if (!textToSend.trim() && !selectedFile) return;
+    if (!retry && action !== 'assess' && !textToSend.trim() && !selectedFile) return;
     
     const userMessage = textToSend.trim();
     const fileName = selectedFile?.name;
-    setInputText('');
-    const currentFile = selectedFile;
-    setSelectedFile(null);
+    if (!retry && action === 'continue') setInputText('');
+    const currentFile = retry ? pendingRequest.current?.file || null : selectedFile;
+    if (!retry && action === 'continue') setSelectedFile(null);
     Keyboard.dismiss();
 
     const displayContent = currentFile ? `${userMessage}\n[Attached: ${fileName}]` : userMessage;
-    const newMessages: Message[] = [...messages, { role: 'user', content: displayContent, fileName }];
+    const newMessages: Message[] = retry && pendingRequest.current
+      ? pendingRequest.current.history
+      : action === 'assess' ? messages.filter(m => !m.localOnly)
+      : [...messages.filter(m => !m.localOnly), { role: 'user', content: displayContent, fileName }];
+    if (retry && pendingRequest.current) action = pendingRequest.current.action;
+    pendingRequest.current = { history: newMessages, file: currentFile, action };
     setMessages(newMessages);
+    setLoadingAction(action);
+    setLoadingSlow(false);
     setIsLoading(true);
+    setCanRetry(false);
+    setReviewReady(false);
+    requestInFlight.current = true;
 
     try {
       const baseUrl = API_BASE_URL;
@@ -95,25 +137,18 @@ export default function TriageScreen() {
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       let response;
+      const historyToSend = newMessages.filter(m => !m.localOnly).map(m => ({ role: m.role, content: m.apiContent || m.content }));
       if (currentFile) {
-        const formData = new FormData();
-        const historyToSend = newMessages.map(m => ({ role: m.role, content: m.content }));
-        formData.append('history', JSON.stringify(historyToSend));
-        formData.append('files', {
-          uri: currentFile.uri,
-          name: currentFile.name,
-          type: currentFile.mimeType || 'application/pdf',
-        } as any);
-
-        response = await fetch(`${baseUrl}/api/triage/interactive`, {
-          method: 'POST',
+        const uploaded = await new File(currentFile.uri).upload(`${baseUrl}/api/triage/interactive`, {
+          httpMethod: 'POST', uploadType: UploadType.MULTIPART, fieldName: 'files',
+          mimeType: currentFile.mimeType || 'application/pdf',
+          parameters: { history: JSON.stringify(historyToSend), action },
           headers,
-          body: formData,
         });
+        response = { ok: uploaded.status >= 200 && uploaded.status < 300, status: uploaded.status, json: async () => JSON.parse(uploaded.body) };
       } else {
-        const historyToSend = newMessages.map(m => ({ role: m.role, content: m.content }));
         headers['Content-Type'] = 'application/x-www-form-urlencoded';
-        const encodedBody = `history=${encodeURIComponent(JSON.stringify(historyToSend))}`;
+        const encodedBody = `history=${encodeURIComponent(JSON.stringify(historyToSend))}&action=${action}`;
         
         response = await fetch(`${baseUrl}/api/triage/interactive`, {
           method: 'POST',
@@ -125,6 +160,21 @@ export default function TriageScreen() {
       if (!response.ok) throw new TriageRequestError(response.status);
 
       const data = await response.json();
+      if (data.processed_user_content && newMessages[newMessages.length - 1]?.role === 'user') {
+        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], apiContent: data.processed_user_content };
+      }
+      if (typeof data.reply === 'string') {
+        setIntent(data.intent || 'undecided');
+        setReviewReady(data.review_ready === true);
+        if (action === 'assess' && data.assessment) {
+          navigation.navigate('PublicTriageResult', { result: data.assessment, conversation: newMessages });
+          setMessages(newMessages);
+        } else {
+          setMessages([...newMessages, { role: 'assistant', content: data.reply, options: data.suggestions }]);
+        }
+        pendingRequest.current = null;
+        return;
+      }
       const reply = data.response || '';
 
       if (reply.includes('TRIAGE_RESULT:')) {
@@ -136,7 +186,11 @@ export default function TriageScreen() {
             jsonStr = jsonMatch[0];
           }
           const triageData = JSON.parse(jsonStr);
-          navigation.navigate('PublicTriageResult', { result: triageData });
+          if (action === 'assess') navigation.navigate('PublicTriageResult', { result: triageData, conversation: newMessages });
+          else {
+            setReviewReady(true);
+            setMessages([...newMessages, { role: 'assistant', content: 'Maaari mo nang suriin ang assessment o magdagdag ng detalye.' }]);
+          }
         } catch {
           console.log('[Triage] Invalid assessment response received');
           setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: 'Nagkaproblema sa pagproseso ng iyong kaso. Pakisubukang muli.' }]);
@@ -160,9 +214,11 @@ export default function TriageScreen() {
     } catch (error) {
       const status = error instanceof TriageRequestError ? error.status : 'connection';
       console.log(`[Triage] Request unavailable (${status})`);
-      setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: getTriageErrorMessage(error) }]);
+      setCanRetry(true);
+      setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: getTriageErrorMessage(error), localOnly: true }]);
     } finally {
       setIsLoading(false);
+      requestInFlight.current = false;
     }
   };
 
@@ -185,14 +241,19 @@ export default function TriageScreen() {
         </Pressable>
         <Text style={styles.headerTitle}>Legal Help Assessment</Text>
         <Pressable onPress={() => {
-          setMessages([{ role: 'assistant', content: 'Magandang araw! Ako ay isang AI legal intake assistant. Ilarawan ang iyong legal na problema at tutulungan kitang i-assess ito at ihanap ng angkop na abogado.' }]);
+          if (requestInFlight.current) return;
+          setMessages([{ role: 'assistant', content: 'Ano ang concern na gusto mong pag-usapan? Maaari kitang tulungang unawain ang iyong mga opsyon o maghanda para sa tulong ng abogado.' }]);
           setInputText('');
           setSelectedFile(null);
+          setReviewReady(false);
+          setIntent('undecided');
+          setCanRetry(false);
+          pendingRequest.current = null;
         }} style={styles.resetBtn}>
           <Ionicons name="refresh" size={20} color={theme.colors.primary} />
         </Pressable>
       </View>
-      <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose attorney']} current={0} />
+      <WorkflowProgress steps={['Describe concern', 'Review assessment', 'Choose next steps']} current={0} />
 
       <ScrollView
         ref={scrollViewRef}
@@ -206,8 +267,8 @@ export default function TriageScreen() {
           <View style={styles.iconContainer}>
             <Ionicons name="scale-outline" size={32} color="#4F46E5" />
           </View>
-          <Text style={styles.heroTitle}>Case Assessment</Text>
-          <Text style={styles.heroSubtitle}>Magbigay ng detalye tungkol sa iyong kaso, at mag-upload ng ebidensya kung meron. Susuriin ito ng AI.</Text>
+          <Text style={styles.heroTitle}>Pag-usapan ang concern mo</Text>
+          <Text style={styles.heroSubtitle}>Ikuwento ang sitwasyon sa sarili mong paraan. Ikaw ang magpapasya sa susunod na hakbang.</Text>
         </View>
 
         {messages.map((msg: Message, idx: number) => (
@@ -221,14 +282,25 @@ export default function TriageScreen() {
         ))}
         {isLoading && (
           <View style={[styles.messageBubbleWrapper, styles.wrapperAssistant]}>
-            <View style={[styles.messageBubble, styles.messageAssistant, { padding: 16 }]}>
+            <View accessibilityLiveRegion="polite" style={[styles.messageBubble, styles.messageAssistant, { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
               <ActivityIndicator color="#4F46E5" size="small" />
+              <View style={{ flexShrink: 1 }}>
+                <Text style={styles.messageTextAssistant}>{loadingAction === 'assess' ? 'Reviewing your details...' : 'Thinking about your concern...'}</Text>
+                {loadingSlow && <Text style={[styles.messageTextAssistant, { fontSize: 12, marginTop: 4 }]}>This is taking a little longer. Please wait...</Text>}
+              </View>
             </View>
           </View>
         )}
       </ScrollView>
 
       <View style={[styles.inputAreaWrapper, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+        {reviewReady && !isLoading && (
+          <Pressable testID="review-assessment" style={styles.optionBtn} disabled={!!inputText.trim() || !!selectedFile} onPress={() => sendMessage('', 'assess')}>
+            <Text style={styles.optionText}>{intent === 'seek_attorney' ? 'Review and find an attorney' : 'Review my assessment'}</Text>
+            {(!!inputText.trim() || !!selectedFile) && <Text>Ipadala muna ang dagdag na detalye.</Text>}
+          </Pressable>
+        )}
+        {canRetry && !isLoading && <Pressable style={styles.optionBtn} onPress={() => sendMessage('', 'continue', true)}><Text style={styles.optionText}>Retry</Text></Pressable>}
         {!isLoading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && messages[messages.length - 1].options && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer} contentContainerStyle={styles.optionsContent}>
             {messages[messages.length - 1].options!.map((opt: string, idx: number) => (
