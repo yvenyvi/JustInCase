@@ -36,6 +36,7 @@ type CaseDetail = {
   } | null;
   attachments: {
     url: string;
+    storagePath?: string;
     name: string;
     type: string | null;
     created_at: string;
@@ -137,6 +138,7 @@ const PublicAllCases = () => {
   const [detailCase, setDetailCase] = React.useState<CaseItem | null>(null);
   const [caseDetail, setCaseDetail] = React.useState<CaseDetail | null>(null);
   const [isDetailLoading, setIsDetailLoading] = React.useState(false);
+  const [attachmentError, setAttachmentError] = React.useState('');
 
   const fetchCases = React.useCallback(async () => {
     if (!profile?.id) return;
@@ -242,6 +244,38 @@ const PublicAllCases = () => {
       }));
     }
 
+    // Private case uploads are readable only to case participants. Resolve
+    // their stored object paths to short-lived links using the current session.
+    const { data: caseDocs } = await supabase
+      .from('case_documents')
+      .select('file_name, file_url, created_at, uploaded_by')
+      .eq('case_id', c.id)
+      .order('created_at', { ascending: true });
+    for (const doc of caseDocs ?? []) {
+      const value = doc.file_url ?? '';
+      const publicPrefix = '/storage/v1/object/public/case-documents/';
+      const objectPath = value.includes(publicPrefix)
+        ? decodeURIComponent(value.split(publicPrefix)[1]?.split('?')[0] ?? '')
+        : value;
+      if (!objectPath || /^https?:\/\//i.test(objectPath)) continue;
+      const { data: signed, error } = await supabase.storage
+        .from('case-documents')
+        .createSignedUrl(objectPath, 5 * 60, { download: doc.file_name });
+      if (error || !signed?.signedUrl) continue;
+      const { data: uploader } = doc.uploaded_by
+        ? await supabase.from('users').select('first_name, last_name').eq('id', doc.uploaded_by).maybeSingle()
+        : { data: null };
+      const ext = doc.file_name.split('.').pop()?.toLowerCase() ?? '';
+      attachments.push({
+        url: signed.signedUrl,
+        storagePath: objectPath,
+        name: doc.file_name,
+        type: ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? `image/${ext === 'jpg' ? 'jpeg' : ext}` : null,
+        created_at: doc.created_at,
+        sender: uploader ? [uploader.first_name, uploader.last_name].filter(Boolean).join(' ') || 'Case participant' : 'Case participant',
+      });
+    }
+
     // 4. Pro-bono service logs
     const { data: logs } = await supabase
       .from('pro_bono_logs')
@@ -266,6 +300,24 @@ const PublicAllCases = () => {
     });
     setIsDetailLoading(false);
   }, []);
+
+  const openCaseAttachment = async (attachment: CaseDetail['attachments'][number]) => {
+    setAttachmentError('');
+    if (!attachment.storagePath) {
+      window.open(attachment.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(
+      attachment.storagePath,
+      5 * 60,
+      { download: attachment.name },
+    );
+    if (error || !data?.signedUrl) {
+      setAttachmentError('Hindi mabuksan ang dokumento. Tiyaking may access ka sa kasong ito at subukan muli.');
+      return;
+    }
+    window.location.assign(data.signedUrl);
+  };
 
   const closeDetail = () => {
     setDetailCase(null);
@@ -601,6 +653,7 @@ const PublicAllCases = () => {
                     <p className={styles.detailEmpty}>Walang na-upload na mga dokumento sa kasong ito.</p>
                   ) : (
                     <div className={styles.attachmentList}>
+                      {attachmentError && <p role="alert" style={{ color: '#b91c1c' }}>{attachmentError}</p>}
                       {caseDetail.attachments.map((att, i) => (
                         <div key={i} className={styles.attachmentRow}>
                           <span className={styles.attachmentIcon}>
@@ -614,15 +667,14 @@ const PublicAllCases = () => {
                               {att.sender} · {fmt(att.created_at)}
                             </span>
                           </div>
-                          <a
-                            href={att.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => void openCaseAttachment(att)}
                             className={styles.attachmentLink}
                             title="Open file"
                           >
                             <ExternalLink size={14} />
-                          </a>
+                          </button>
                         </div>
                       ))}
                     </div>

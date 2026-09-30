@@ -4,9 +4,8 @@ import { ClipboardList, BookOpen, FileSignature, HeartHandshake, FolderOpen, Tar
 import styles from './LandingView.module.css';
 import SpotlightCard from '../components/SpotlightCard';
 import BlurText from '../components/BlurText';
-import ShinyText from '../components/ShinyText';
-import CountUp from '../components/CountUp';
 import { MagicBentoCard } from '../components/MagicBento';
+import JusticeIllustration from '../components/JusticeIllustration';
 
 // Simple FadeIn for non-text elements
 type FadeDirection = 'up' | 'down' | 'left' | 'right' | 'none';
@@ -68,50 +67,50 @@ const LandingView = () => {
             <Link to="/#contact">Contact Us</Link>
           </div>
           <div className={styles.navActions}>
-            <Link to="/login" className={styles.authLink}>Mag-Sign In (Para sa Laban)</Link>
-            <Link to="/register" className={styles.navButton}>Humingi ng Tulong</Link>
+            <Link to="/login" className={styles.authLink}>Sign In</Link>
+            <Link to="/register" className={styles.navButton}>Get Legal Help</Link>
           </div>
         </nav>
 
-        <div className={styles.heroContent}>
-          <FadeIn delay={0.1}>
-            <div className={styles.badge}>BRIDGING THE JUSTICE GAP</div>
-          </FadeIn>
+        <div className={styles.heroBody}>
+          <div className={styles.heroContent}>
+            <FadeIn delay={0.1}>
+              <div className={styles.badge}>LEGAL SUPPORT, MADE MORE ACCESSIBLE</div>
+            </FadeIn>
 
-          {/* BlurText for the main hero title */}
-          <BlurText
-            text="Libreng legal help para sa bawat Pilipino"
-            animateBy="words"
-            direction="top"
-            delay={120}
-            stepDuration={0.4}
-            className={styles.heroTitleBlur}
-          />
+            <BlurText
+              text="A clearer path to legal support"
+              animateBy="words"
+              direction="top"
+              delay={120}
+              stepDuration={0.4}
+              className={styles.heroTitleBlur}
+            />
 
-          <FadeIn delay={0.4}>
-            <p className={styles.heroSubtitle}>
-              Direktang koneksyon para sa ating mga Kababayang nangangailangan ng tulong mula sa mga volunteer lawyers.
-              Libreng legal resources, document generators, at smart triage para sa iyong karapatan.
-            </p>
-          </FadeIn>
-          <FadeIn delay={0.55}>
-            <div className={styles.heroActions}>
-              <Link to="/register" className={styles.primaryButton}>
-                Humingi ng Libreng Tulong <ArrowRight size={18} style={{ marginLeft: '0.5rem' }} />
-              </Link>
-              <Link to="/login" className={styles.secondaryHeroBtn}>
-                Para sa mga Lawyers
-              </Link>
+            <FadeIn delay={0.4}>
+              <p className={styles.heroSubtitle}>
+                Explore your options, find guidance in the Legal Library, and connect with an attorney through pro bono or private assistance.
+              </p>
+            </FadeIn>
+            <FadeIn delay={0.55}>
+              <div className={styles.heroActions}>
+                <Link to="/register" className={styles.primaryButton}>
+                  Get Legal Help <ArrowRight size={18} style={{ marginLeft: '0.5rem' }} />
+                </Link>
+                <Link to="/login" className={styles.secondaryHeroBtn}>
+                  For Attorneys
+                </Link>
+              </div>
+            </FadeIn>
+            <div className={styles.heroTrust}><span /> Guidance and legal support in one place</div>
+          </div>
+
+          <FadeIn delay={0.35} direction="up" className={styles.heroArtwork}>
+            <JusticeIllustration className={styles.justiceIllustration} />
+            <div className={styles.artworkCaption}>
+              <span className={styles.captionIcon}><BookOpen size={17} /></span>
+              <span><strong>Guidance. Connection. Action.</strong><small>You choose the next step.</small></span>
             </div>
-          </FadeIn>
-        </div>
-
-        <div className={styles.heroImages}>
-          <FadeIn delay={0.5} direction="up" className={styles.imageCard}>
-            <div className={styles.realImg} style={{ backgroundImage: "url('/landing_page/lawyer_1.jpg')" }} aria-label="Lawyer discussing documents with a client" />
-          </FadeIn>
-          <FadeIn delay={0.65} direction="up" className={styles.imageCard}>
-            <div className={styles.realImg} style={{ backgroundImage: "url('/landing_page/lawyer_2.jpg')" }} aria-label="Two professionals shaking hands" />
           </FadeIn>
         </div>
       </section>
@@ -139,7 +138,7 @@ const LandingView = () => {
         </FadeIn>
         <FadeIn delay={0.3}>
           <p className={styles.sectionSubtitle}>
-            Our dedicated team of volunteer Filipino lawyers is committed to providing <strong>expert, client-focused legal services</strong> across the country. With deep experience in Philippine Law and a results-driven approach, we deliver strategic solutions tailored to each Kababayan's needs, completely free of charge.
+            LAYA brings together legal guides, case-matching tools, and a network of participating attorneys. Depending on a user's needs, eligibility, and availability, pro bono or private legal assistance may be available. The platform does not guarantee case acceptance or free services.
           </p>
         </FadeIn>
 
@@ -150,7 +149,7 @@ const LandingView = () => {
               <div className={styles.cardIcon}><Target size={32} /></div>
               <h3 className={styles.cardTitle}>Mission</h3>
               <p className={styles.cardText}>
-                To bridge the justice gap in the Philippines by providing every Filipino with free, accessible, and expert legal support, regardless of their background or means.
+                To make legal information and attorney connections easier to access, with pro bono and private assistance options based on each user's needs and availability.
               </p>
             </SpotlightCard>
           </FadeIn>
@@ -160,7 +159,7 @@ const LandingView = () => {
               <div className={styles.cardIcon}><Eye size={32} /></div>
               <h3 className={styles.cardTitle}>Vision</h3>
               <p className={styles.cardText}>
-                A society where every Filipino can assert their rights and access justice, empowered by technology and a compassionate network of volunteer legal professionals.
+                A society where every Filipino can understand their rights and choose a suitable path to legal support, empowered by accessible tools and a compassionate network of legal professionals.
               </p>
             </SpotlightCard>
           </FadeIn>
@@ -182,7 +181,7 @@ const LandingView = () => {
                   <div className={styles.serviceCardInner}>
                     <div className={styles.iconWrapper}><ClipboardList size={24} /></div>
                     <h3>Legal Help Assessment</h3>
-                    <p>Sagutin ang ilang katanungan para mai-match ka sa tamang pro-bono attorney na expert sa iyong problema (Labor, Housing, VAWC, etc.).</p>
+                    <p>Answer a few questions to explore next steps and find pro bono or private legal assistance that may fit your needs.</p>
                   </div>
                 </MagicBentoCard>
               </FadeIn>
@@ -191,7 +190,7 @@ const LandingView = () => {
                   <div className={styles.serviceCardInner}>
                     <div className={styles.iconWrapper}><BookOpen size={24} /></div>
                     <h3>Legal Library</h3>
-                    <p>Alamin ang iyong mga karapatan. Basahin ang aming mga guides tungkol sa Rent Control Act, Labor Code, at iba pa.</p>
+                    <p>Explore plain-language guides about your rights under laws such as the Rent Control Act and Labor Code.</p>
                   </div>
                 </MagicBentoCard>
               </FadeIn>
@@ -200,7 +199,7 @@ const LandingView = () => {
                   <div className={styles.serviceCardInner}>
                     <div className={styles.iconWrapper}><FileSignature size={24} /></div>
                     <h3>Document Generator</h3>
-                    <p>Gumawa ng mga formal legal letters, demand notices, o sa Barangay complaints gamit ang aming subok na templates.</p>
+                    <p>Prepare formal legal letters, demand notices, and barangay complaints with guided templates.</p>
                   </div>
                 </MagicBentoCard>
               </FadeIn>
@@ -211,15 +210,15 @@ const LandingView = () => {
           <div>
             <FadeIn delay={0.2} direction="right">
               <div className={styles.badgeOrange} style={{ marginBottom: '1rem', backgroundColor: 'rgba(37,99,235,0.1)', color: '#2563eb' }}>FOR LAWYERS</div>
-              <h2 className={styles.sectionTitle} style={{ textAlign: 'left', marginBottom: '2rem' }}>Streamlined pro-bono</h2>
+              <h2 className={styles.sectionTitle} style={{ textAlign: 'left', marginBottom: '2rem' }}>Flexible case matching</h2>
             </FadeIn>
             <div className={styles.serviceCards}>
               <FadeIn delay={0.3} direction="up">
                 <MagicBentoCard glowColor="37, 99, 235">
                   <div className={styles.serviceCardInner}>
                     <div className={styles.iconWrapper} style={{ background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}><HeartHandshake size={24} /></div>
-                    <h3>Pro-Bono Matchmaking Hub</h3>
-                    <p>Browse pre-vetted, triaged cases that fit your exact expertise and availability.</p>
+                    <h3>Case Matching Options</h3>
+                    <p>Review cases that fit your legal expertise, availability, and the assistance arrangement you offer.</p>
                   </div>
                 </MagicBentoCard>
               </FadeIn>
@@ -228,7 +227,7 @@ const LandingView = () => {
                   <div className={styles.serviceCardInner}>
                     <div className={styles.iconWrapper} style={{ background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}><FolderOpen size={24} /></div>
                     <h3>Client & Case Management</h3>
-                    <p>Manage your active docket, communicate securely, and track your pro-bono hours for Bar compliance.</p>
+                    <p>Manage active cases, communicate securely, and track pro bono hours where applicable.</p>
                   </div>
                 </MagicBentoCard>
               </FadeIn>
@@ -241,51 +240,33 @@ const LandingView = () => {
       <section className={styles.impactSection} id="impact">
         <div className={styles.impactContent}>
           <FadeIn delay={0.1} direction="right">
-            <div className={styles.impactImage} style={{ backgroundImage: "url('/landing_page/lawyer_1.jpg')" }} />
+            <div className={styles.impactJourney}>
+              <div className={styles.journeyEyebrow}>HOW LAYA HELPS</div>
+              <div className={styles.journeyStep}>
+                <span className={styles.journeyIcon}><ClipboardList size={20} /></span>
+                <span><strong>Share your concern</strong><small>Start with what happened, in your own words.</small></span>
+                <span className={styles.journeyNumber}>01</span>
+              </div>
+              <div className={styles.journeyStep}>
+                <span className={styles.journeyIcon}><BookOpen size={20} /></span>
+                <span><strong>Understand your options</strong><small>Explore plain-language legal guides and research.</small></span>
+                <span className={styles.journeyNumber}>02</span>
+              </div>
+              <div className={styles.journeyStep}>
+                <span className={styles.journeyIcon}><HeartHandshake size={20} /></span>
+                <span><strong>Choose what comes next</strong><small>Request a connection with a lawyer when you are ready.</small></span>
+                <span className={styles.journeyNumber}>03</span>
+              </div>
+              <div className={styles.journeyNote}>You stay in control of the next step.</div>
+            </div>
           </FadeIn>
           <div className={styles.impactText}>
             <FadeIn delay={0.2} direction="left">
-              {/* ShinyText for a premium heading shimmer */}
               <h2 className={styles.sectionTitle} style={{ textAlign: 'left', color: '#fff', marginBottom: '0.5rem' }}>
-                Delivering practical solutions through{' '}
-                <ShinyText text="pro-bono" speed={4} className={styles.shinyAccent} />
+                A clearer path from concern to support
               </h2>
+              <p className={styles.impactDescription}>LAYA helps people understand their options, find reliable legal information, and decide whether they want to connect with an attorney.</p>
             </FadeIn>
-
-            <div className={styles.impactStats}>
-              <FadeIn delay={0.3} direction="up">
-                <div className={styles.statBox}>
-                  <h4>
-                    <CountUp to={25000} separator="," suffix="+" duration={2.5} className={styles.statNumber} />
-                  </h4>
-                  <p>Hours Volunteered</p>
-                </div>
-              </FadeIn>
-              <FadeIn delay={0.4} direction="up">
-                <div className={styles.statBox}>
-                  <h4>
-                    <CountUp to={5000} separator="," suffix="+" duration={2.5} className={styles.statNumber} />
-                  </h4>
-                  <p>Cases Resolved</p>
-                </div>
-              </FadeIn>
-              <FadeIn delay={0.5} direction="up">
-                <div className={styles.statBox}>
-                  <h4>
-                    <CountUp to={200} prefix="₱" suffix="M+" duration={2.5} className={styles.statNumber} />
-                  </h4>
-                  <p>In Recovered Claims</p>
-                </div>
-              </FadeIn>
-              <FadeIn delay={0.6} direction="up">
-                <div className={styles.statBox}>
-                  <h4>
-                    <CountUp to={98} suffix="%" duration={2.5} className={styles.statNumber} />
-                  </h4>
-                  <p>Evictions Halted</p>
-                </div>
-              </FadeIn>
-            </div>
 
             <FadeIn delay={0.75} direction="up">
               <Link to="/register" className={styles.primaryButton} style={{ display: 'inline-flex', width: 'auto', marginTop: '2rem' }}>
@@ -305,7 +286,7 @@ const LandingView = () => {
                 <img src="/logo-mark.png" alt="LAYA bird and justice scales emblem" className={styles.logoIcon} style={{ width: '52px', height: '44px', objectFit: 'contain' }} />
                 <span className={styles.logoText}>LAYA</span>
               </div>
-              <p className={styles.footerDesc}>A secure triage and matching engine that connects marginalized Filipinos directly with volunteer legal professionals.</p>
+              <p className={styles.footerDesc}>A legal support platform with guided triage, research tools, and attorney connections through available pro bono or private assistance options.</p>
             </div>
             <div className={styles.footerLinks}>
               <div className={styles.linkColumn}>
@@ -317,7 +298,7 @@ const LandingView = () => {
               <div className={styles.linkColumn}>
                 <h4>Legal</h4>
                 <Link to="/login">Attorney Dashboard</Link>
-                <Link to="/login">Pro-Bono Hub</Link>
+                <Link to="/login">Case Matching</Link>
                 <Link to="#">Terms of Service</Link>
                 <Link to="#">Privacy Policy</Link>
               </div>

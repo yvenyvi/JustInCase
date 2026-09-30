@@ -15,11 +15,12 @@ const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image
 
 interface CaseAttachment {
   url: string;
+  storagePath?: string;
   name: string;
   type: string;
   sentAt: string;
   senderName: string;
-  tag: 'chat' | 'evidence';
+  tag: 'chat' | 'evidence' | 'case';
 }
 
 interface Case {
@@ -59,6 +60,7 @@ const Cases = () => {
   const [closeNotes, setCloseNotes] = React.useState('');
   const [caseAttachments, setCaseAttachments] = React.useState<Record<string, CaseAttachment[]>>({});
   const [loadingAttachments, setLoadingAttachments] = React.useState<string | null>(null);
+  const [attachmentError, setAttachmentError] = React.useState<string | null>(null);
   const [serviceLogCase, setServiceLogCase] = React.useState<{ id: string; title: string; client_id: string | null } | null>(null);
   const [actionError, setActionError] = React.useState<string | null>(null);
   const [confirmAccept, setConfirmAccept] = React.useState<string | null>(null);
@@ -131,8 +133,13 @@ const Cases = () => {
         .not('evidence_url', 'is', null)
         .order('created_at', { ascending: true }),
     ]);
+    const { data: caseDocs } = await supabase
+      .from('case_documents')
+      .select('id, file_name, file_url, created_at')
+      .eq('case_id', caseId)
+      .order('created_at', { ascending: true });
 
-    type RawItem = { url: string; name: string; type: string; createdAt: string; senderName: string; tag: 'chat' | 'evidence' };
+    type RawItem = { url: string; storagePath?: string; name: string; type: string; createdAt: string; senderName: string; tag: 'chat' | 'evidence' | 'case' };
     const raw: RawItem[] = [];
 
     // Chat message attachments
@@ -164,10 +171,31 @@ const Cases = () => {
       raw.push({ url: e.evidence_url, name, type, createdAt: e.created_at, senderName: 'Service Log Evidence', tag: 'evidence' });
     }
 
+    // Case documents are stored in a private bucket. Mint short-lived links
+    // with the signed-in attorney's session; never expose a permanent public URL.
+    for (const doc of caseDocs ?? []) {
+      const value = doc.file_url ?? '';
+      const publicPrefix = '/storage/v1/object/public/case-documents/';
+      const objectPath = value.includes(publicPrefix)
+        ? decodeURIComponent(value.split(publicPrefix)[1]?.split('?')[0] ?? '')
+        : value;
+      if (!objectPath || /^https?:\/\//i.test(objectPath)) continue;
+      const { data: signed, error } = await supabase.storage
+        .from('case-documents')
+        .createSignedUrl(objectPath, 5 * 60, { download: doc.file_name });
+      if (error || !signed?.signedUrl) continue;
+      const ext = doc.file_name.split('.').pop()?.toLowerCase() ?? '';
+      const type = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
+        ? `image/${ext === 'jpg' ? 'jpeg' : ext}`
+        : '';
+      raw.push({ url: signed.signedUrl, storagePath: objectPath, name: doc.file_name, type, createdAt: doc.created_at, senderName: 'Case document', tag: 'case' });
+    }
+
     raw.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
     const attachments: CaseAttachment[] = raw.map(r => ({
       url: r.url,
+      storagePath: r.storagePath,
       name: r.name,
       type: r.type,
       sentAt: new Date(r.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -177,6 +205,24 @@ const Cases = () => {
 
     setCaseAttachments(prev => ({ ...prev, [caseId]: attachments }));
     setLoadingAttachments(null);
+  };
+
+  const openAttachment = async (attachment: CaseAttachment) => {
+    setAttachmentError(null);
+    if (!attachment.storagePath) {
+      window.open(attachment.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(
+      attachment.storagePath,
+      5 * 60,
+      { download: attachment.name },
+    );
+    if (error || !data?.signedUrl) {
+      setAttachmentError('Hindi mabuksan ang file. Tiyaking may access ka sa kasong ito at subukan muli.');
+      return;
+    }
+    window.location.assign(data.signedUrl);
   };
 
   const handleReject = async (caseId: string) => {
@@ -555,12 +601,12 @@ const Cases = () => {
                     <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>No files have been shared or uploaded for this case yet.</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {attachmentError && <p role="alert" style={{ color: '#b91c1c', fontSize: '.85rem' }}>{attachmentError}</p>}
                       {attachments.map((a, i) => {
                         const isImage = IMAGE_TYPES.includes(a.type);
                         return (
-                          <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
-                            download={!isImage ? a.name : undefined}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 1rem', backgroundColor: 'var(--color-background)', borderRadius: '10px', border: '1px solid var(--color-border)', textDecoration: 'none' }}>
+                          <button key={i} type="button" onClick={() => void openAttachment(a)}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 1rem', backgroundColor: 'var(--color-background)', borderRadius: '10px', border: '1px solid var(--color-border)', textAlign: 'left', cursor: 'pointer' }}>
                             {isImage ? (
                               <img src={a.url} alt={a.name} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
                             ) : (
@@ -572,13 +618,13 @@ const Cases = () => {
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
                                 <p style={{ fontWeight: 600, fontSize: '0.825rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{a.name}</p>
                                 <span style={{ flexShrink: 0, fontSize: '0.65rem', fontWeight: 700, padding: '0.1rem 0.45rem', borderRadius: '9999px', backgroundColor: a.tag === 'evidence' ? 'rgba(139,92,246,0.12)' : 'rgba(37,99,235,0.1)', color: a.tag === 'evidence' ? '#8b5cf6' : 'var(--color-primary)' }}>
-                                  {a.tag === 'evidence' ? 'Evidence' : 'Chat'}
+                                  {a.tag === 'evidence' ? 'Evidence' : a.tag === 'case' ? 'Case file' : 'Chat'}
                                 </span>
                               </div>
                               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0 }}>{a.senderName} · {a.sentAt}</p>
                             </div>
                             <Download size={14} color="var(--color-text-muted)" style={{ flexShrink: 0 }} />
-                          </a>
+                          </button>
                         );
                       })}
                     </div>

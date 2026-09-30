@@ -32,10 +32,10 @@ import {
   QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createClient } from '@supabase/supabase-js';
 import AuthLayout from './AuthLayout';
 import Button from '../../components/Button';
 import LocationSelector from '../../components/shared/LocationSelector';
-import { supabase } from '../../lib/supabase';
 import styles from './auth.module.css';
 
 type Role = 'public' | 'legal';
@@ -127,7 +127,7 @@ const Register = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<FormFieldErrorMap>({});
-  const [emailVerificationNotice, setEmailVerificationNotice] = useState<string>('');
+  const [registrationNotice, setRegistrationNotice] = useState<string>('');
   const [verificationResult, setVerificationResult] = useState<{
     rollMatch: boolean;
     nameMatch: boolean;
@@ -642,6 +642,13 @@ const Register = () => {
     setErrorMessage('');
 
     const normalizedEmail = formData.email.trim().toLowerCase();
+    // Match mobile registration: account creation must not sign into the active
+    // browser session while the registration flow is still running.
+    const registrationAuth = createClient(
+      import.meta.env.VITE_SUPABASE_URL || '',
+      import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+      { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+    );
 
     if (role === 'legal') {
       if (!ibpIdFile || !selfieFile) {
@@ -658,11 +665,10 @@ const Register = () => {
 
         const handle = _makeHandle(personalInfo.firstName, personalInfo.lastName, normalizedEmail);
 
-        const { error } = await supabase.auth.signUp({
+        const { error } = await registrationAuth.auth.signUp({
           email: normalizedEmail,
           password: formData.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/login`,
             data: {
               first_name: personalInfo.firstName,
               middle_name: personalInfo.middleName,
@@ -691,7 +697,7 @@ const Register = () => {
           throw new Error(error.message);
         }
 
-        setEmailVerificationNotice(`A verification email was sent to ${normalizedEmail}. Please verify your email, then wait for admin approval of your legal credentials.`);
+        setRegistrationNotice('Your account has been created and is awaiting administrator review. You can sign in after your credentials are approved.');
         setStep(4);
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : 'Legal registration failed.');
@@ -728,11 +734,10 @@ const Register = () => {
         throw new Error(finalizePayload?.detail || 'Final verification step failed.');
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { error } = await registrationAuth.auth.signUp({
         email: normalizedEmail,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/login`,
           data: {
             first_name: personalInfo.firstName,
             middle_name: personalInfo.middleName,
@@ -759,7 +764,7 @@ const Register = () => {
         throw new Error(error.message);
       }
 
-      setEmailVerificationNotice(`A verification email was sent to ${normalizedEmail}. Please confirm your email before logging in.`);
+      setRegistrationNotice('Your account has been successfully created. You can now log in with your email and password.');
       setStep(4);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Registration failed.');
@@ -778,7 +783,7 @@ const Register = () => {
 
   const renderStepIndicator = () => {
     const steps = role === 'public'
-      ? ['Account Setup', 'Didit Verification', 'Personal Info', 'Email Verification']
+      ? ['Account Setup', 'Didit Verification', 'Personal Info', 'Complete']
       : ['Account Setup', 'Verification', 'Personal Info', 'For Review'];
 
     return (
@@ -806,18 +811,7 @@ const Register = () => {
   };
 
   return (
-    <AuthLayout 
-      visualImage="/auth_bg.jpg"
-      quote={step === 1 
-        ? "Justice is the first virtue of social institutions, as truth is of systems of thought."
-        : step === 2 
-        ? "In a government of laws, existence of the government will be imperilled if it fails to observe the law scrupulously."
-        : step === 3
-        ? "Equal justice under law is not merely a caption on the facade of the Supreme Court building, it is perhaps the most inspiring ideal of our society."
-        : "The first duty of society is justice."
-      }
-      author={step === 1 ? "John Rawls" : step === 2 ? "Justice Louis D. Brandeis" : step === 3 ? "Justice Lewis F. Powell Jr." : "Alexander Hamilton"}
-    >
+    <AuthLayout>
       <div className={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
           {step > 1 && step < 4 && (
@@ -825,13 +819,13 @@ const Register = () => {
               type="button" 
               onClick={handleBack}
               className={styles.backButton}
-              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: '0.25rem' }}
+              style={{ background: 'none', border: 'none', color: '#334155', cursor: 'pointer', padding: '0.25rem' }}
             >
               <ChevronLeft size={24} />
             </button>
           )}
           <h1 className={styles.title} style={{ margin: 0 }}>
-            {step === 1 ? 'Join LAYA' : step === 2 ? 'Verify Identity' : step === 3 ? 'Personal Details' : 'Verify Your Email'}
+            {step === 1 ? 'Join LAYA' : step === 2 ? 'Verify Identity' : step === 3 ? 'Personal Details' : 'Registration Complete'}
           </h1>
         </div>
         <p className={styles.subtitle}>
@@ -841,11 +835,11 @@ const Register = () => {
             ? (role === 'public' ? 'Use Didit to complete OCR and face match verification.' : 'Upload your professional documents to proceed')
             : step === 3
             ? 'Please confirm your details'
-            : 'Check your inbox to activate your account.'
+            : role === 'public' ? 'Your account is ready. You can now sign in.' : 'Your application has been submitted for review.'
           }
         </p>
         {errorMessage && (
-          <div style={{ marginTop: '0.75rem', color: '#fecaca', fontSize: '0.85rem' }}>{errorMessage}</div>
+          <div style={{ marginTop: '0.75rem', color: '#b42318', fontSize: '0.85rem' }}>{errorMessage}</div>
         )}
       </div>
 
@@ -927,7 +921,7 @@ const Register = () => {
                       <div
                         key={`${requirement.key}-${idx}`}
                         className={styles.passwordHintItem}
-                        style={{ color: '#fca5a5' }}
+                        style={{ color: '#b42318' }}
                       >
                         <AlertCircle size={12} />
                         <span>{requirement.label}</span>
@@ -955,8 +949,8 @@ const Register = () => {
           <div className={styles.fadeSlide} style={{ textAlign: 'center', padding: '2rem 0' }}>
             {role === 'public' ? (
               <>
-                <h3 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '1rem' }}>Verify easily with Didit</h3>
-                <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem', fontSize: '0.9rem' }}>
+                <h3 style={{ color: '#172b4d', fontSize: '1.25rem', marginBottom: '1rem' }}>Verify easily with Didit</h3>
+                <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.9rem' }}>
                   Start your Didit session and complete OCR + face match in the opened page.
                 </p>
 
@@ -973,11 +967,11 @@ const Register = () => {
                   </Button>
 
                   <div style={{ padding: '0.5rem 0', textAlign: 'center' }}>
-                    <div style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                    <div style={{ color: '#172b4d', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
                       Session status: <strong>{diditStatus.toUpperCase()}</strong>
                     </div>
                     {attemptId && (
-                      <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+                      <div style={{ color: '#64748b', fontSize: '0.8rem', wordBreak: 'break-all' }}>
                         Attempt ID: {attemptId}
                       </div>
                     )}
@@ -986,8 +980,8 @@ const Register = () => {
               </>
             ) : (
               <>
-                <h3 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '1rem' }}>Manual Verification Required</h3>
-                <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem', fontSize: '0.9rem' }}>
+                <h3 style={{ color: '#172b4d', fontSize: '1.25rem', marginBottom: '1rem' }}>Manual Verification Required</h3>
+                <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.9rem' }}>
                   Please upload a clear selfie and a picture of your valid IBP ID. <br/>
                   Our admins will verify your details against the Supreme Court database.
                 </p>
@@ -1073,7 +1067,7 @@ const Register = () => {
                   variant="outline" 
                   onClick={continueFromVerification}
                   disabled={!ibpIdFile || !selfieFile}
-                  style={{ width: '100%', border: '1px dashed rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)' }}
+                  style={{ width: '100%', border: '1px dashed #cbd5e1', color: '#475569' }}
                 >
                   Continue to Personal Details
                 </Button>
@@ -1256,9 +1250,9 @@ const Register = () => {
             </div>
 
             <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="streetAddress">House No., Street / Purok</label>
+              <label className={styles.label} htmlFor="streetAddress">Street Address</label>
               <div className={styles.inputWrapper}>
-                <input id="streetAddress" type="text" placeholder="123 Main St., Purok 4" className={`${styles.input} ${fieldErrors.streetAddress ? styles.inputError : ''}`} value={personalInfo.streetAddress || ''} onChange={(e) => {
+                <input id="streetAddress" type="text" placeholder="123 Main St., Neighborhood 4" className={`${styles.input} ${fieldErrors.streetAddress ? styles.inputError : ''}`} value={personalInfo.streetAddress || ''} onChange={(e) => {
                   setPersonalInfo((prev) => ({ ...prev, streetAddress: e.target.value }));
                   if (fieldErrors.streetAddress) {
                     setFieldErrors((prev) => ({ ...prev, streetAddress: undefined }));
@@ -1273,7 +1267,7 @@ const Register = () => {
                 type="button" 
                 variant="outline" 
                 size="lg" 
-                style={{ flex: 1, border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                style={{ flex: 1, border: '1px solid #dbe3ef', color: '#334155' }}
                 onClick={() => setStep(2)}
                 icon={ChevronLeft}
               >
@@ -1297,13 +1291,13 @@ const Register = () => {
         {step === 4 && (
           <div className={styles.fadeSlide} style={{ textAlign: 'center', padding: '2rem 0' }}>
             <CheckCircle2 size={52} color="#10b981" style={{ marginBottom: '1rem' }} />
-            <h3 style={{ color: '#fff', marginBottom: '0.75rem' }}>
-              {role === 'public' ? 'Email Verification Required' : 'Legal Registration Submitted'}
+            <h3 style={{ color: '#172b4d', marginBottom: '0.75rem' }}>
+              {role === 'public' ? 'Registration Complete!' : 'Application Submitted'}
             </h3>
-            <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '1.5rem' }}>
-              {emailVerificationNotice || (role === 'public'
-                ? 'We sent a verification email to your account.'
-                : 'Your legal aide account was created. Verify your email and wait for admin approval.')}
+            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
+              {registrationNotice || (role === 'public'
+                ? 'Your account has been successfully created. You can now log in with your email and password.'
+                : 'Your account is awaiting administrator review. You can sign in after your credentials are approved.')}
             </p>
             <Button type="button" variant="primary" onClick={() => navigate('/login')}>
               Go to Login

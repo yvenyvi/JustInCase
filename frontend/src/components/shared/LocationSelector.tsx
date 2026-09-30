@@ -27,7 +27,7 @@ interface LocationSelectorProps {
     city?: string;
     barangay?: string;
   };
-  /** 'auth' uses the dark registration-form appearance; 'default' uses the light triage appearance */
+  /** 'auth' uses the registration-form appearance; 'default' uses the light triage appearance */
   variant?: 'default' | 'auth';
 }
 
@@ -45,12 +45,12 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       ? {
           width: '100%',
           padding: '0.875rem 1rem',
-          backgroundColor: hasValue ? 'rgba(37, 99, 235, 0.05)' : 'rgba(255, 255, 255, 0.05)',
+          backgroundColor: hasValue ? 'rgba(37, 99, 235, 0.05)' : '#f7f9fc',
           border: hasValue
             ? '1px solid rgba(37, 99, 235, 0.5)'
-            : '1px solid rgba(255, 255, 255, 0.1)',
+            : '1px solid #dbe3ee',
           borderRadius: 'var(--radius-md)',
-          color: '#fff',
+          color: '#172b4d',
           fontFamily: 'inherit',
           fontSize: '1rem',
           appearance: 'none' as const,
@@ -66,13 +66,13 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           width: '100%',
         };
 
-  /** Dark background for each <option> so the dropdown popup stays dark in all browsers */
+  /** Keep dropdown options readable in both light and dark browser themes. */
   const optionStyle: React.CSSProperties = isAuth
-    ? { backgroundColor: '#101624', color: '#f0f4ff' }
+    ? { backgroundColor: '#fff', color: '#172b4d' }
     : {};
 
   const labelStyle: React.CSSProperties = isAuth
-    ? { fontSize: '0.875rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.01em' }
+    ? { fontSize: '0.875rem', fontWeight: 600, color: '#334155', letterSpacing: '0.01em' }
     : { fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' };
 
   const [regionData, setRegionData] = useState<any[]>([]);

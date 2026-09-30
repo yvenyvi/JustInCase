@@ -1,4 +1,119 @@
 .triageContainer {
+  width: min(100%, 900px);
+  margin: 0 auto;
+  padding: 0 0 2rem;
+  color: var(--color-text-main);
+}
+
+.pageHeader {
+  margin: 0 0 1rem;
+  text-align: left;
+}
+
+.pageTitle {
+  margin: 0.3rem 0;
+  color: var(--color-secondary);
+  font-size: clamp(1.55rem, 3vw, 2rem);
+}
+
+.pageSubtitle {
+  max-width: 66ch;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.stageIndicator {
+  max-width: 460px;
+  margin-top: 1rem;
+}
+
+.stageMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.stageTrack {
+  height: 4px;
+  margin-top: 0.45rem;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--color-border);
+}
+
+.stageTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: width 180ms ease;
+}
+
+.reviewFields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.reviewField {
+  display: block;
+  margin-top: 0.75rem;
+  color: var(--color-secondary);
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.reviewField textarea {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+  margin-top: 0.35rem;
+  padding: 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  color: var(--color-text-main);
+  background: var(--color-surface);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.reviewField textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.optionalDetails {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.optionalDetails summary {
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.optionalDetails .reviewFields {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .triageContainer {
+    padding-bottom: 1rem;
+  }
+
+  .stageMeta {
+    font-size: 0.72rem;
+  }
+}
+
+.triageContainer {
   max-width: 1100px;
   margin: 0 auto;
 }

@@ -78,8 +78,8 @@ const Login = () => {
         };
         const userRole = roleMap[profile?.role] || 'public';
 
-        // Block legal users who have not yet been approved by an admin
-        if (userRole === 'legal' && profile?.status_verification !== 'verified') {
+        // Match mobile auth: pending and unverified attorney accounts must wait for review.
+        if (userRole === 'legal' && ['pending', 'unverified'].includes(profile?.status_verification || '')) {
           await supabase.auth.signOut();
           setPendingVerification(true);
           return;
@@ -124,23 +124,23 @@ const Login = () => {
     <AuthLayout>
       <div className={styles.header}>
         <h1 className={styles.title}>Welcome Back</h1>
-        <p className={styles.subtitle}>Sign in to your LAYA account</p>
+        <p className={styles.subtitle}>Sign in to continue to your legal workspace.</p>
       </div>
 
       {pendingVerification && (
-        <div style={{ backgroundColor: 'rgba(217, 119, 6, 0.12)', border: '1px solid rgba(217, 119, 6, 0.4)', color: '#fcd34d', padding: '1rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+        <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', padding: '1rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
             <Clock size={17} />
             Account Pending Verification
           </div>
-          <p style={{ margin: 0, color: 'rgba(253, 230, 138, 0.85)', lineHeight: 1.5 }}>
+          <p style={{ margin: 0, color: '#92400e', lineHeight: 1.5 }}>
             Your attorney account has been submitted and is awaiting admin approval. You will be able to log in once your credentials have been reviewed.
           </p>
         </div>
       )}
 
       {error && (
-        <div style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', border: '1px solid rgba(220, 38, 38, 0.3)', color: '#fca5a5', padding: '0.75rem 1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+        <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#b42318', padding: '0.75rem 1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
           <AlertCircle size={18} />
           {error}
         </div>
@@ -154,11 +154,13 @@ const Login = () => {
           <div className={styles.inputWrapper}>
             <input
               id="email"
-              type="text"
+              type="email"
+              autoComplete="email"
               placeholder="e.g. juandelacruz@email.com or admin@justicelink.ph"
               className={styles.input}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
             <Mail className={styles.inputIcon} size={18} />
           </div>
@@ -170,6 +172,7 @@ const Login = () => {
             <input
               id="password"
               type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
               placeholder="••••••••"
               className={styles.input}
               value={password}

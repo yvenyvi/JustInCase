@@ -13,24 +13,37 @@ interface PublicLayoutProps {
 
 const PublicLayout = ({ user, navigationSections }: PublicLayoutProps) => {
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+
+  React.useEffect(() => setSidebarOpen(false), [location.pathname]);
+  React.useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
   
   // Find the active navigation item to get the page title
   const activeItem = navigationSections
     .flatMap(section => section.items)
     .find(item => location.pathname === item.path || (item.path !== '/public' && location.pathname.startsWith(item.path)));
   
-  const pageTitle = activeItem ? activeItem.label : 'LAYA';
+  const pageTitle = activeItem?.label
+    ?? (location.pathname.endsWith('/notifications') ? 'Notifications'
+      : location.pathname.endsWith('/profile') ? 'Profile'
+        : 'LAYA');
   
   // Ensure we check exactly for the messages route
   const isMessagesPage = location.pathname.endsWith('/messages') || location.pathname.includes('/messages/');
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} app-ambient-surface`}>
+      {sidebarOpen && <button className={styles.overlay} onClick={() => setSidebarOpen(false)} aria-label="Close navigation" />}
       {/* Desktop Sidebar */}
       <Sidebar 
         user={user} 
         sections={navigationSections} 
         className={styles.sidebar} 
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <div className={styles.mainWrapper}>
@@ -42,11 +55,12 @@ const PublicLayout = ({ user, navigationSections }: PublicLayoutProps) => {
             className={styles.header} 
             showBrand={false} 
             profileLink="/public/profile"
+            onMenuToggle={() => setSidebarOpen(open => !open)}
           />
         )}
 
         <main className={`${styles.mainContent} ${isMessagesPage ? styles.fullBleed : ''}`}>
-          <div className={styles.contentWrapper}>
+          <div className={`${styles.contentWrapper} app-page-frame ${isMessagesPage ? 'app-page-frame-fullbleed' : ''}`}>
             <Outlet />
           </div>
         </main>

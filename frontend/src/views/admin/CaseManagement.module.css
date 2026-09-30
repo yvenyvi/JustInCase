@@ -1,11 +1,11 @@
 .container {
-  padding: 1rem;
+  padding: 0;
   width: 100%;
 }
 
 @media (min-width: 640px) {
   .container {
-    padding: 1.5rem;
+    padding: 0;
   }
 }
 

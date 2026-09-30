@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, FileText, BookOpen, MessageSquare, ClipboardList, Clock, CheckCircle2, Loader2, HelpCircle, XCircle, Users, AlertTriangle, Star } from 'lucide-react';
+import { ArrowRight, FileText, ClipboardList, Clock, CheckCircle2, Loader2, HelpCircle, XCircle, Users, AlertTriangle, Star } from 'lucide-react';
 import styles from './PublicDashboard.module.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -123,8 +123,10 @@ const PublicDashboard = () => {
       .from('cases')
       .select('id, title, status, updated_at, client_feedback, attorney:attorney_id(first_name, last_name)')
       .eq('client_id', profile.id)
+      .in('status', ['In Progress', 'Hearing Scheduled', 'Demand Sent'])
+      .not('attorney_id', 'is', null)
       .order('updated_at', { ascending: false })
-      .limit(2);
+      .limit(1);
 
     if (!error && data) {
       const mapped: CaseItem[] = data.map((row: any) => ({
@@ -320,8 +322,8 @@ const PublicDashboard = () => {
     <div className={styles.dashboard}>
       {/* Greeting */}
       <div className={styles.greeting}>
-        <h1 className={styles.greetTitle}>Kumusta, {firstName}!</h1>
-        <p className={styles.greetSub}>Ano ang kailangan mo ngayon?</p>
+        <h1 className={styles.greetTitle}>Welcome back, {firstName}</h1>
+        <p className={styles.greetSub}>Explore legal guidance, request assistance, and keep track of your next steps.</p>
       </div>
 
       {/* Primary Action Cards — Full Width Grid */}
@@ -331,55 +333,23 @@ const PublicDashboard = () => {
             <ClipboardList size={28} />
           </div>
           <div className={styles.actionText}>
-            <h2>Humanap ng Legal Help</h2>
-            <p>Sagutin ang mga tanong para ma-match ka sa libreng abogado.</p>
+            <h2>Get legal help</h2>
+            <p>Tell us what is happening. Explore guidance first or request attorney assistance when you are ready.</p>
           </div>
           <ArrowRight size={20} className={styles.actionArrow} />
         </Link>
 
-        <Link to="/public/messages" className={`${styles.actionCard} ${styles.actionDefault}`}>
-          <div className={styles.actionIcon}>
-            <MessageSquare size={28} />
-          </div>
-          <div className={styles.actionText}>
-            <h2>Mga Mensahe</h2>
-            <p>Kausapin ang iyong assigned na attorney o support team.</p>
-          </div>
-          <ArrowRight size={20} className={styles.actionArrow} />
-        </Link>
-
-        <Link to="/public/documents" className={`${styles.actionCard} ${styles.actionDefault}`}>
-          <div className={styles.actionIcon}>
-            <FileText size={28} />
-          </div>
-          <div className={styles.actionText}>
-            <h2>Gumawa ng Legal Letter</h2>
-            <p>Gumawa ng demand letter o reklamo nang mabilis at libre.</p>
-          </div>
-          <ArrowRight size={20} className={styles.actionArrow} />
-        </Link>
-
-        <Link to="/public/rights" className={`${styles.actionCard} ${styles.actionDefault}`}>
-          <div className={styles.actionIcon}>
-            <BookOpen size={28} />
-          </div>
-          <div className={styles.actionText}>
-            <h2>Alamin ang Iyong Karapatan</h2>
-            <p>Mga madaling basahing guides tungkol sa batas ng Pilipinas.</p>
-          </div>
-          <ArrowRight size={20} className={styles.actionArrow} />
-        </Link>
       </div>
 
       {/* Cases Section */}
       <div className={styles.casesSection}>
         <div className={styles.sectionHeader}>
           <div className={styles.sectionTitleWrapper}>
-            <h2 className={styles.sectionTitle}>Mga Kaso Ko</h2>
+            <h2 className={styles.sectionTitle}>Your Cases</h2>
             {cases.length > 0 && <span className={styles.caseCount}>{cases.length}</span>}
           </div>
           <Link to="/public/cases" className={styles.viewAllLink}>
-            Tingnan Lahat <ArrowRight size={16} />
+            View all <ArrowRight size={16} />
           </Link>
         </div>
 
@@ -399,9 +369,9 @@ const PublicDashboard = () => {
         ) : cases.length === 0 ? (
           <div className={styles.emptyState}>
             <CheckCircle2 size={40} strokeWidth={1.5} />
-            <p>Wala kang kaso sa ngayon. Simulan ang Legal Help Assessment para makahanap ng abogado.</p>
-            <Link to="/public/triage" className={styles.createDocBtn}>
-              Simulan ang Assessment
+            <p>No active case with an assigned attorney yet. You can check existing requests or start a new assessment.</p>
+            <Link to="/public/cases" className={styles.createDocBtn}>
+              View my cases
             </Link>
           </div>
         ) : (
@@ -492,14 +462,14 @@ const PublicDashboard = () => {
       <div className={styles.documentsSection}>
         <div className={styles.sectionHeader}>
           <div className={styles.sectionTitleWrapper}>
-            <h2 className={styles.sectionTitle}>Mga Kamakailang Dokumento</h2>
+            <h2 className={styles.sectionTitle}>Recent Documents</h2>
             {generatedDocuments.length > 0 && (
               <span className={styles.caseCount}>{generatedDocuments.length}</span>
             )}
           </div>
           {generatedDocuments.length > 0 && (
             <button onClick={() => setIsDocumentsModalOpen(true)} className={styles.viewAllLink} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>
-              Tingnan Lahat <ArrowRight size={16} />
+              View all <ArrowRight size={16} />
             </button>
           )}
         </div>
@@ -521,9 +491,9 @@ const PublicDashboard = () => {
         ) : generatedDocuments.length === 0 ? (
           <div className={styles.emptyState}>
             <FileText size={40} strokeWidth={1.5} />
-            <p>Wala ka pang nagagawang dokumento.</p>
+            <p>You have not created any documents yet.</p>
             <Link to="/public/documents" className={styles.createDocBtn}>
-              Gumawa Ngayon
+              Create a document
             </Link>
           </div>
         ) : (
@@ -536,7 +506,7 @@ const PublicDashboard = () => {
                 <div className={styles.documentInfo}>
                   <h3 className={styles.documentName}>{doc.templateTitle}</h3>
                   <p className={styles.documentDate}>
-                    Gawa noong {getTimeAgo(doc.generatedAt)} ({formatDate(doc.generatedAt)})
+                    Created {getTimeAgo(doc.generatedAt)} ({formatDate(doc.generatedAt)})
                   </p>
                   <p className={styles.documentPreview}>{doc.preview}</p>
                 </div>

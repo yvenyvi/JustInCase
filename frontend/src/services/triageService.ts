@@ -190,6 +190,7 @@ const computeWeightedScore = (
   parts: {
     practice: number;
     location: number;
+    language: number;
     urgency: number;
     availability: number;
     proBono: number;

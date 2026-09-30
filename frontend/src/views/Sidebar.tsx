@@ -32,6 +32,7 @@ type SidebarProps = {
 
 const Sidebar = ({ sections = [], user, className = '', isOpen = false, onClose }: SidebarProps) => {
   const { profile } = useAuth();
+  const roleLabel = user?.role === 'public' ? 'Citizen' : user?.role === 'legal' ? 'Attorney' : user?.role === 'admin' ? 'Administrator' : user?.role;
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''} ${className}`}>
       <div className={styles.logoContainer}>
@@ -86,12 +87,12 @@ const Sidebar = ({ sections = [], user, className = '', isOpen = false, onClose 
             </div>
             <div className={styles.userMeta}>
               <span className={styles.userName}>{user.name}</span>
-              <span className={styles.userRole}>{user.role}</span>
+              <span className={styles.userRole}>{roleLabel}</span>
             </div>
           </div>
         )}
         <div className={styles.proBonoBadge}>
-          <span className={styles.badgeText}>Pro-Bono Portal</span>
+          <span className={styles.badgeText}>Legal support workspace</span>
         </div>
       </div>
     </aside>

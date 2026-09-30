@@ -6,7 +6,7 @@
   justify-content: space-between;
   padding: 0 var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.025);
   z-index: 10;
   gap: 0.75rem;
 }
@@ -63,7 +63,7 @@
 .pageTitle {
   font-size: 1rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-secondary);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -147,7 +147,7 @@
 }
 
 .userProfile:hover {
-  background-color: var(--color-background);
+  background-color: rgba(37, 99, 235, 0.055);
 }
 
 .userInfo {
@@ -174,7 +174,7 @@
 .userName {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--color-secondary);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;

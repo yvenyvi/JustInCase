@@ -4,18 +4,19 @@
   /* Brand colors - Shared */
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
+  --color-primary-light: #eff6ff;
 
   /* Theme-specific variables (Default: Light Mode) */
   --color-background: #f8fafc;
   --color-surface: #ffffff;
   --color-secondary: #0f172a;
   --color-text-main: #1e293b;
-  --color-text-muted: #475569;
+  --color-text-muted: #64748b;
   --color-text-inverse: #f8fafc;
   --color-text-inverse-muted: #cbd5e1;
   --color-border: #e2e8f0;
   --color-border-subtle: rgba(0, 0, 0, 0.05);
-  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow: rgba(100, 116, 139, 0.08);
 
   /* Status Colors (Shared) */
   --color-success: #10b981;
@@ -39,9 +40,10 @@
   --spacing-2xl: 4rem;
 
   /* Borders & Shadows */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
   --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
   --radius-full: 9999px;
 
   --shadow-sm: 0 1px 2px 0 var(--color-shadow);
@@ -85,7 +87,7 @@ body {
 h1 {
   font-family: var(--font-family-display);
   color: var(--color-secondary);
-  font-weight: 600;
+  font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;
 }
@@ -102,6 +104,48 @@ h6 {
 
 p {
   line-height: 1.65;
+}
+
+/* LAYA's mobile look: cool slate surfaces with quiet teal/indigo ambient color. */
+.app-ambient-surface {
+  background-image:
+    radial-gradient(ellipse 24rem 18rem at 2% -6%, rgba(20, 184, 166, 0.075), transparent 72%),
+    radial-gradient(ellipse 28rem 24rem at 102% 54%, rgba(99, 102, 241, 0.045), transparent 72%);
+}
+
+.app-page-frame {
+  width: min(100%, 1440px);
+  min-width: 0;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: clamp(1rem, 2.4vw, 2rem);
+}
+
+.app-page-frame-fullbleed {
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+input,
+textarea,
+select {
+  font-family: var(--font-family-base);
+  color: var(--color-text-main);
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='file']),
+textarea,
+select {
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .app-page-frame {
+    padding: 1rem;
+  }
 }
 
 a {

@@ -31,6 +31,11 @@ const NotificationBell: React.FC = () => {
   const ref = React.useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
+  const notificationsPath = profile?.role === 'public'
+    ? '/public/notifications'
+    : profile?.role === 'legal'
+      ? '/legal/notifications'
+      : null;
 
   const fetchNotifications = React.useCallback(async () => {
     if (!profile?.id) return;
@@ -121,7 +126,7 @@ const NotificationBell: React.FC = () => {
           <div style={{ maxHeight: 380, overflowY: 'auto' }}>
             {notifications.length === 0 ? (
               <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                Walang notification sa ngayon.
+                No notifications yet.
               </div>
             ) : (
               notifications.map(n => (
@@ -143,6 +148,14 @@ const NotificationBell: React.FC = () => {
               ))
             )}
           </div>
+          {notificationsPath && (
+            <button
+              onClick={() => { setOpen(false); navigate(notificationsPath); }}
+              style={{ width: '100%', padding: '.75rem 1rem', borderTop: '1px solid var(--color-border)', color: 'var(--color-primary)', fontWeight: 650, fontSize: '.82rem', textAlign: 'center', background: 'var(--color-surface)' }}
+            >
+              View all notifications
+            </button>
+          )}
         </div>
       )}
     </div>

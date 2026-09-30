@@ -37,3 +37,17 @@ checkout has no SQL files:
 Do not fabricate empty migrations or reset/push the linked database to address
 this gap. Recover the original SQL from version control or a trusted backup
 before attempting a full local/remote history reconciliation.
+
+On 2026-09-30, the linked staging database was verified to be missing the
+`public.users.terms_accepted_at` column despite the two historical migration
+records above. A single additive convergence migration,
+`20260930133105_ensure_terms_accepted_at.sql`, was applied to staging through
+Supabase MCP and recorded remotely. This restores the expected column without
+resetting or reconciling the older missing migration history. The missing SQL
+files still need recovery before a general `supabase db push` or reset.
+
+The terms update is restricted to `public.accept_terms()`, a security-definer
+RPC that derives the target user from `auth.uid()`. Its execution is revoked
+from `PUBLIC` and `anon` and granted only to `authenticated`, avoiding a broad
+self-update policy on user profiles. This RPC is recorded in
+`20260930133621_accept_terms_rpc.sql`.

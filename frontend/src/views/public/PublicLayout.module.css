@@ -1,7 +1,8 @@
 .container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Fixed height for dashboard */
+  height: 100dvh;
+  min-height: 0;
   width: 100%;
   background-color: var(--color-background);
   overflow: hidden;
@@ -16,41 +17,47 @@
 }
 
 .sidebar {
-  display: none; /* Hidden on mobile */
+  display: flex;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(2px);
 }
 
 .header {
-  height: 72px;
+  height: 76px;
   background-color: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
   z-index: 40;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
 }
 
 .mainContent {
   flex: 1;
-  padding: 1.5rem;
-  padding-bottom: 80px; /* Space for bottom nav */
+  padding: 0 0 80px; /* Keep content clear of the mobile tab bar. */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
 .mainContent.fullBleed {
-  padding: 0;
+  padding: 0 0 64px;
   overflow: hidden;
-  padding-bottom: 64px; /* Space for bottom nav on mobile Messages */
 }
 
 .mainContent.fullBleed .contentWrapper {
   max-width: none;
   margin: 0;
   height: 100%;
+  padding: 0;
 }
 
 .contentWrapper {
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
   flex: 1;
   display: flex;
@@ -107,13 +114,16 @@
     flex-shrink: 0;
   }
 
+  .overlay {
+    display: none;
+  }
+
   .bottomNav {
     display: none;
   }
 
   .mainContent {
-    padding: 2.5rem;
-    padding-bottom: 2.5rem;
+    padding-bottom: 0;
   }
 
   .mainContent.fullBleed {

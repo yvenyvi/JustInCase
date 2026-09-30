@@ -1,27 +1,23 @@
 import { ReactNode } from 'react';
 import styles from './auth.module.css';
+import JusticeIllustration from '../../components/JusticeIllustration';
 
 interface AuthLayoutProps {
   children: ReactNode;
-  visualImage?: string;
   quote?: string;
   author?: string;
 }
 
 const AuthLayout = ({ 
   children, 
-  visualImage = '/auth_bg.jpg', 
-  quote = "In a government of laws, existence of the government will be imperilled if it fails to observe the law scrupulously.",
-  author = "Justice Louis D. Brandeis"
+  quote = 'Mas malinaw na hakbang tungo sa tulong na kailangan mo.',
+  author = 'LAYA • Gabay sa legal na suporta'
 }: AuthLayoutProps) => {
   return (
     <div className={styles.authContainer}>
       {/* Visual Side */}
       <div className={styles.visualSide}>
-        <div 
-          className={styles.visualBg} 
-          style={{ backgroundImage: `url(${visualImage})` }}
-        />
+        <div className={styles.visualBg} aria-hidden="true" />
         <div className={styles.visualOverlay} />
         
         <div className={styles.brandContent}>
@@ -31,6 +27,10 @@ const AuthLayout = ({
           </div>
         </div>
 
+        <div className={styles.authArtwork} aria-hidden="true">
+          <JusticeIllustration />
+        </div>
+
         <div className={styles.visualFooter}>
           <p className={styles.quote}>"{quote}"</p>
           <p className={styles.author}>{author}</p>
@@ -38,11 +38,11 @@ const AuthLayout = ({
       </div>
 
       {/* Form Side */}
-      <div className={styles.formSide}>
+      <main className={styles.formSide}>
         <div className={styles.formContainer}>
           {children}
         </div>
-      </div>
+      </main>
     </div>
   );
 };

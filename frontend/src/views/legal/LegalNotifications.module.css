@@ -1,12 +1,12 @@
 .container {
-  padding: 1rem;
-  max-width: 680px;
+  padding: 0;
+  max-width: 1040px;
   width: 100%;
   margin: 0 auto;
 }
 
 @media (min-width: 640px) {
-  .container { padding: 1.5rem; }
+  .container { padding: 0; }
 }
 
 .header {

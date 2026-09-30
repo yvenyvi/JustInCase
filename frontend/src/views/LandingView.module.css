@@ -7,16 +7,11 @@
 
 /* Base Dark Section */
 .heroSection {
-  background-color: var(--color-secondary); /* Deep Dark */
-  color: var(--color-text-inverse); /* White */
   background:
-    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(180deg, #111111 0%, #0a0a0a 100%);
-  background-size:
-    40px 40px,
-    40px 40px,
-    100% 100%;
+    radial-gradient(circle at 82% 42%, rgba(37, 99, 235, 0.09), transparent 35%),
+    radial-gradient(circle at 10% 85%, rgba(14, 165, 142, 0.08), transparent 30%),
+    linear-gradient(135deg, #fbfdff 0%, #f3f8fd 55%, #f8fbf7 100%);
+  color: #172c43;
   padding: 0 5%;
   position: relative;
   overflow: hidden;
@@ -30,7 +25,7 @@
   content: "";
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px); /* Reduced blur for more visibility */
+  filter: blur(90px);
   z-index: 0;
   pointer-events: none;
 }
@@ -42,7 +37,7 @@
   height: 60vw;
   background: radial-gradient(
     circle,
-    rgba(37, 99, 235, 0.25) 0%,
+    rgba(37, 99, 235, 0.10) 0%,
     transparent 70%
   );
  /* Stronger orange */
@@ -55,7 +50,7 @@
   height: 55vw;
   background: radial-gradient(
     circle,
-    rgba(37, 99, 235, 0.35) 0%,
+    rgba(14, 165, 142, 0.08) 0%,
     transparent 70%
   ); /* Much stronger blue tint */
 }
@@ -66,7 +61,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(29, 62, 94, 0.1);
   position: relative;
   z-index: 2;
 }
@@ -86,7 +81,7 @@
   font-weight: 600;
   font-size: 2rem;
   font-family: var(--font-family-logo);
-  color: #fff;
+  color: #163451;
 }
 
 .navLinks {
@@ -95,13 +90,13 @@
 }
 
 .navLinks a {
-  color: var(--color-text-inverse-muted);
+  color: #64778b;
   font-size: 0.875rem;
   font-weight: 500;
 }
 
 .navLinks a:hover {
-  color: #fff;
+  color: #163451;
 }
 
 .navActions {
@@ -111,13 +106,13 @@
 }
 
 .authLink {
-  color: var(--color-text-inverse-muted);
+  color: #52677e;
   font-size: 0.875rem;
   font-weight: 500;
 }
 
 .authLink:hover {
-  color: #fff;
+  color: #163451;
 }
 
 /* Buttons */
@@ -134,12 +129,13 @@
 }
 
 .navButton {
-  background-color: #fff;
-  color: var(--color-secondary);
+  background-color: #2563eb;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
 }
 
 .navButton:hover {
-  background-color: #f1f5f9;
+  background-color: #1d4ed8;
 }
 
 .primaryButton {
@@ -167,15 +163,14 @@
 
 /* Hero Content */
 .heroContent {
-  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 4rem 0 2rem;
-  max-width: 800px;
-  margin: 0 auto;
+  align-items: flex-start;
+  text-align: left;
+  padding: 4rem 0;
+  max-width: 680px;
+  margin: 0;
   position: relative;
   z-index: 1;
 }
@@ -189,13 +184,12 @@
   letter-spacing: 0.05em;
   padding: 0.35rem 1rem;
   border-radius: var(--radius-full);
-  margin-bottom: 2rem;
+  margin-bottom: 1.35rem;
 }
 
 .badge {
-  color: var(--color-primary);
-  /* The design has transparent background with gold text initially */
-  background: transparent;
+  color: #2057a9;
+  background: #e8f1ff;
 }
 
 .badgeOrange {
@@ -220,11 +214,11 @@
   font-weight: 600;
   font-family: var(--font-family-display);
   line-height: 1.1;
-  color: #fff;
-  margin-bottom: 2rem;
+  color: #162d45;
+  margin-bottom: 1.35rem;
   letter-spacing: -0.01em;
-  text-align: center;
-  justify-content: center;
+  text-align: left;
+  justify-content: flex-start;
 }
 
 /* Secondary CTA in hero */
@@ -234,92 +228,109 @@
   font-weight: 600;
   font-size: 0.875rem;
   background-color: transparent;
-  color: rgba(255,255,255,0.8);
-  border: 1px solid rgba(255,255,255,0.25);
+  color: #294663;
+  border: 1px solid rgba(41, 70, 99, 0.24);
   transition: all var(--transition-fast);
 }
 
 .secondaryHeroBtn:hover {
-  background-color: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.5);
-  color: #fff;
+  background-color: rgba(37,99,235,0.06);
+  border-color: rgba(37,99,235,0.45);
+  color: #163451;
 }
 
 .heroSubtitle {
-  font-size: 1.125rem;
-  color: var(--color-text-inverse-muted);
-  max-width: 600px;
-  margin-bottom: 3rem;
-  line-height: 1.6;
+  font-size: 1.05rem;
+  color: #5d7188;
+  max-width: 570px;
+  margin: 0 0 2rem;
+  line-height: 1.75;
 }
 
 .heroActions {
   display: flex;
   gap: 1rem;
-  margin-bottom: 3rem;
+  margin-bottom: 1.4rem;
   position: relative;
   z-index: 2;
 }
 
-/* Hero Images */
-.heroImages {
-  display: flex;
-  gap: 1.5rem;
-  width: 90%;
-  max-width: 1100px;
+.heroBody {
+  width: min(100%, 1280px);
+  flex: 1;
   margin: 0 auto;
-  margin-top: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 0.92fr);
+  align-items: center;
+  gap: clamp(2rem, 5vw, 5rem);
   position: relative;
   z-index: 1;
-  overflow: hidden;
-  height: 320px;
 }
 
-.imageCard {
-  height: 400px; /* Taller than container so bottom is clipped */
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.25rem 1.25rem 0 0; /* Only top corners rounded */
-  overflow: hidden;
-  box-shadow: 0 -5px 40px -10px rgba(0, 0, 0, 0.4);
-  transition:
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.5s ease;
-}
-
-.imageCard:first-child {
-  flex: 3; /* Left image is wider (~60%) */
-}
-
-.imageCard:last-child {
-  flex: 2; /* Right image is narrower (~40%) */
-}
-
-.imageCard:hover {
-  transform: translateY(-8px);
-  box-shadow:
-    0 -10px 50px -8px rgba(37, 99, 235, 0.15),
-    0 -5px 40px -10px rgba(0, 0, 0, 0.4);
-}
-
-.placeholderImg1,
-.placeholderImg2 {
+.heroArtwork {
+  position: relative;
   width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
+  max-width: 610px;
+  justify-self: end;
 }
 
-.realImg {
+.justiceIllustration {
+  display: block;
   width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  transition: transform 6s ease;
+  height: auto;
+  overflow: visible;
 }
 
-.imageCard:hover .realImg {
-  transform: scale(1.08);
+.artworkCaption {
+  position: absolute;
+  right: 0;
+  bottom: 5%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  background: rgba(255,255,255,0.94);
+  border: 1px solid rgba(38, 73, 108, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 16px 35px rgba(34, 63, 91, 0.12);
+  color: #1b3652;
+}
+
+.artworkCaption strong,
+.artworkCaption small {
+  display: block;
+}
+
+.artworkCaption small {
+  margin-top: 0.2rem;
+  color: #71849a;
+  font-size: 0.75rem;
+}
+
+.captionIcon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #eaf2ff;
+  color: #2563eb;
+}
+
+.heroTrust {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #71849a;
+  font-size: 0.82rem;
+}
+
+.heroTrust span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #18a875;
+  box-shadow: 0 0 0 4px rgba(24,168,117,.11);
 }
 
 /* Info Section (Light Background - Now Theme Responsive) */
@@ -586,30 +597,6 @@
   line-height: 1.6;
 }
 
-/* ShinyText accent in impact heading */
-.shinyAccent {
-  -webkit-text-fill-color: #60a5fa;
-  background: linear-gradient(
-    120deg,
-    rgba(255,255,255,0) 30%,
-    rgba(255,255,255,0.9) 50%,
-    rgba(255,255,255,0) 70%
-  );
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: shine 4s linear infinite;
-}
-
-/* CountUp stat number */
-.statNumber {
-  font-size: 2.5rem;
-  font-weight: 600;
-  font-family: var(--font-family-display);
-  color: #fff;
-  letter-spacing: -0.02em;
-}
-
 /* Services Section */
 .servicesSection {
   background-color: var(--color-background);
@@ -804,36 +791,108 @@
   }
 }
 
-.impactImage {
-  height: 500px;
+.impactJourney {
+  min-height: 430px;
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   border-radius: var(--radius-lg);
-  background-size: cover;
-  background-position: center;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  background:
+    radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.2), transparent 36%),
+    linear-gradient(145deg, #142b45, #0c1928);
+  border: 1px solid rgba(148, 183, 220, 0.18);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
 }
 
-.impactStats {
+.impactJourney::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  background-image: radial-gradient(rgba(191, 219, 254, 0.55) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+.journeyEyebrow,
+.journeyStep,
+.journeyNote {
+  position: relative;
+  z-index: 1;
+}
+
+.journeyEyebrow {
+  margin: 0 0 1.25rem 0.2rem;
+  color: #93c5fd;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.journeyStep {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 3rem;
+  grid-template-columns: 46px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid rgba(191, 219, 254, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(8px);
 }
 
-.statBox h4 {
-  color: var(--color-primary);
-  font-size: 2.5rem;
-  font-weight: 600;
-  font-family: var(--font-family-display);
-  margin-bottom: 0.25rem;
-  letter-spacing: -0.02em;
+.journeyStep + .journeyStep {
+  margin-top: 0.75rem;
 }
 
-.statBox p {
-  color: var(--color-text-inverse-muted);
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
+.journeyIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: #bfdbfe;
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.journeyStep strong,
+.journeyStep small {
+  display: block;
+}
+
+.journeyStep strong {
+  color: #f4f8ff;
+  font-size: 0.95rem;
+}
+
+.journeyStep small {
+  margin-top: 0.3rem;
+  color: #b2c4d8;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.journeyNumber {
+  color: #93a9c2;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.journeyNote {
+  margin: 1rem 0 0 0.2rem;
+  color: #b7c8da;
+  font-size: 0.82rem;
+}
+
+.impactDescription {
+  max-width: 38rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
 /* Footer */
@@ -954,6 +1013,53 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .heroSection {
+    min-height: auto;
+    padding-bottom: 1.5rem;
+  }
+
+  .navbar {
+    gap: 0.75rem;
+    padding: 1rem 0;
+  }
+
+  .logoText {
+    font-size: 1.55rem;
+  }
+
+  .logoIcon {
+    width: 42px !important;
+    height: 36px !important;
+  }
+
+  .navActions {
+    display: flex;
+    gap: 0.65rem;
+  }
+
+  .authLink {
+    font-size: 0.78rem;
+  }
+
+  .navButton {
+    padding: 0.65rem 0.9rem;
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+
+  .heroBody {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .heroContent {
+    padding: 3.5rem 0 1rem;
+    align-items: center;
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
   .heroTitle {
     font-size: 2.5rem;
   }
@@ -963,13 +1069,63 @@
   }
 
   .heroActions {
-    flex-direction: column;
-    gap: 1rem;
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.75rem;
     width: 100%;
-    max-width: 300px;
+    max-width: 520px;
+    margin-bottom: 1.25rem;
   }
 
+  .heroSubtitle {
+    margin-bottom: 1.5rem;
+  }
+
+  .heroArtwork {
+    width: min(100%, 530px);
+    margin: 0 auto;
+  }
+
+  .heroTrust {
+    justify-content: center;
+  }
+
+  .artworkCaption {
+    right: 1%;
+    bottom: 3%;
+    padding: 0.7rem 0.85rem;
+  }
+}
+
+@media (max-width: 500px) {
   .navActions {
-    display: none;
+    gap: 0.45rem;
+  }
+
+  .authLink {
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .navButton {
+    padding: 0.6rem 0.72rem;
+    font-size: 0.7rem;
+  }
+
+  .heroTitleBlur {
+    font-size: clamp(2.15rem, 10vw, 3rem);
+  }
+
+  .heroActions {
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 330px;
+  }
+
+  .artworkCaption {
+    right: 0;
+    bottom: 1%;
+    transform: scale(0.88);
+    transform-origin: right bottom;
   }
 }

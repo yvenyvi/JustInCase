@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Briefcase, Clock, AlertCircle, ArrowRight, TrendingUp, Loader2, MessageSquare, BookOpen } from 'lucide-react';
+import { Users, Briefcase, Clock, AlertCircle, ArrowRight, TrendingUp, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,6 +12,7 @@ interface PendingCase {
   title: string;
   description: string;
   created_at: string;
+  status?: string;
 }
 
 const BADGE_MILESTONES = [
@@ -46,6 +47,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [activeCaseCount, setActiveCaseCount] = React.useState(0);
   const [pendingCases, setPendingCases] = React.useState<PendingCase[]>([]);
+  const [directRequests, setDirectRequests] = React.useState<PendingCase[]>([]);
+  const [unassignedCases, setUnassignedCases] = React.useState<PendingCase[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [verifiedHours, setVerifiedHours] = React.useState(0);
   const [totalHours, setTotalHours] = React.useState(0);
@@ -59,17 +62,31 @@ const Dashboard = () => {
     if (!profile?.id || !period) return;
     setIsLoading(true);
 
-    const [activeRes, pendingRes, logsRes] = await Promise.all([
+    const [activeRes, pendingRes, directRes, unassignedRes, logsRes] = await Promise.all([
       supabase
         .from('cases')
         .select('id', { count: 'exact', head: true })
         .eq('attorney_id', profile.id)
-        .eq('status', 'In Progress'),
+        .in('status', ['Pending Acceptance', 'In Progress', 'Hearing Scheduled', 'Demand Sent']),
       supabase
         .from('cases')
-        .select('id, title, description, created_at')
+        .select('id, title, description, created_at, status')
         .eq('attorney_id', profile.id)
         .eq('status', 'Pending Acceptance')
+        .order('created_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('cases')
+        .select('id, title, description, created_at, status')
+        .eq('attorney_id', profile.id)
+        .eq('status', 'Pending Triage')
+        .order('created_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('cases')
+        .select('id, title, description, created_at, status')
+        .is('attorney_id', null)
+        .eq('status', 'Pending Triage')
         .order('created_at', { ascending: false })
         .limit(5),
       supabase
@@ -81,6 +98,8 @@ const Dashboard = () => {
 
     setActiveCaseCount(activeRes.count || 0);
     if (!pendingRes.error && pendingRes.data) setPendingCases(pendingRes.data);
+    if (!directRes.error && directRes.data) setDirectRequests(directRes.data);
+    if (!unassignedRes.error && unassignedRes.data) setUnassignedCases(unassignedRes.data);
     if (!logsRes.error && logsRes.data) {
       const total = logsRes.data.reduce((s: number, l: any) => s + Number(l.hours), 0);
       const verified = logsRes.data.filter((l: any) => l.is_verified).reduce((s: number, l: any) => s + Number(l.hours), 0);
@@ -96,7 +115,7 @@ const Dashboard = () => {
     if (!profile?.id) return;
     const channel = supabase
       .channel(`legal-dashboard-${profile.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cases', filter: `attorney_id=eq.${profile.id}` }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, fetchData)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -108,26 +127,10 @@ const Dashboard = () => {
     <div className={styles.dashboard}>
       <div className={styles.pageHeader}>
         <div className={styles.pageHeading}>
-          <h1 className={styles.title}>Overview</h1>
-          <p className={styles.subtitle}>Welcome back, Atty. {firstName}. Narito ang iyong pro-bono impact ngayong buwan.</p>
+          <h1 className={styles.title}>Attorney workspace</h1>
+          <p className={styles.subtitle}>Welcome back, Atty. {firstName}. Review client requests, manage active cases, and access legal research.</p>
         </div>
       </div>
-
-      <section aria-labelledby="quick-actions-title" style={{ marginBottom: '1.5rem' }}>
-        <h2 id="quick-actions-title" style={{ fontSize: '.78rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--color-text-muted)', marginBottom: '.75rem' }}>Quick actions</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '.75rem' }}>
-          {[
-            { label: 'Review cases', detail: pendingCases.length ? `${pendingCases.length} awaiting review` : 'View your caseload', icon: Briefcase, path: '/legal/cases' },
-            { label: 'Open messages', detail: 'Continue client conversations', icon: MessageSquare, path: '/legal/messages' },
-            { label: 'Legal research', detail: 'Search cases and Republic Acts', icon: BookOpen, path: '/legal/library' },
-          ].map(action => (
-            <button key={action.label} onClick={() => navigate(action.path)} style={{ display: 'flex', alignItems: 'center', gap: '.8rem', textAlign: 'left', padding: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', cursor: 'pointer', color: 'var(--color-text)' }}>
-              <action.icon size={20} color="var(--color-primary)" />
-              <span><strong style={{ display: 'block' }}>{action.label}</strong><small style={{ color: 'var(--color-text-muted)' }}>{action.detail}</small></span>
-            </button>
-          ))}
-        </div>
-      </section>
 
       <div className={styles.statGrid}>
         <div className={`${styles.card} ${styles.statCard}`}>
@@ -189,20 +192,20 @@ const Dashboard = () => {
 
         <div className={`${styles.card} ${styles.statCard} ${styles.statCardWarning}`}>
           <div className={styles.statTopRow}>
-            <span className={styles.statLabel}>New Matches</span>
+            <span className={styles.statLabel}>Case Requests</span>
             <Users size={20} color="var(--color-warning)" />
           </div>
-          <div className={styles.statValue}>{isLoading ? <Skeleton style={{ height: 28, width: 44, borderRadius: 4, display: 'inline-block' }} /> : pendingCases.length}</div>
-          <div className={styles.activityMeta}>Awaiting your response</div>
+          <div className={styles.statValue}>{isLoading ? <Skeleton style={{ height: 28, width: 44, borderRadius: 4, display: 'inline-block' }} /> : pendingCases.length + directRequests.length + unassignedCases.length}</div>
+          <div className={styles.activityMeta}>Direct and open-network cases</div>
         </div>
       </div>
 
-      <div className={styles.twoColumnGrid}>
+      <div className={styles.requestOverview}>
         {/* Pending cases requiring action */}
         <div className={`${styles.card} ${styles.alertCard}`}>
           <div className={styles.alertTitleRow}>
             <AlertCircle size={24} color="var(--color-primary)" />
-            <h2 className={styles.alertTitle}>Kailangang Aksyunan</h2>
+            <h2 className={styles.alertTitle}>Requests to review</h2>
           </div>
 
           {isLoading ? (
@@ -216,12 +219,12 @@ const Dashboard = () => {
             </div>
           ) : pendingCases.length === 0 ? (
             <p className={styles.alertText} style={{ color: 'var(--color-text-muted)' }}>
-              Walang bagong case matches sa ngayon.
+              No new case requests need your review right now.
             </p>
           ) : (
             <>
               <p className={styles.alertText}>
-                Mayroon kang <strong>{pendingCases.length}</strong> bagong legal-help match{pendingCases.length > 1 ? 'es' : ''} na naghihintay ng iyong review.
+                <strong>{pendingCases.length}</strong> case request{pendingCases.length === 1 ? '' : 's'} are waiting for your review.
               </p>
               <div className={styles.alertList}>
                 {pendingCases.map((c) => (
@@ -237,7 +240,7 @@ const Dashboard = () => {
                       style={{ color: 'var(--color-primary)', fontSize: '0.8rem' }}
                       onClick={() => navigate('/legal/cases')}
                     >
-                      I-review ang Kaso <ArrowRight size={14} />
+                      Review request <ArrowRight size={14} />
                     </button>
                   </div>
                 ))}
@@ -250,27 +253,27 @@ const Dashboard = () => {
             style={{ width: '100%', marginTop: '1.5rem' }}
             onClick={() => navigate('/legal/cases')}
           >
-            Go to My Cases
+            Open case queue
           </button>
         </div>
 
-        {/* Placeholder for recent activity */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.sectionHeading}>Kamakailang Aktibidad</h2>
-          </div>
-          <div className={`${styles.cardBody} ${styles.listStack}`}>
-            {activeCaseCount === 0 && pendingCases.length === 0 && !isLoading ? (
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', padding: '1rem 0' }}>
-                Walang aktibidad pa. Tanggapin ang isang kaso para magsimula.
-              </p>
-            ) : (
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', padding: '1rem 0' }}>
-                {activeCaseCount} active · {pendingCases.length} pending review
-              </p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+        {[
+          { title: 'Direct requests', items: directRequests, empty: 'No direct requests at the moment.' },
+          { title: 'Open-network cases', items: unassignedCases, empty: 'No open-network cases are available right now.' },
+        ].map(section => (
+          <section key={section.title} className={styles.card} aria-label={section.title}>
+            <div className={styles.cardHeader}><h2 className={styles.sectionHeading}>{section.title}</h2><button className={styles.linkButton} onClick={() => navigate('/legal/cases')}>View all <ArrowRight size={14} /></button></div>
+            {isLoading ? <Skeleton style={{ height: 56, borderRadius: 8 }} /> : section.items.length === 0 ? <p style={{ color: 'var(--color-text-muted)', margin: '.75rem 0' }}>{section.empty}</p> : (
+              <div className={styles.listStack}>{section.items.map(item => <div key={item.id} className={styles.alertItem}>
+                <div className={styles.alertItemTop}><span className={styles.alertType}>{item.title}</span><span className={styles.alertMatch} style={{ fontSize: '.75rem', color: 'var(--color-text-muted)' }}>{new Date(item.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span></div>
+                <button className={styles.linkButton} onClick={() => navigate('/legal/cases')}>{section.title === 'Open-network cases' ? 'Browse available cases' : 'Review request'} <ArrowRight size={14} /></button>
+              </div>)}</div>
             )}
-          </div>
-        </div>
+          </section>
+        ))}
       </div>
     </div>
   );

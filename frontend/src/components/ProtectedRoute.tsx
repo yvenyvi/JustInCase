@@ -3,8 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useMaintenance } from '../contexts/MaintenanceContext';
 import MaintenancePage from './MaintenancePage';
-import TermsAndConditionsGate from './TermsAndConditionsGate';
-import { Loader2, Clock, ShieldCheck, LogOut } from 'lucide-react';
+import { Loader2, Clock, LogOut } from 'lucide-react';
 
 interface ProtectedRouteProps {
   allowedRoles?: Array<'public' | 'legal' | 'admin'>;
@@ -44,8 +43,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     }
 
     // Attorneys must be approved before accessing the legal dashboard
-    if (profile.role === 'legal' && profile.status_verification !== 'verified') {
-      const isRejected = profile.status_verification === 'rejected';
+    if (profile.role === 'legal' && ['pending', 'unverified'].includes(profile.status_verification)) {
       return (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -55,20 +53,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
           <div style={{
             width: 72, height: 72, borderRadius: '50%', display: 'flex', alignItems: 'center',
             justifyContent: 'center', marginBottom: '1.5rem',
-            background: isRejected ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+            background: 'rgba(245,158,11,0.1)',
           }}>
-            {isRejected
-              ? <ShieldCheck size={34} color="#ef4444" />
-              : <Clock size={34} color="#f59e0b" />
-            }
+            <Clock size={34} color="#f59e0b" />
           </div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-secondary)', margin: '0 0 0.75rem' }}>
-            {isRejected ? 'Application Not Approved' : 'Application Under Review'}
+            Account Under Review
           </h2>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', maxWidth: 420, lineHeight: 1.7, margin: '0 0 2rem' }}>
-            {isRejected
-              ? 'Your attorney account application was not approved. Please contact support at justicelink.ph@gmail.com for more information.'
-              : 'Your attorney account is pending admin review. You will be notified by email once approved. This usually takes 1–2 business days.'}
+            Your account is being reviewed by an administrator. You can sign in after the review is complete.
           </p>
           <button
             onClick={() => void signOut()}
@@ -86,10 +79,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     }
 
     // Terms and Conditions gate — every user must accept before entering their portal
-    if (!profile.terms_accepted_at) {
-      return <TermsAndConditionsGate />;
-    }
-
     // Show maintenance page for non-admin users when maintenance mode is active
     if (isMaintenanceMode && profile.role !== 'admin') {
       return <MaintenancePage />;

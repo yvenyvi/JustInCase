@@ -306,7 +306,7 @@ const AccountManagement = () => {
   const vBadge = (v: string) => VERIFICATION_BADGE[v] ?? VERIFICATION_BADGE.unverified;
 
   return (
-    <div className={styles.container} style={{ padding: '0 2rem' }}>
+    <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
         <div>

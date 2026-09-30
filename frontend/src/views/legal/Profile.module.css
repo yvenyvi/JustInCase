@@ -4,18 +4,18 @@
   gap: var(--spacing-lg);
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 var(--spacing-md);
+  padding: 0;
 }
 
 @media (min-width: 640px) {
   .container {
-    padding: 0 var(--spacing-lg);
+    padding: 0;
   }
 }
 
 @media (min-width: 1024px) {
   .container {
-    padding: 0 var(--spacing-xl);
+    padding: 0;
   }
 }
 

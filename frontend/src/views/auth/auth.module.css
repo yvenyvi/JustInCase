@@ -665,3 +665,383 @@
     font-size: 0.75rem;
   }
 }
+
+/* LAYA entry screens: calm, accessible surfaces with a custom vector identity. */
+.authContainer {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #f4f7fb;
+  color: #172b4d;
+}
+
+.visualSide {
+  display: block;
+  flex: 0 0 47%;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #eaf3ff;
+}
+
+.visualBg {
+  background:
+    radial-gradient(ellipse at 18% 18%, rgba(214, 240, 236, 0.9), transparent 45%),
+    linear-gradient(145deg, #eff6ff 0%, #f7fbff 52%, #e8f5f1 100%);
+}
+
+.visualOverlay {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.32));
+}
+
+.brandContent {
+  top: 2.25rem;
+  left: 3rem;
+}
+
+.logoText {
+  color: #183b60;
+  font-size: 1.65rem;
+  letter-spacing: 0.07em;
+}
+
+.authArtwork {
+  position: absolute;
+  inset: 14% 4% 15%;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+.authArtwork svg {
+  display: block;
+  width: min(100%, 620px);
+  max-height: 66vh;
+}
+
+.visualFooter {
+  bottom: 2.5rem;
+  left: 3rem;
+  right: 3rem;
+  z-index: 2;
+}
+
+.quote {
+  max-width: 34rem;
+  color: #1e3552;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.32;
+}
+
+.author {
+  color: #64748b;
+}
+
+.formSide {
+  flex: 1;
+  min-width: 0;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  background: #f7f9fc;
+}
+
+.formContainer {
+  max-width: 520px;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border: 1px solid #e5ebf3;
+  border-radius: 1.5rem;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(30, 58, 90, 0.09);
+}
+
+.header {
+  margin-bottom: 1.75rem;
+}
+
+.title {
+  color: #172b4d;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+.subtitle {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.label {
+  color: #334155;
+  font-weight: 600;
+}
+
+.input {
+  min-height: 48px;
+  border-color: #dbe3ee;
+  background: #f7f9fc;
+  color: #172b4d;
+  color-scheme: light;
+}
+
+.input option {
+  background: #fff;
+  color: #172b4d;
+}
+
+.input:focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.inputIcon,
+.passwordToggle {
+  color: #7b8ba1;
+}
+
+.passwordToggle:hover {
+  color: #2563eb;
+}
+
+.footerActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.forgotPassword,
+.switchLink {
+  color: #2563eb;
+  font-weight: 650;
+}
+
+.forgotPassword {
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.forgotPassword:hover,
+.switchLink:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.divider {
+  color: #94a3b8;
+}
+
+.divider::before,
+.divider::after {
+  border-color: #e5ebf3;
+}
+
+.switchAuth {
+  color: #64748b;
+  margin-top: 1.5rem;
+}
+
+.roleOption {
+  background: #fff;
+  border-color: #dbe3ee;
+}
+
+.roleOption:hover {
+  border-color: #93b4fb;
+  background: #f8fbff;
+}
+
+.roleActive {
+  background: #eff6ff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+}
+
+.roleActive .roleIcon,
+.roleIcon {
+  color: #52749c;
+}
+
+.roleActive .roleIcon {
+  color: #2563eb;
+}
+
+.roleLabel {
+  color: #23364d;
+}
+
+.fieldError {
+  color: #b42318;
+}
+
+.passwordHint,
+.uploadArea,
+.filePreview {
+  background: #f8fafc;
+  border-color: #dbe3ee;
+}
+
+.passwordHintTitle,
+.uploadText,
+.fileName {
+  color: #334155;
+}
+
+.passwordHintItem,
+.uploadSubtext {
+  color: #64748b;
+}
+
+.passwordHintItemOk {
+  color: #18864b;
+}
+
+.uploadArea:hover {
+  border-color: #8bb1fd;
+  background: #f5f9ff;
+}
+
+.uploadIcon,
+.removeFile {
+  color: #7890aa;
+}
+
+.verifStep {
+  background: #e2e8f0;
+}
+
+.verifStepActive {
+  background: #2563eb;
+}
+
+.aiShieldCard,
+.aiActionCard {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.aiShieldTitle,
+.aiActionTitle {
+  color: #1e293b;
+}
+
+.aiMatchLine,
+.instructionItem {
+  color: #64748b;
+}
+
+.instructionBox {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+@media (max-width: 900px) {
+  .visualSide {
+    flex-basis: 42%;
+  }
+
+  .brandContent {
+    left: 1.75rem;
+  }
+
+  .visualFooter {
+    left: 1.75rem;
+    right: 1.75rem;
+  }
+
+  .formSide {
+    padding: 1.5rem;
+  }
+
+  .formContainer {
+    padding: 1.75rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .authContainer {
+    flex-direction: column;
+  }
+
+  .visualSide {
+    flex: none;
+    width: 100%;
+    min-height: 208px;
+    height: 208px;
+  }
+
+  .brandContent {
+    top: 1rem;
+    left: 1.25rem;
+  }
+
+  .logo img {
+    width: 38px !important;
+    height: 34px !important;
+  }
+
+  .logoText {
+    font-size: 1.35rem;
+  }
+
+  .authArtwork {
+    inset: 2rem 0 -5rem auto;
+    width: min(60vw, 270px);
+    opacity: 0.92;
+  }
+
+  .authArtwork svg {
+    width: 100%;
+    max-height: none;
+  }
+
+  .visualFooter {
+    left: 1.25rem;
+    right: 36%;
+    bottom: 1rem;
+  }
+
+  .quote {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .author {
+    margin: 0;
+    font-size: 0.65rem;
+  }
+
+  .formSide {
+    flex: 1;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .formContainer {
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .visualSide {
+    min-height: 188px;
+    height: 188px;
+  }
+
+  .visualFooter {
+    right: 31%;
+  }
+
+  .quote {
+    font-size: 0.9rem;
+  }
+
+  .formSide {
+    padding: 0.75rem;
+  }
+
+  .formContainer {
+    padding: 1.25rem 1rem;
+  }
+}

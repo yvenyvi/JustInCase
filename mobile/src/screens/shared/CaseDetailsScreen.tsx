@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useRoute, RouteProp, useIsFocused } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as WebBrowser from 'expo-web-browser';
 import { RootStackParamList } from '../../navigation/types';
 import { mobileSupabase } from '../../shared/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -56,6 +57,7 @@ export default function CaseDetailsScreen() {
   const [confirmConfig, setConfirmConfig] = useState({ visible: false, title: '', message: '', confirmText: '', onConfirm: () => {} });
 
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [openingDocumentId, setOpeningDocumentId] = useState<string | null>(null);
   const [isResearching, setIsResearching] = useState(false);
   const [isTimeLogsExpanded, setIsTimeLogsExpanded] = useState(false);
   
@@ -192,11 +194,12 @@ export default function CaseDetailsScreen() {
   const { data: caseDocuments = [], isLoading: isLoadingDocs } = useQuery({
     queryKey: ['caseDocuments', caseId],
     queryFn: async () => {
-      const { data: docs } = await mobileSupabase
+      const { data: docs, error } = await mobileSupabase
         .from('case_documents')
         .select('*')
         .eq('case_id', caseId)
         .order('created_at', { ascending: false });
+      if (error) throw error;
       return docs || [];
     },
     enabled: !!caseId
@@ -316,6 +319,44 @@ export default function CaseDetailsScreen() {
       Toast.show({ type: 'error', text1: 'Upload Failed', text2: err.message || 'Could not upload document.' });
     } finally {
       setIsUploadingDoc(false);
+    }
+  };
+
+  const handleOpenCaseDocument = async (document: (typeof caseDocuments)[number]) => {
+    setOpeningDocumentId(document.id);
+    try {
+      // New rows contain a storage object path. Also accept legacy public URLs
+      // so files uploaded before the bucket was made private remain reachable.
+      const storedValue = document.file_url;
+      const publicPrefix = '/storage/v1/object/public/case-documents/';
+      const objectPath = storedValue.includes(publicPrefix)
+        ? decodeURIComponent(storedValue.split(publicPrefix)[1]?.split('?')[0] ?? '')
+        : storedValue;
+      if (!objectPath || /^https?:\/\//i.test(objectPath)) {
+        throw new Error('This document link is no longer available. Please ask the uploader to share it again.');
+      }
+
+      const { data, error } = await mobileSupabase.storage
+        .from('case-documents')
+        .createSignedUrl(objectPath, 60 * 5, { download: document.file_name });
+      if (error || !data?.signedUrl) throw error || new Error('Could not create a secure document link.');
+      await WebBrowser.openBrowserAsync(data.signedUrl);
+    } catch (error: any) {
+      const status = Number(error?.statusCode || error?.status || 0);
+      const message = status === 401 || status === 403
+        ? 'You do not have permission to access this case document.'
+        : status === 404
+          ? 'This document could not be found. Ask the uploader to share it again.'
+          : error?.message?.toLowerCase?.().includes('network')
+            ? 'Check your internet connection and try again.'
+            : 'The document could not be opened. Please try again.';
+      Toast.show({
+        type: 'error',
+        text1: 'Unable to open document',
+        text2: message,
+      });
+    } finally {
+      setOpeningDocumentId(null);
     }
   };
 
@@ -754,7 +795,7 @@ export default function CaseDetailsScreen() {
           </View>
           <View style={styles.card}>
             {caseDocuments.length > 0 ? caseDocuments.map((doc, index) => (
-              <View key={doc.id} style={[styles.logItem, index > 0 && styles.logItemBorder]}>
+              <Pressable key={doc.id} onPress={() => handleOpenCaseDocument(doc)} accessibilityRole="button" accessibilityLabel={`Open ${doc.file_name}`} disabled={openingDocumentId === doc.id} style={[styles.logItem, index > 0 && styles.logItemBorder, { opacity: openingDocumentId === doc.id ? 0.65 : 1 }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                   <View style={styles.docIconBox}>
                     <Ionicons name="document-text" size={20} color={theme.colors.primary} />
@@ -763,8 +804,11 @@ export default function CaseDetailsScreen() {
                     <Text style={styles.docTitle} numberOfLines={1}>{doc.file_name}</Text>
                     <Text style={styles.docDate}>{new Date(doc.created_at).toLocaleDateString()}</Text>
                   </View>
+                  {openingDocumentId === doc.id
+                    ? <ActivityIndicator size="small" color={theme.colors.primary} />
+                    : <Ionicons name="open-outline" size={19} color={theme.colors.primary} />}
                 </View>
-              </View>
+              </Pressable>
             )) : (
               <View style={{ alignItems: 'center', paddingVertical: 22, paddingHorizontal: 16 }}>
                 <Ionicons name="documents-outline" size={28} color={theme.typography.caption.color} />

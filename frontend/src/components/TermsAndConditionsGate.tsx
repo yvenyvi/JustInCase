@@ -8,13 +8,21 @@ const TermsAndConditionsGate: React.FC = () => {
   const { acceptTerms, signOut } = useAuth();
   const [checked, setChecked] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [acceptanceError, setAcceptanceError] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleAccept = async () => {
     if (!checked) return;
     setIsAccepting(true);
-    await acceptTerms();
-    // Profile state updates in AuthContext; gate unmounts automatically.
+    setAcceptanceError('');
+    try {
+      await acceptTerms();
+      // Profile state updates in AuthContext; gate unmounts automatically.
+    } catch (error) {
+      setAcceptanceError(error instanceof Error ? error.message : 'We could not save your acceptance. Please try again.');
+    } finally {
+      setIsAccepting(false);
+    }
   };
 
   return (
@@ -157,6 +165,7 @@ const TermsAndConditionsGate: React.FC = () => {
           </label>
 
           {/* Action buttons */}
+          {acceptanceError && <p role="alert" style={{ margin: 0, color: 'var(--color-error, #b91c1c)', fontSize: '.875rem' }}>{acceptanceError}</p>}
           <div style={{
             display: 'flex',
             alignItems: 'center',

@@ -61,7 +61,10 @@ const MainLayout = ({ user, navigationSections, activePageTitle }: MainLayoutPro
     .flatMap(section => section.items)
     .find(item => location.pathname === item.path || (item.path !== '/legal' && item.path !== '/admin' && location.pathname.startsWith(item.path)));
 
-  const displayTitle = activeItem ? activeItem.label : activePageTitle;
+  const displayTitle = activeItem?.label
+    ?? (location.pathname.endsWith('/notifications') ? 'Notifications'
+      : location.pathname.endsWith('/profile') ? 'Profile'
+        : activePageTitle);
   const isMessagesPage = location.pathname.includes('/messages');
 
   return (
@@ -82,7 +85,7 @@ const MainLayout = ({ user, navigationSections, activePageTitle }: MainLayoutPro
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className={styles.contentWrapper}>
+      <div className={`${styles.contentWrapper} app-ambient-surface`}>
         <Header
           user={user}
           pageTitle={displayTitle}
@@ -92,7 +95,7 @@ const MainLayout = ({ user, navigationSections, activePageTitle }: MainLayoutPro
           onMenuToggle={() => setSidebarOpen(prev => !prev)}
         />
         <main className={`${styles.mainContent} ${isMessagesPage ? styles.fullBleed : ''}`}>
-          <div className="animate-enter">
+          <div className={`app-page-frame animate-enter ${isMessagesPage ? 'app-page-frame-fullbleed' : ''}`}>
             <Outlet />
           </div>
         </main>

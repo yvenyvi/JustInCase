@@ -35,11 +35,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <AuthLayout
-      visualImage="/auth_bg.jpg"
-      quote="The quality of mercy is not strained; It droppeth as the gentle rain from heaven."
-      author="William Shakespeare, The Merchant of Venice"
-    >
+    <AuthLayout>
       <div className={styles.header}>
         <h1 className={styles.title}>Reset Password</h1>
         <p className={styles.subtitle}>We'll send you instructions to reset your password</p>

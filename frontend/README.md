@@ -1,16 +1,31 @@
-# React + Vite
+# JusticeLink Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite web portals for citizens, attorneys, and administrators. The web app remains supported while current feature development prioritizes the mobile client. Citizen and attorney case views support case management, legal research, participant messaging, and case-file access using short-lived signed links for private uploads.
 
-Currently, two official plugins are available:
+## Local setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+From this directory, create a `.env` file with the appropriate project values:
 
-## React Compiler
+```text
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<supabase-anon-key>
+VITE_BACKEND_URL=http://localhost:8000
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Install dependencies with `npm install`. Start the Vite development server with:
 
-## Expanding the ESLint configuration
+```powershell
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Start the API separately from the repository root with `./dev.ps1 start` (this also starts Expo), or use the instructions in [backend/README.md](../backend/README.md).
+
+## Useful commands
+
+```powershell
+npm run build
+npm run lint
+npm run test:e2e
+```
+
+E2E tests require the configured backend, Supabase project, and test accounts described by the test setup. A successful build is not a substitute for checking authenticated role-specific workflows.

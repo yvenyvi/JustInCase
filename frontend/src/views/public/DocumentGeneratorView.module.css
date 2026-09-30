@@ -344,6 +344,171 @@
   text-align: center;
 }
 
+.drafterPage {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  padding: 0 0 2rem;
+  color: var(--color-text-main);
+}
+
+.drafterHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.drafterTitle {
+  margin: 0.3rem 0;
+  font-size: clamp(1.55rem, 3vw, 2rem);
+}
+
+.drafterSubtitle {
+  max-width: 62ch;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.assistantPanel,
+.draftPanel {
+  overflow: hidden;
+}
+
+.assistantHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-secondary);
+  font-weight: 700;
+}
+
+.assistantHeader span {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.conversationHistory {
+  min-height: min(42vh, 420px) !important;
+  max-height: 58vh !important;
+  padding: clamp(1rem, 3vw, 1.5rem) !important;
+  background: #fbfcfe;
+}
+
+.draftComposer textarea {
+  min-height: 48px;
+  max-height: 180px;
+  border-color: var(--color-border) !important;
+  background: var(--color-surface);
+}
+
+.draftComposer textarea:focus {
+  outline: none;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.draftEditorLabel {
+  display: block;
+  margin-top: 1.25rem;
+  color: var(--color-secondary);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.draftEditorLabel span {
+  display: block;
+  margin: 0.2rem 0 0.55rem;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+
+.draftEditor {
+  display: block;
+  width: 100%;
+  min-height: min(58vh, 640px);
+  padding: 1.15rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: #fbfcfe;
+  color: var(--color-text-main);
+  font: inherit;
+  line-height: 1.75;
+  resize: vertical;
+}
+
+.draftEditor:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.exportMenu {
+  position: relative;
+}
+
+.exportMenu summary {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  background: white;
+  color: var(--color-text-main);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 650;
+  list-style: none;
+}
+
+.exportMenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.exportOptions {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  display: grid;
+  min-width: 170px;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: white;
+  box-shadow: var(--shadow-md);
+}
+
+.exportOptions button {
+  justify-content: flex-start !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 640px) {
+  .drafterHeader {
+    flex-direction: column;
+  }
+
+  .draftComposer {
+    align-items: flex-end;
+  }
+
+  .exportOptions {
+    right: auto;
+    left: 0;
+  }
+}
+
 @media (max-width: 768px) {
   .formCard,
   .resultCard,

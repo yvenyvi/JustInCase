@@ -5,22 +5,15 @@
   padding: 0;
 }
 
-@media (min-width: 640px) {
-  .dashboard {
-    padding: 0 0.5rem;
-  }
+.requestOverview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 0.25rem;
 }
 
 @media (min-width: 768px) {
   .dashboard {
-    padding: 0 1rem;
     gap: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .dashboard {
-    padding: 0 2rem;
   }
 }
 
@@ -40,7 +33,7 @@
 
 .title {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 800;
   font-family: var(--font-family-display);
   color: var(--color-secondary);
   line-height: 1.1;
@@ -156,9 +149,9 @@
 
 .card {
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(226, 232, 240, 0.82);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 10px rgba(100, 116, 139, 0.055);
   overflow: hidden;
 }
 
@@ -189,15 +182,19 @@
 
 .statCard {
   padding: 1.5rem;
-  border-left: 4px solid var(--color-primary);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-xl);
+  background: #eff6ff;
 }
 
 .statCardSuccess {
-  border-left-color: var(--color-success);
+  border-color: #bbf7d0;
+  background: #f0fdf4;
 }
 
 .statCardWarning {
-  border-left-color: var(--color-warning);
+  border-color: #e9d5ff;
+  background: #f5f3ff;
 }
 
 .statTopRow {
@@ -218,7 +215,7 @@
 
 .statValue {
   font-size: 2.4rem;
-  font-weight: 600;
+  font-weight: 800;
   font-family: var(--font-family-display);
   color: var(--color-secondary);
   line-height: 1;

@@ -1,49 +1,45 @@
-# JusticeLink
+# JusticeLink (LAYA)
 
-JusticeLink is a modern legal tech platform designed to bridge the gap between the public and legal professionals in the Philippines.
+JusticeLink, branded in the app as LAYA, connects people seeking legal help with attorneys in the Philippines. This repository contains the Expo mobile app, React web portals, FastAPI backend, and Supabase schema/migrations. Current product work prioritizes the mobile app while keeping web workflows aligned.
 
-This repository contains the full stack implementation, with a major focus currently on the **Mobile Application** built with React Native (Expo).
+## Main capabilities
 
-## Current Progress: Mobile App
+- Role-based citizen, attorney, and administrator experiences.
+- Conversational AI triage, assessment review, and attorney matching.
+- Case lifecycle management, participant messaging, time logging, and review of logged hours.
+- Private case-document uploads, visible to case participants through short-lived signed links.
+- Legal Library research, including curated rights guides, Juris legal research, and Open Congress pending bills.
+- AI-assisted legal document drafting and saved drafts.
+- Profile management, notifications, and attorney verification workflows.
 
-The mobile application is undergoing rapid development. Here is the current state of the implemented features:
+## Repository layout
 
-### 🚀 Core Features & UI
-* **Authentication Flow:** Complete login and registration screens connected to Supabase Auth.
-* **Role-Based Routing:** Seamless navigation for different user types (Public End-Users, Legal Professionals).
-* **Modern Design System:** A clean, gap-free, and responsive UI heavily utilizing Tailwind-inspired utility styling and React Native flexbox.
+- `mobile/` — Expo / React Native application.
+- `frontend/` — React web application and role-based portals.
+- `backend/` — FastAPI services for AI workflows and integrations.
+- `supabase/` — current SQL migrations and migration-history notes.
+- `documentation/` — user, feature, and project documentation.
 
-### 🤖 AI-Powered Tools
-* **Interactive AI Document Drafter (`DocumentGeneratorScreen`):** 
-  * A conversational chat interface where users explain their legal situation.
-  * The AI backend actively gathers missing information through follow-up questions.
-  * Once sufficient data is collected, the system generates a fully formatted legal document (e.g., Barangay Complaints).
-  * **Recent Fixes:** Fully optimized Android keyboard behavior (custom offset tracking for gap-free and clip-free chat interactions).
-* **AI Triage System (`TriageScreen`):** Initial conversational interface for evaluating user situations and suggesting immediate legal next steps.
+## Local development
 
-### ⚖️ Legal Professional Dashboard
-* **Case Management (`LegalCasesScreen`, `LegalCaseDetailsScreen`):** UI for lawyers to view available cases, active engagements, and detailed case information.
-* **Dashboard Overview (`LegalDashboardScreen`):** At-a-glance statistics and recent activities for the logged-in professional.
+Install the root and app dependencies, configure the required environment values from the relevant `.env.example` files, then use the repository launcher:
 
-### 💬 Communication
-* **Messaging System (`ChatThreadScreen`):** Real-time chat interface connecting end-users and assigned legal professionals, equipped with the same highly-optimized Android keyboard avoidance architecture used in the AI Drafter.
-
-## Tech Stack
-
-* **Frontend:** React Native, Expo, React Navigation
-* **Backend:** Python (FastAPI) for AI endpoints and business logic
-* **Database & Auth:** Supabase (PostgreSQL)
-
-## Running the App Locally
-
-Ensure you have your environment variables set up in the `.env` files (both root and `mobile/`).
-
-To start the full stack environment (Backend + Expo Mobile App):
 ```powershell
-.\dev.ps1 start
+./dev.ps1 start
 ```
 
-## Next Steps / Active Development
-- Refining the prompt logic for specific document generation (e.g., ensuring Barangay Complaints address the barangay generically rather than specific placeholders).
-- Finalizing the connection between the AI Triage system and the lawyer-matching database.
-- Enhancing real-time WebSocket subscriptions for the messaging system.
+To start Android emulators using the launcher:
+
+```powershell
+./dev.ps1 emulators
+```
+
+The backend and web app can also be started independently with the root npm scripts. See [mobile/README.md](mobile/README.md), [frontend/README.md](frontend/README.md), and [backend/README.md](backend/README.md) for component-specific details.
+
+## Database migration caution
+
+The linked Supabase project contains older applied migrations whose original SQL files are not present in this checkout. Review [supabase/migrations/README.md](supabase/migrations/README.md) before changing migration history. Do not reset the linked project or push a reconstructed migration chain until the missing SQL is recovered and reviewed.
+
+## Verification
+
+Useful checks are available through the root and component package scripts. Emulator/system testing should be performed explicitly as part of a test session; a successful static build does not substitute for validating real authenticated role workflows.

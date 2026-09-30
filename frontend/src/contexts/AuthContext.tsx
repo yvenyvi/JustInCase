@@ -151,9 +151,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const acceptTerms = async () => {
-    if (!user?.id) return;
-    const now = new Date().toISOString();
-    await supabase.from('users').update({ terms_accepted_at: now }).eq('id', user.id);
+    if (!user?.id) throw new Error('Your session has expired. Sign in again to accept the terms.');
+    const { data, error } = await supabase.rpc('accept_terms');
+    if (error || !data) throw new Error('We could not save your acceptance. Please try again.');
+    const now = typeof data === 'string' ? data : new Date().toISOString();
     // Update local profile state immediately so the gate dismisses without a refetch
     setProfile(prev => prev ? { ...prev, terms_accepted_at: now } : prev);
   };

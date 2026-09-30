@@ -1,13 +1,13 @@
 /* ── Mobile: off-screen drawer ── */
 .sidebar {
-  width: 280px;
+  width: 272px;
   background-color: var(--color-surface);
   color: var(--color-text-main);
   display: flex;
   flex-direction: column;
   height: 100vh;
   border-right: 1px solid var(--color-border);
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.03);
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.045);
   position: fixed;
   top: 0;
   left: 0;
@@ -63,7 +63,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 2rem 1.5rem 1.75rem;
+  padding: 1.5rem 1.35rem 1.25rem;
   margin-bottom: 0.5rem;
   overflow: hidden;
   border-bottom: 1px solid var(--color-border);
@@ -95,8 +95,8 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  padding: 0 1rem;
-  gap: 1.5rem;
+  padding: 0 0.85rem;
+  gap: 1.25rem;
   overflow-y: auto;
 }
 
@@ -120,12 +120,12 @@
   display: flex;
   align-items: center;
   gap: 0.875rem;
-  padding: 0.75rem 0.875rem;
+  padding: 0.68rem 0.8rem;
   color: var(--color-text-muted);
   border-radius: var(--radius-md);
   text-decoration: none;
   font-weight: 500;
-  font-size: 0.9375rem;
+  font-size: 0.9rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
@@ -149,15 +149,15 @@
 }
 
 .navItem.active {
-  background-color: var(--color-primary);
-  color: white !important;
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--color-primary) !important;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 .navItem.active:hover {
-  background-color: var(--color-primary-hover);
-  color: white !important;
+  background-color: rgba(37, 99, 235, 0.14);
+  color: var(--color-primary-hover) !important;
 }
 
 .navItem.active::before {
@@ -167,7 +167,7 @@
   top: 20%;
   bottom: 20%;
   width: 3px;
-  background-color: white;
+  background-color: var(--color-primary);
   border-radius: 0 4px 4px 0;
   opacity: 0.6;
 }
@@ -209,12 +209,12 @@
 }
 
 .footer {
-  padding: 1.5rem;
+  padding: 1rem;
   border-top: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: rgba(15, 23, 42, 0.018);
 }
 
 .userBlock {
