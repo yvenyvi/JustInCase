@@ -7,6 +7,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
+import { mobileSupabase } from '../../shared/supabase';
+import { formatPersonName } from '../../shared/personName';
 
 export default function DocumentFormScreen() {
   const navigation = useNavigation<any>();
@@ -18,6 +20,30 @@ export default function DocumentFormScreen() {
 
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
+
+  React.useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId || !template) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await mobileSupabase
+        .from('users')
+        .select('first_name, middle_name, last_name, suffix, street_address, barangay, city_municipality, province')
+        .eq('id', userId)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      const address = [data.street_address, data.barangay, data.city_municipality, data.province].filter(Boolean).join(', ');
+      const defaults: Record<string, string> = {};
+      if (template.required_fields?.some((field: any) => field.key === 'sender_name') || template.optional_fields?.some((field: any) => field.key === 'sender_name')) {
+        defaults.sender_name = formatPersonName(data.first_name, data.middle_name, data.last_name, data.suffix);
+      }
+      if (address && (template.required_fields?.some((field: any) => field.key === 'sender_address') || template.optional_fields?.some((field: any) => field.key === 'sender_address'))) {
+        defaults.sender_address = address;
+      }
+      setFormValues(current => ({ ...defaults, ...current }));
+    })();
+    return () => { cancelled = true; };
+  }, [session?.user?.id, template]);
 
   if (!template) {
     return (

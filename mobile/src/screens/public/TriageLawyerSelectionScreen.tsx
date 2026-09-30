@@ -199,7 +199,7 @@ export default function TriageLawyerSelectionScreen() {
                 )}
                 
                 <View style={styles.cardHeader}>
-                  <ProfileAvatar uri={lawyer.selfie_url} firstName={lawyer.first_name} lastName={lawyer.last_name} style={[styles.lawyerAvatarModern, styles.avatarFallback]} textStyle={styles.avatarFallbackText} />
+                  <ProfileAvatar uri={lawyer.profile_photo_url} firstName={lawyer.first_name} lastName={lawyer.last_name} style={[styles.lawyerAvatarModern, styles.avatarFallback]} textStyle={styles.avatarFallbackText} />
                   
                   <View style={styles.lawyerInfo}>
                     <Text style={[styles.lawyerName, isSelected && styles.selectedTextPrimary]}>Atty. {lawyer.first_name} {lawyer.last_name}</Text>

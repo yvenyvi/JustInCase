@@ -41,6 +41,7 @@ CREATE TABLE users (
     status_verification verification_status DEFAULT 'unverified',
     id_picture_url TEXT,
     selfie_url TEXT,
+    profile_photo_url TEXT,
 
     -- Legal Professional Details
     firm_name VARCHAR(150),
@@ -67,6 +68,17 @@ CREATE TABLE cases (
     ai_summary TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Private case attachments. RLS rules live in backend/sql/rls_policies.sql.
+CREATE TABLE case_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+    uploaded_by UUID REFERENCES auth.users(id),
+    file_name TEXT NOT NULL,
+    file_url TEXT NOT NULL,
+    file_size BIGINT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 
@@ -187,3 +199,5 @@ CREATE TABLE user_documents (
     template_slug VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE user_documents ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE user_documents FROM PUBLIC, anon, authenticated;

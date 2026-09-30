@@ -13,7 +13,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { API_BASE_URL } from '../../shared/api';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { formatPersonName } from '../../shared/personName';
-import { uploadProfilePhoto } from '../../shared/profilePhotoUpload';
+import { removeProfilePhoto, uploadProfilePhoto } from '../../shared/profilePhotoUpload';
+import { ProfileDetailsEditor } from '../../components/profile/ProfileDetailsEditor';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -36,6 +37,7 @@ interface UserProfile {
   status_verification?: string;
   id_picture_url?: string;
   selfie_url?: string;
+  profile_photo_url?: string | null;
   id_number?: string;
   expiration_date?: string;
   role?: string;
@@ -89,6 +91,7 @@ export default function PublicProfileScreen() {
   const fullName = formatPersonName(profile?.first_name, profile?.middle_name, profile?.last_name, profile?.suffix);
 
   const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
+  const [isProfileEditorVisible, setIsProfileEditorVisible] = React.useState(false);
 
   const changeAvatar = async () => {
     if (!profile) return;
@@ -103,7 +106,7 @@ export default function PublicProfileScreen() {
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 0.75,
     });
 
     if (!result.canceled && result.assets[0].uri) {
@@ -124,8 +127,8 @@ export default function PublicProfileScreen() {
           uploadUrl: `${API_BASE_URL}/api/legal-registration/upload-proof`,
         });
         
-        const { error } = await mobileSupabase.rpc('users_update_own_profile', {
-          p_selfie_url: newAvatarUrl,
+        const { error } = await mobileSupabase.rpc('users_set_own_profile_photo', {
+          p_profile_photo_url: newAvatarUrl,
         });
           
         if (error) throw error;
@@ -140,6 +143,50 @@ export default function PublicProfileScreen() {
         setIsUploadingAvatar(false);
       }
     }
+  };
+
+  const removeAvatar = () => {
+    Alert.alert('Remove profile photo?', 'Your profile will show your initials instead.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove Photo',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            setIsUploadingAvatar(true);
+            try {
+              const { data: { session }, error } = await mobileSupabase.auth.getSession();
+              if (error) throw error;
+              if (!session) throw new Error('Not logged in');
+
+              await removeProfilePhoto(
+                `${API_BASE_URL}/api/profile/photo`,
+                session.access_token,
+                async () => {
+                  const { error: updateError } = await mobileSupabase.rpc('users_set_own_profile_photo', {
+                    p_profile_photo_url: null,
+                  });
+                  if (updateError) throw updateError;
+                },
+              );
+              await refetch();
+            } catch (err: any) {
+              Alert.alert('Could not remove photo', err?.message || 'Please check your connection and try again.');
+            } finally {
+              setIsUploadingAvatar(false);
+            }
+          })();
+        },
+      },
+    ]);
+  };
+
+  const showAvatarOptions = () => {
+    Alert.alert('Profile photo', 'Choose an action for your profile photo.', [
+      { text: 'Choose Photo', onPress: () => void changeAvatar() },
+      ...(profile?.profile_photo_url ? [{ text: 'Remove Photo', style: 'destructive' as const, onPress: removeAvatar }] : []),
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   // Some fields like sex, id_number, expiration_date may only be in auth metadata
@@ -175,8 +222,8 @@ export default function PublicProfileScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Profile Header */}
           <View style={styles.profileHeader}>
-            <Pressable style={styles.avatar} onPress={changeAvatar} disabled={isUploadingAvatar}>
-              <ProfileAvatar uri={profile.selfie_url} firstName={profile.first_name} lastName={profile.last_name} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: theme.colors.primary }} textStyle={styles.avatarText} />
+            <Pressable style={styles.avatar} onPress={showAvatarOptions} disabled={isUploadingAvatar}>
+              <ProfileAvatar uri={profile.profile_photo_url} firstName={profile.first_name} lastName={profile.last_name} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: theme.colors.primary }} textStyle={styles.avatarText} />
               {isUploadingAvatar ? (
                 <View style={{ position: 'absolute', backgroundColor: 'rgba(0,0,0,0.5)', width: '100%', height: '100%', borderRadius: 999, justifyContent: 'center', alignItems: 'center' }}>
                   <ActivityIndicator color="#FFF" />
@@ -198,6 +245,12 @@ export default function PublicProfileScreen() {
               </Text>
             </View>
           </View>
+
+          <Pressable style={styles.editProfileButton} onPress={() => setIsProfileEditorVisible(true)}>
+            <Ionicons name="create-outline" size={19} color={theme.colors.primary} />
+            <Text style={styles.editProfileButtonText}>Edit profile details</Text>
+            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+          </Pressable>
 
           {/* Personal Information */}
           <View style={styles.section}>
@@ -309,6 +362,12 @@ export default function PublicProfileScreen() {
           <Text style={styles.errorText}>Unable to load profile data.</Text>
         </View>
       )}
+      {profile && <ProfileDetailsEditor
+        visible={isProfileEditorVisible}
+        profile={profile}
+        onClose={() => setIsProfileEditorVisible(false)}
+        onSaved={() => { setIsProfileEditorVisible(false); void refetch(); }}
+      />}
     </View>
   );
 }
@@ -350,6 +409,8 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: theme.colors.border, marginVertical: 16 },
 
   menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, padding: 16, borderRadius: theme.borderRadius.lg, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
+  editProfileButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EFF6FF', borderRadius: 14, borderWidth: 1, borderColor: '#BFDBFE', padding: 14, marginBottom: 24 },
+  editProfileButtonText: { flex: 1, color: theme.colors.primary, fontSize: 15, fontWeight: '700' },
   menuIconContainer: { width: 40, height: 40, borderRadius: theme.borderRadius.md, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
   menuText: { flex: 1, color: theme.colors.textPrimary, fontSize: 16, fontWeight: '500' },
   

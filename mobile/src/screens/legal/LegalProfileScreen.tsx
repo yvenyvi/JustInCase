@@ -13,7 +13,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { API_BASE_URL } from '../../shared/api';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { formatPersonName } from '../../shared/personName';
-import { uploadProfilePhoto } from '../../shared/profilePhotoUpload';
+import { removeProfilePhoto, uploadProfilePhoto } from '../../shared/profilePhotoUpload';
+import { ProfileDetailsEditor } from '../../components/profile/ProfileDetailsEditor';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -36,6 +37,7 @@ interface UserProfile {
   status_verification?: string;
   id_picture_url?: string;
   selfie_url?: string;
+  profile_photo_url?: string | null;
   firm_name?: string;
   ibp_number?: string;
   roll_number?: string;
@@ -60,6 +62,7 @@ export default function LegalProfileScreen() {
     'International Law and Emerging Legal Trends'
   ];
   const [isEditExpertiseVisible, setIsEditExpertiseVisible] = useState(false);
+  const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
   const [editingExpertise, setEditingExpertise] = useState<string[]>([]);
   const [isSavingExpertise, setIsSavingExpertise] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'about'>('overview');
@@ -123,12 +126,16 @@ export default function LegalProfileScreen() {
 
   const saveExpertise = async () => {
     if (!profile) return;
+    if (editingExpertise.length === 0) {
+      Alert.alert('Select an area of expertise', 'Choose at least one legal expertise area before saving.');
+      return;
+    }
     setIsSavingExpertise(true);
     try {
       const { data: { user } } = await mobileSupabase.auth.getUser();
       if (!user) throw new Error("Not logged in");
       
-      const { error } = await mobileSupabase.rpc('users_update_own_profile', {
+      const { error } = await mobileSupabase.rpc('users_update_own_expertise', {
         p_expertise: editingExpertise,
       });
         
@@ -170,7 +177,7 @@ export default function LegalProfileScreen() {
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 0.75,
     });
 
     if (!result.canceled && result.assets[0].uri) {
@@ -191,8 +198,8 @@ export default function LegalProfileScreen() {
           uploadUrl: `${API_BASE_URL}/api/legal-registration/upload-proof`,
         });
         
-        const { error } = await mobileSupabase.rpc('users_update_own_profile', {
-          p_selfie_url: newAvatarUrl,
+        const { error } = await mobileSupabase.rpc('users_set_own_profile_photo', {
+          p_profile_photo_url: newAvatarUrl,
         });
           
         if (error) throw error;
@@ -207,6 +214,50 @@ export default function LegalProfileScreen() {
         setIsUploadingAvatar(false);
       }
     }
+  };
+
+  const removeAvatar = () => {
+    Alert.alert('Remove profile photo?', 'Your profile will show your initials instead.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove Photo',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            setIsUploadingAvatar(true);
+            try {
+              const { data: { session }, error } = await mobileSupabase.auth.getSession();
+              if (error) throw error;
+              if (!session) throw new Error('Not logged in');
+
+              await removeProfilePhoto(
+                `${API_BASE_URL}/api/profile/photo`,
+                session.access_token,
+                async () => {
+                  const { error: updateError } = await mobileSupabase.rpc('users_set_own_profile_photo', {
+                    p_profile_photo_url: null,
+                  });
+                  if (updateError) throw updateError;
+                },
+              );
+              await refetch();
+            } catch (err: any) {
+              Alert.alert('Could not remove photo', err?.message || 'Please check your connection and try again.');
+            } finally {
+              setIsUploadingAvatar(false);
+            }
+          })();
+        },
+      },
+    ]);
+  };
+
+  const showAvatarOptions = () => {
+    Alert.alert('Profile photo', 'Choose an action for your profile photo.', [
+      { text: 'Choose Photo', onPress: () => void changeAvatar() },
+      ...(profile?.profile_photo_url ? [{ text: 'Remove Photo', style: 'destructive' as const, onPress: removeAvatar }] : []),
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const fullName = formatPersonName(profile?.first_name, profile?.middle_name, profile?.last_name, profile?.suffix);
@@ -245,8 +296,8 @@ export default function LegalProfileScreen() {
         >
           {/* Profile Header */}
           <View style={styles.profileHeader}>
-            <Pressable style={styles.avatar} onPress={changeAvatar} disabled={isUploadingAvatar}>
-              <ProfileAvatar uri={profile.selfie_url} firstName={profile.first_name} lastName={profile.last_name} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: theme.colors.primary }} textStyle={styles.avatarText} />
+            <Pressable style={styles.avatar} onPress={showAvatarOptions} disabled={isUploadingAvatar}>
+              <ProfileAvatar uri={profile.profile_photo_url} firstName={profile.first_name} lastName={profile.last_name} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: theme.colors.primary }} textStyle={styles.avatarText} />
               {isUploadingAvatar ? (
                 <View style={{ position: 'absolute', backgroundColor: 'rgba(0,0,0,0.5)', width: '100%', height: '100%', borderRadius: 999, justifyContent: 'center', alignItems: 'center' }}>
                   <ActivityIndicator color="#FFF" />
@@ -282,6 +333,12 @@ export default function LegalProfileScreen() {
               )}
             </View>
           </View>
+
+          <Pressable style={styles.editProfileButton} onPress={() => setIsProfileEditorVisible(true)}>
+            <Ionicons name="create-outline" size={19} color={theme.colors.primary} />
+            <Text style={styles.editProfileButtonText}>Edit profile details</Text>
+            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+          </Pressable>
 
           {/* Tab Navigation */}
           <View style={styles.tabContainer}>
@@ -453,6 +510,14 @@ export default function LegalProfileScreen() {
             </View>
           </Modal>
 
+          <ProfileDetailsEditor
+            visible={isProfileEditorVisible}
+            profile={profile}
+            attorney
+            onClose={() => setIsProfileEditorVisible(false)}
+            onSaved={() => { setIsProfileEditorVisible(false); void refetch(); }}
+          />
+
         </ScrollView>
       ) : (
         <View style={styles.centerBox}>
@@ -473,6 +538,8 @@ const styles = StyleSheet.create({
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { color: theme.colors.textSecondary, fontSize: 16 },
   scrollContent: { padding: 24, paddingBottom: 60 },
+  editProfileButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EFF6FF', borderRadius: 14, borderWidth: 1, borderColor: '#BFDBFE', padding: 14, marginBottom: 24 },
+  editProfileButtonText: { flex: 1, color: theme.colors.primary, fontSize: 15, fontWeight: '700' },
   
   profileHeader: { alignItems: 'center', marginBottom: 32 },
   avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 16, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },

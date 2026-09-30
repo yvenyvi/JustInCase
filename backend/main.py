@@ -18,7 +18,7 @@ from didit_service import (
 )
 from document_generator_service import generate_document_draft, list_document_templates, generate_interactive_draft
 from kampi_service import generate_kampi_reply
-from legal_registration_service import upload_legal_verification_asset
+from legal_registration_service import remove_own_profile_photo, upload_legal_verification_asset
 from triage_service import analyze_triage_case
 from juris_service import search_legal_sources
 from lawyer_matching_service import rank_lawyers
@@ -325,6 +325,25 @@ async def legal_registration_upload_proof(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to upload verification asset right now.") from exc
 
 
+@app.delete("/api/profile/photo")
+def delete_profile_photo(
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, bool]:
+    try:
+        return remove_own_profile_photo(
+            user_id=current_user["id"],
+            email=current_user.get("email") or "",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Profile photo removal failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to remove the profile photo right now.",
+        ) from exc
+
+
 class UpsertProfileBody(BaseModel):
     id: str
     email: str
@@ -529,7 +548,7 @@ def document_interactive_draft(
                 )
                 if resp.status_code == 200 and len(resp.json()) > 0:
                     db_user = resp.json()[0]
-                    name_parts = filter(None, [db_user.get("first_name"), db_user.get("middle_name"), db_user.get("last_name")])
+                    name_parts = filter(None, [db_user.get("first_name"), db_user.get("middle_name"), db_user.get("last_name"), db_user.get("suffix")])
                     user_profile["full_name"] = " ".join(name_parts)
                     user_profile["email"] = db_user.get("email") or user.get("email", "")
                     user_profile["phone_number"] = db_user.get("phone_number") or ""
@@ -717,7 +736,7 @@ def document_generate(
 
 def _fetch_lawyers_for_matching() -> list[dict[str, Any]]:
     resp = httpx.get(
-            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,province,selfie_url,expertise,pro_bono_logs!pro_bono_logs_attorney_id_fkey(hours,is_verified),cases!cases_attorney_id_fkey(feedback_rating,status)",
+            f"{config.supabase_url}/rest/v1/users?role=eq.Volunteer+Attorney&select=id,first_name,last_name,firm_name,city_municipality,province,profile_photo_url,expertise,pro_bono_logs!pro_bono_logs_attorney_id_fkey(hours,is_verified),cases!cases_attorney_id_fkey(feedback_rating,status)",
             headers={
                 "apikey": config.supabase_service_role_key,
                 "Authorization": f"Bearer {config.supabase_service_role_key}",

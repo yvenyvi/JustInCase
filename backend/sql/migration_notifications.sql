@@ -60,7 +60,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
 DROP TRIGGER IF EXISTS trg_notify_on_message ON public.messages;
 CREATE TRIGGER trg_notify_on_message
@@ -111,7 +111,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
 DROP TRIGGER IF EXISTS trg_notify_on_case_status ON public.cases;
 CREATE TRIGGER trg_notify_on_case_status
@@ -145,10 +145,16 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
 DROP TRIGGER IF EXISTS trg_notify_on_pro_bono_log ON public.pro_bono_logs;
 CREATE TRIGGER trg_notify_on_pro_bono_log
 AFTER INSERT ON public.pro_bono_logs
 FOR EACH ROW
 EXECUTE FUNCTION public.trigger_notify_on_pro_bono_log();
+
+-- Trigger functions are invoked by PostgreSQL's trigger mechanism; they do
+-- not need to be callable as public RPC endpoints.
+REVOKE ALL ON FUNCTION public.trigger_notify_on_message() FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.trigger_notify_on_case_status() FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.trigger_notify_on_pro_bono_log() FROM PUBLIC, anon, authenticated, service_role;

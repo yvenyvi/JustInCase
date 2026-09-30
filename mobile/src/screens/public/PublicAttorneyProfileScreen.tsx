@@ -32,6 +32,7 @@ interface UserProfile {
   status_verification?: string;
   id_picture_url?: string;
   selfie_url?: string;
+  profile_photo_url?: string | null;
   firm_name?: string;
   ibp_number?: string;
   roll_number?: string;
@@ -149,7 +150,7 @@ export default function PublicAttorneyProfileScreen() {
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <View style={styles.avatar}>
-              <ProfileAvatar uri={profile.selfie_url} firstName={profile.first_name} lastName={profile.last_name} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: theme.colors.primary }} textStyle={styles.avatarText} />
+              <ProfileAvatar uri={profile.profile_photo_url} firstName={profile.first_name} lastName={profile.last_name} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: theme.colors.primary }} textStyle={styles.avatarText} />
             </View>
             <Text style={styles.name}>Atty. {fullName}</Text>
             <Text style={styles.email}>{profile.email}</Text>

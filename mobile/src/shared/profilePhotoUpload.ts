@@ -51,3 +51,21 @@ export async function uploadProfilePhoto({
 
   return payload.url;
 }
+
+export async function removeProfilePhoto(
+  apiUrl: string,
+  accessToken: string,
+  clearDatabaseReference: () => Promise<void>,
+): Promise<void> {
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (response.ok) return;
+  } catch {
+    // The database RPC below still removes the profile reference if the API is offline.
+  }
+
+  await clearDatabaseReference();
+}

@@ -255,19 +255,36 @@ export default function LegalCaseDetailsScreen() {
   const handleAcceptCase = async () => {
     try {
       if (!c || !currentUser) return;
-      const { data, error } = await mobileSupabase
+      if (c.status !== 'Pending Triage') {
+        Toast.show({ type: 'info', text1: 'Request no longer pending', text2: 'The case details have been refreshed.' });
+        await fetchCaseDetails();
+        return;
+      }
+
+      if (c.attorneyId !== null && c.attorneyId !== currentUser.id) {
+        Toast.show({ type: 'info', text1: 'Case unavailable', text2: 'This case is assigned to another attorney.' });
+        await fetchCaseDetails();
+        return;
+      }
+
+      let acceptanceQuery = mobileSupabase
         .from('cases')
         .update({ attorney_id: currentUser.id, status: 'In Progress' })
         .eq('id', c.id)
-        .is('attorney_id', null)
-        .eq('status', 'Pending Triage')
-        .select('id')
-        .maybeSingle();
+        .eq('status', 'Pending Triage');
+
+      // Direct requests already belong to this attorney; open-network cases
+      // must still be unassigned when claimed.
+      acceptanceQuery = c.attorneyId === currentUser.id
+        ? acceptanceQuery.eq('attorney_id', currentUser.id)
+        : acceptanceQuery.is('attorney_id', null);
+
+      const { data, error } = await acceptanceQuery.select('id').maybeSingle();
       
       if (error) throw error;
       if (!data) {
-        Toast.show({ type: 'info', text1: 'Case unavailable', text2: 'Another attorney has already accepted this case.' });
-        fetchCaseDetails();
+        Toast.show({ type: 'info', text1: 'Request changed', text2: 'The case is no longer awaiting acceptance. Its latest details have been loaded.' });
+        await fetchCaseDetails();
         return;
       }
       
@@ -280,7 +297,7 @@ export default function LegalCaseDetailsScreen() {
       });
 
       Toast.show({ type: 'success', text1: 'Success', text2: 'You have accepted this case.' });
-      fetchCaseDetails();
+      await fetchCaseDetails();
     } catch (err) {
       console.error(err);
       Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to accept case.' });
@@ -654,7 +671,7 @@ export default function LegalCaseDetailsScreen() {
 
         {/* Attorney Actions */}
         <View style={styles.actionGrid}>
-          {(isAvailable || (isAssigned && c.status === 'Pending Triage')) && (
+          {(isAvailable || isAssigned) && c.status === 'Pending Triage' && (
             <>
               <Pressable 
                 style={[

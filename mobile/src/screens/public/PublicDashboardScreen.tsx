@@ -42,7 +42,8 @@ export default function PublicDashboardScreen() {
           attorney:users!cases_attorney_id_fkey(first_name, last_name)
         `)
         .eq('client_id', user.id)
-        .in('status', ['Pending Triage', 'Pending Acceptance', 'In Progress', 'Hearing Scheduled', 'Demand Sent'])
+        .in('status', ['In Progress', 'Hearing Scheduled', 'Demand Sent'])
+        .not('attorney_id', 'is', null)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -169,7 +170,7 @@ export default function PublicDashboardScreen() {
           <Card style={[styles.caseWidget, { alignItems: 'center', paddingVertical: 32 }]}>
             <Ionicons name="folder-open-outline" size={40} color={theme.colors.border} style={{ marginBottom: 12 }} />
             <Text style={{ color: theme.colors.textSecondary, fontSize: 15, fontWeight: '600', marginBottom: 4 }}>No Active Cases</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Your cases will appear here once you file a request.</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Cases will appear here after an attorney accepts your request.</Text>
           </Card>
         )}
 

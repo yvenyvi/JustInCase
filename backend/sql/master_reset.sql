@@ -21,9 +21,11 @@ DROP TABLE IF EXISTS public.thread_participants CASCADE;
 DROP TABLE IF EXISTS public.message_threads CASCADE;
 DROP TABLE IF EXISTS public.triage_assessments CASCADE;
 DROP TABLE IF EXISTS public.cases CASCADE;
+DROP TABLE IF EXISTS public.case_documents CASCADE;
 DROP TABLE IF EXISTS public.ai_messages CASCADE;
 DROP TABLE IF EXISTS public.ai_conversations CASCADE;
 DROP TABLE IF EXISTS public.generated_documents CASCADE;
+DROP TABLE IF EXISTS public.user_documents CASCADE;
 DROP TABLE IF EXISTS public.document_templates CASCADE;
 DROP TABLE IF EXISTS public.users CASCADE;
 
@@ -66,6 +68,7 @@ CREATE TABLE public.users (
     status_verification public.verification_status DEFAULT 'unverified',
     id_picture_url TEXT,
     selfie_url TEXT,
+    profile_photo_url TEXT,
     firm_name VARCHAR(150),
     ibp_number VARCHAR(50),
     roll_number VARCHAR(50),
@@ -94,6 +97,17 @@ CREATE TABLE public.cases (
     client_feedback TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Case attachments are listed here; access policies are defined in rls_policies.sql.
+CREATE TABLE public.case_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    case_id UUID REFERENCES public.cases(id) ON DELETE CASCADE,
+    uploaded_by UUID REFERENCES auth.users(id),
+    file_name TEXT NOT NULL,
+    file_url TEXT NOT NULL,
+    file_size BIGINT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 
@@ -240,6 +254,17 @@ CREATE TABLE public.generated_documents (
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 
+CREATE TABLE public.user_documents (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  template_slug VARCHAR(100),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE public.user_documents ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.user_documents FROM PUBLIC, anon, authenticated;
+
 -- 4b. SYSTEM SETTINGS TABLE
 DROP TABLE IF EXISTS public.system_settings CASCADE;
 CREATE TABLE public.system_settings (
@@ -301,7 +326,11 @@ CREATE POLICY "allow_public_read_articles"   ON public.rights_articles    FOR SE
 -- 6. TRIGGERS & FUNCTIONS
 -- This is a super-safe version of the trigger that will NOT block user creation even if profile sync fails
 CREATE OR REPLACE FUNCTION public.handle_auth_user_insert()
-RETURNS trigger AS $$
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   BEGIN
     INSERT INTO public.users (
@@ -339,10 +368,11 @@ BEGIN
   END;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 CREATE TRIGGER trg_create_profile_on_auth_user_insert
 AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_auth_user_insert();
+REVOKE ALL ON FUNCTION public.handle_auth_user_insert() FROM PUBLIC, anon, authenticated, service_role;
 
 -- 7. SYNC EXISTING USERS
 -- Manually sync profiles from auth.users to public.users

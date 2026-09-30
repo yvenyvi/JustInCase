@@ -288,19 +288,15 @@ export default function CaseDetailsScreen() {
 
       if (uploadError) throw uploadError;
 
-      // Get Public URL
-      const { data: urlData } = mobileSupabase.storage
-        .from('case-documents')
-        .getPublicUrl(fileName);
-
-      // Save to database
+      // Store the private object path; a signed URL should be generated only
+      // when an authorized case participant opens the attachment.
       const { error: dbError } = await mobileSupabase
         .from('case_documents')
         .insert({
           case_id: caseId,
           uploaded_by: currentUser.id,
           file_name: file.name,
-          file_url: urlData.publicUrl,
+          file_url: fileName,
           file_size: file.size || 0,
         });
 
