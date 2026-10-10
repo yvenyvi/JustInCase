@@ -19,6 +19,7 @@ JusticeLink, branded in the app as LAYA, connects people seeking legal help with
 - `backend/` — FastAPI services for AI workflows and integrations.
 - `supabase/` — current SQL migrations and migration-history notes.
 - `documentation/` — user, feature, and project documentation.
+- `scripts/` — repository-level developer and maintenance scripts.
 
 ## Local development
 
@@ -42,4 +43,4 @@ The linked Supabase project contains older applied migrations whose original SQL
 
 ## Verification
 
-Useful checks are available through the root and component package scripts. Emulator/system testing should be performed explicitly as part of a test session; a successful static build does not substitute for validating real authenticated role workflows.
+Useful checks are available through the root and component package scripts. Test scenarios are in [documentation/testing](documentation/testing/). Emulator/system testing should be performed explicitly as part of a test session; a successful static build does not substitute for validating real authenticated role workflows.

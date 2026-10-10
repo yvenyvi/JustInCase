@@ -107,10 +107,12 @@ justiceLink/
 │   ├── legal_registration_service.py
 │   ├── sql/                    # DB migration scripts
 │   └── tests/                  # pytest test files
-├── database_schema.sql         # Full PostgreSQL schema
+├── supabase/
+│   ├── schema.sql               # Full PostgreSQL schema reference
+│   └── migrations/              # Applied migration history in this checkout
 ├── documentation/
-│   ├── screenshots/            # Auto-captured UI screenshots
-│   └── diagrams/
+│   └── testing/                 # Test scenarios and QA references
+├── scripts/                     # Repository-level developer utilities
 └── package.json                # Monorepo scripts
 ```
 
@@ -346,4 +348,4 @@ Supabase RLS policies enforce data isolation at the database level:
 | `generated_documents` | CRUD own | — | Full |
 | `system_settings` | — | — | Full |
 
-RLS policies are defined in `database_schema.sql` and should be applied via the Supabase dashboard or migrations in `backend/sql/`.
+RLS policies are defined in `supabase/schema.sql` and should be applied via the Supabase dashboard or migrations in `backend/sql/`.
