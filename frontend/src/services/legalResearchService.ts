@@ -15,7 +15,7 @@ export interface LegalSource {
   pdf_url?: string | null;
 }
 
-const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || '';
 
 export async function searchLegalSources(query: string, datasets: LegalDataset[], limit = 8) {
   const { data } = await supabase.auth.getSession();

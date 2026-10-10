@@ -9,7 +9,7 @@ type ChatMessage = { role: 'user' | 'assistant'; content: string; apiContent?: s
 type Assessment = Record<string, any>;
 type Attorney = { id: string; first_name: string; last_name: string; firm_name?: string; profile_photo_url?: string | null; city_municipality?: string; rating?: number; review_count?: number; match_reasons?: string[] };
 
-const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const API = import.meta.env.VITE_BACKEND_URL || '';
 const initialMessage: ChatMessage = {
   role: 'assistant',
   content: 'Hello. What would you like help with today? Describe the situation in your own words, then decide whether you want guidance or attorney assistance.',

@@ -69,7 +69,7 @@ type NormalizedOcrData = {
 
 const Register = () => {
   const navigate = useNavigate();
-  const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || '';
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState<Role>('public');
   const [file, setFile] = useState<File | null>(null);

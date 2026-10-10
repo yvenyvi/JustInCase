@@ -40,7 +40,7 @@ export interface GeneratedDocumentDraft {
 
 import { supabase } from '../lib/supabase';
 
-const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || '';
 
 async function _getAccessToken(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();

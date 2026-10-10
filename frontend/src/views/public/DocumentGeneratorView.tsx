@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { documentGeneratorService } from '../../services/documentGeneratorService';
 import styles from './DocumentGeneratorView.module.css';
 
-const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const API = import.meta.env.VITE_BACKEND_URL || '';
 type Message = { role: 'user' | 'assistant'; content: string };
 type Draft = { templateTitle: string; content: string; templateSlug: string; sources: any[]; researchUnavailable: boolean };
 type SavedDocument = { id: string; title: string; content: string; template_slug: string; created_at: string; sources?: any[] };

@@ -25,7 +25,7 @@ interface KampiChatResponse {
   research_unavailable?: boolean;
 }
 
-const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || '';
 
 export const kampiService = {
   async chat(request: KampiChatRequest): Promise<KampiChatResponse> {
