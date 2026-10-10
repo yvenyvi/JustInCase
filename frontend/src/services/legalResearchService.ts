@@ -26,6 +26,9 @@ export async function searchLegalSources(query: string, datasets: LegalDataset[]
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ query, datasets, limit }),
   });
-  if (!response.ok) throw new Error('Legal research is temporarily unavailable.');
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) throw new Error('Your session has expired. Please sign in again.');
+    throw new Error('Legal research is temporarily unavailable.');
+  }
   return response.json() as Promise<{ sources: LegalSource[]; unavailable: string[]; query: string }>;
 }

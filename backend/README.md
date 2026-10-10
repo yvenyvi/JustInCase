@@ -52,6 +52,9 @@ Apply the variables and redeploy the Railway backend. Its service role key must 
 - `POST /api/kampi/chat` — legal-information assistant.
 - `GET /api/documents/templates` and `POST /api/documents/generate` — document drafting.
 - `POST /api/legal-registration/upload-proof` — upload of verification/profile assets handled by the backend.
+- `GET /api/congress/documents` and `GET /api/congress/stats` — cached, read-only Open Congress proxy. The web client uses this proxy because the upstream API does not provide browser CORS headers.
+
+Juris and Open Congress use public endpoints and need no additional API keys. Juris searches through this backend require a signed-in Supabase session. The Vercel frontend forwards `/api/*` to the Railway backend; its SPA fallback must come after that rewrite.
 
 The API keeps triage history temporary. Triage review alone does not create a case; case submission is confirmed by the mobile workflow. Provider outages should not be treated as verified legal research, and generated content is not a substitute for a lawyer's advice.
 

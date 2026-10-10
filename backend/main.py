@@ -5,7 +5,7 @@ import re
 import unicodedata
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File, Form, status
+from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File, Form, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field
@@ -23,6 +23,7 @@ from legal_registration_service import remove_own_profile_photo, upload_legal_ve
 from triage_service import analyze_triage_case
 from juris_service import search_legal_sources
 from lawyer_matching_service import rank_lawyers
+from congress_service import fetch_congress
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,34 @@ def legal_research_search(
         return search_legal_sources(body.query, body.datasets, body.year, body.limit)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@app.get("/api/congress/documents")
+def congress_documents(
+    search: str = Query(default="", max_length=300),
+    chamber: str | None = Query(default=None, alias="type", pattern="^(HB|SB)$"),
+    limit: int = Query(default=20, ge=1, le=50),
+    offset: int = Query(default=0, ge=0, le=10000),
+) -> dict[str, Any]:
+    params: dict[str, Any] = {"limit": limit, "offset": offset, "sort": "date_filed", "dir": "desc"}
+    if chamber:
+        params["type"] = chamber
+    if search.strip():
+        params["search"] = search.strip()
+    try:
+        return fetch_congress("documents", params)
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("Open Congress document request failed: %s", exc.__class__.__name__)
+        raise HTTPException(status_code=503, detail="Open Congress is temporarily unavailable. Please try again.") from exc
+
+
+@app.get("/api/congress/stats")
+def congress_stats() -> dict[str, Any]:
+    try:
+        return fetch_congress("stats")
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("Open Congress statistics request failed: %s", exc.__class__.__name__)
+        raise HTTPException(status_code=503, detail="Open Congress statistics are temporarily unavailable.") from exc
 
 
 class LawyerInfo(BaseModel):

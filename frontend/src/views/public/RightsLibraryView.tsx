@@ -76,6 +76,8 @@ const RightsLibraryView = () => {
   const [isResearching, setIsResearching] = useState(false);
   const [researchError, setResearchError] = useState<string | null>(null);
   const [bills, setBills] = useState<any[]>([]);
+  const [billsLoading, setBillsLoading] = useState(false);
+  const [billsError, setBillsError] = useState<string | null>(null);
 
   useEffect(() => {
     const state = location.state as { query?: string; sources?: LegalSource[] } | null;
@@ -105,15 +107,26 @@ const RightsLibraryView = () => {
 
   useEffect(() => {
     if (activeTab !== 'bills') return;
+    const controller = new AbortController();
+    let active = true;
+    setBillsLoading(true);
+    setBillsError(null);
     const timer = window.setTimeout(async () => {
       try {
-        const query = searchTerm.trim() ? `&search=${encodeURIComponent(searchTerm.trim())}` : '';
-        const response = await fetch(`https://open-congress-api.bettergov.ph/api/documents?limit=20&sort=date_filed&dir=desc${query}`);
+        const query = searchTerm.trim() ? `&search=${encodeURIComponent(searchTerm.trim().slice(0, 300))}` : '';
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}/api/congress/documents?limit=20${query}`, { signal: controller.signal });
+        if (!response.ok) throw new Error('Open Congress could not be reached. Please try again shortly.');
         const payload = await response.json();
-        setBills(payload?.data || []);
-      } catch { setBills([]); }
+        if (!payload.success || !Array.isArray(payload.data)) throw new Error('Open Congress returned an unreadable response.');
+        if (active) setBills(payload.data);
+      } catch (error) {
+        if (active) {
+          setBills([]);
+          setBillsError(error instanceof Error ? error.message : 'Open Congress could not be reached.');
+        }
+      } finally { if (active) setBillsLoading(false); }
     }, 400);
-    return () => window.clearTimeout(timer);
+    return () => { active = false; window.clearTimeout(timer); controller.abort(); };
   }, [activeTab, searchTerm]);
 
   const openExternal = (url: string) => {
@@ -243,12 +256,15 @@ const RightsLibraryView = () => {
 
       {activeTab === 'bills' && (
         <div>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '.85rem' }}>Pending legislation supplied by Open Congress / BetterGov.ph.</p>
+          {billsLoading && <p role="status">Loading legislative records...</p>}
+          {billsError && <p role="alert">{billsError}</p>}
+          {!billsLoading && !billsError && !bills.length && <p>No matching legislative records found.</p>}
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '.85rem' }}>Legislative records supplied by Open Congress / BetterGov.ph.</p>
           <div className={styles.categoriesGrid}>
             {bills.map((bill: any) => (
               <article key={bill.id} className={styles.categoryCard}>
                 <h3 className={styles.categoryTitle}>{bill.title || bill.long_title || bill.name}</h3>
-                <p className={styles.categoryLaw}>{bill.name || bill.id} · {bill.status || 'Pending'}</p>
+                <p className={styles.categoryLaw}>{bill.name || bill.id} · {bill.status || 'Status not provided'}</p>
                 <a href={`https://open-congress-api.bettergov.ph/view/documents/${bill.id}`} target="_blank" rel="noreferrer">View bill</a>
               </article>
             ))}
