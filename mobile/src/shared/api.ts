@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ||
-  (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
+  (process.env.EXPO_PUBLIC_API_BASE_URL ||
+    'https://justincase-production-9b25.up.railway.app').replace(/\/+$/, '');

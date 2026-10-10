@@ -100,7 +100,7 @@ const LandingView = () => {
                 <Link to="/login" className={styles.secondaryHeroBtn}>
                   For Attorneys
                 </Link>
-                <a href="/downloads/laya-android-arm64.apk" className={styles.downloadAppButton} download>
+                <a href="/downloads/laya-android-arm64.apk?v=0.1.1" className={styles.downloadAppButton} download="Laya-v0.1.1-arm64.apk">
                   <Download size={18} aria-hidden="true" />
                   Download Android app
                 </a>

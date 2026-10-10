@@ -18,11 +18,13 @@ LAYA is the Expo / React Native client for JusticeLink. It is the current produc
    ```text
    EXPO_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
    EXPO_PUBLIC_SUPABASE_ANON_KEY=<supabase-anon-key>
-   EXPO_PUBLIC_API_BASE_URL=http://<computer-lan-ip>:8000
+   EXPO_PUBLIC_API_BASE_URL=https://justincase-production-9b25.up.railway.app
    ```
 
-   For Android emulators, `http://10.0.2.2:8000` reaches the host machine if no explicit API URL is set. A physical phone needs the computer's reachable LAN address.
-3. Start the backend and Expo using `./dev.ps1 start` from the repository root, or run `npm start` from this directory.
+   The default API is `https://justincase-production-9b25.up.railway.app`. Use that URL to run without a local backend. For a local Android emulator, set the API URL to `http://10.0.2.2:8000`. A physical phone needs the computer's reachable LAN address and the same network.
+
+   Expo embeds this URL when building the APK. Changing `.env` requires rebuilding and reinstalling the APK. Run Expo prebuild after changing a local HTTP address so Android's host-specific network policy is regenerated.
+3. Run `npm start` from this directory to use the hosted backend. For local backend development, use `./dev.ps1 start` from the repository root and set the API URL to the computer's LAN address.
 
 The backend also needs its own `backend/.env`; see [backend/README.md](../backend/README.md). Do not commit environment files or secrets.
 
