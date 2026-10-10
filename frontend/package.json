@@ -20,6 +20,7 @@
     "docs:presentation": "node scripts/generate-presentation-pdf.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.100.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.3.1",
