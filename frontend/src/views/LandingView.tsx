@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ClipboardList, BookOpen, FileSignature, HeartHandshake, FolderOpen, Target, Eye, ArrowRight } from 'lucide-react';
+import { ClipboardList, BookOpen, FileSignature, HeartHandshake, FolderOpen, Target, Eye, ArrowRight, Download } from 'lucide-react';
 import styles from './LandingView.module.css';
 import SpotlightCard from '../components/SpotlightCard';
 import BlurText from '../components/BlurText';
@@ -100,6 +100,10 @@ const LandingView = () => {
                 <Link to="/login" className={styles.secondaryHeroBtn}>
                   For Attorneys
                 </Link>
+                <a href="/downloads/laya-android-arm64.apk" className={styles.downloadAppButton} download>
+                  <Download size={18} aria-hidden="true" />
+                  Download Android app
+                </a>
               </div>
             </FadeIn>
             <div className={styles.heroTrust}><span /> Guidance and legal support in one place</div>

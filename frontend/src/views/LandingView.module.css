@@ -239,6 +239,28 @@
   color: #163451;
 }
 
+.downloadAppButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid rgba(41, 70, 99, 0.24);
+  border-radius: var(--radius-full);
+  background: #fff;
+  color: #294663;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.downloadAppButton:hover {
+  background: #eef5ff;
+  border-color: rgba(37, 99, 235, 0.45);
+  color: #163451;
+}
+
 .heroSubtitle {
   font-size: 1.05rem;
   color: #5d7188;
