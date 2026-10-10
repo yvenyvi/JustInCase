@@ -1,3 +1,4 @@
+from ai_text import draft_response
 from typing import Any, Optional
 import logging
 import re
@@ -322,7 +323,14 @@ async def legal_registration_upload_proof(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to upload verification asset right now.") from exc
+        logger.exception("Verification asset storage failed")
+        detail = "Photo storage is unavailable. Please try again later."
+        if not config.supabase_url or not config.supabase_service_role_key:
+            detail = "Photo storage is not configured on the server. Contact support."
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail) from exc
+    except httpx.HTTPError as exc:
+        logger.exception("Verification asset storage connection failed")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Could not reach photo storage. Please try again.") from exc
 
 
 @app.delete("/api/profile/photo")
@@ -568,8 +576,9 @@ def document_interactive_draft(
         # Retrieval only occurs once the model is ready to draft. A preliminary
         # pass preserves the existing conversational question flow.
         preliminary = generate_interactive_draft(history=history_dicts, user_profile=user_profile)
-        if not preliminary.startswith("DOCUMENT:"):
-            return {"response": preliminary, "sources": []}
+        parsed = draft_response(preliminary)
+        if parsed["kind"] != "document":
+            return {**parsed, "sources": []}
         try:
             research = search_legal_sources(preliminary[:6000], limit=4)
             reply = generate_interactive_draft(
@@ -577,9 +586,12 @@ def document_interactive_draft(
                 user_profile=user_profile,
                 legal_sources=research["sources"],
             )
-            return {"response": reply, "sources": research["sources"], "research_unavailable": bool(research["unavailable"])}
+            final = draft_response(reply)
+            if final["kind"] != "document":
+                final = parsed
+            return {**final, "sources": research["sources"], "research_unavailable": bool(research["unavailable"])}
         except Exception:
-            return {"response": preliminary, "sources": [], "research_unavailable": True}
+            return {**parsed, "sources": [], "research_unavailable": True}
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
 

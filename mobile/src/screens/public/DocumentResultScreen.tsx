@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Linking } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, Linking, TextInput } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -9,6 +9,8 @@ import * as Sharing from 'expo-sharing';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
+import { plainAiText } from '../../shared/aiText';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 
 export default function DocumentResultScreen() {
@@ -19,6 +21,9 @@ export default function DocumentResultScreen() {
   // @ts-ignore
   const { result } = route.params || {};
 
+  const insets = useSafeAreaInsets();
+  const [content, setContent] = useState(() => plainAiText(result?.content || ''));
+  const [isSaved, setIsSaved] = useState(Boolean(result?.saved));
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
@@ -33,7 +38,7 @@ export default function DocumentResultScreen() {
   }
 
   const copyToClipboard = async () => {
-    await Clipboard.setStringAsync(result.content);
+    await Clipboard.setStringAsync(content);
     Toast.show({
       type: 'success',
       text1: 'Na-copy sa Clipboard',
@@ -50,6 +55,7 @@ export default function DocumentResultScreen() {
       Toast.show({ type: 'error', text1: 'Error', text2: 'Please log in to save documents.' });
       return;
     }
+    if (isSaved || isSaving) return;
     setIsSaving(true);
     try {
       const baseUrl = API_BASE_URL;
@@ -61,7 +67,7 @@ export default function DocumentResultScreen() {
         },
         body: JSON.stringify({
           title: result.templateTitle || 'Generated Document',
-          content: result.content,
+          content: content,
           templateSlug: result.templateSlug,
           sources: result.sources || []
         })
@@ -69,6 +75,7 @@ export default function DocumentResultScreen() {
       
       if (!response.ok) throw new Error('Failed to save document');
       
+      setIsSaved(true);
       Toast.show({ type: 'success', text1: 'Success', text2: 'Document saved to your account.' });
     } catch (error) {
       console.error(error);
@@ -87,7 +94,7 @@ export default function DocumentResultScreen() {
       const response = await fetch(`${baseUrl}/api/documents/export/${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content: result.content })
+        body: JSON.stringify({ title, content: content })
       });
       
       if (!response.ok) throw new Error(`Failed to export ${format}`);
@@ -188,7 +195,8 @@ export default function DocumentResultScreen() {
             </Pressable>
           </View>
           <View style={styles.documentBody}>
-            <Text style={styles.documentContent}>{result.content}</Text>
+            <Text style={styles.editNote}>Review and edit your draft before saving or exporting.</Text>
+            <TextInput style={styles.documentContent} value={content} onChangeText={value => { setContent(value); setIsSaved(false); }} multiline scrollEnabled={false} accessibilityLabel="Edit document draft" />
           </View>
         </View>
 
@@ -222,7 +230,7 @@ export default function DocumentResultScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.actionRow}>
           <Pressable style={styles.actionBtn} onPress={() => downloadFile('pdf', setIsDownloadingPdf)} disabled={isDownloadingPdf}>
             {isDownloadingPdf ? <ActivityIndicator color={theme.colors.primary} /> : <Ionicons name="document-text-outline" size={24} color={theme.colors.primary} />}
@@ -234,9 +242,9 @@ export default function DocumentResultScreen() {
             <Text style={styles.actionBtnText}>Word</Text>
           </Pressable>
 
-          <Pressable style={styles.actionBtn} onPress={handleSaveToAccount} disabled={isSaving}>
+          <Pressable style={styles.actionBtn} onPress={handleSaveToAccount} disabled={isSaving || isSaved}>
             {isSaving ? <ActivityIndicator color={theme.colors.primary} /> : <Ionicons name="save-outline" size={24} color={theme.colors.primary} />}
-            <Text style={styles.actionBtnText}>Save</Text>
+            <Text style={styles.actionBtnText}>{isSaved ? 'Saved' : 'Save in app'}</Text>
           </Pressable>
         </View>
 
@@ -271,7 +279,8 @@ const styles = StyleSheet.create({
   copyBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDFA', paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.borderRadius.sm, gap: 4 },
   copyBtnText: { color: theme.colors.primary, fontSize: 13, fontWeight: '700' },
   documentBody: { padding: 20 },
-  documentContent: { color: '#334155', fontSize: 14, lineHeight: 22, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
+  editNote: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: 12 },
+  documentContent: { textAlignVertical: 'top', minHeight: 240, color: '#334155', fontSize: 14, lineHeight: 22, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
   sourcesCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, borderWidth: 1, borderColor: theme.colors.border, padding: 16, marginBottom: 20 },
   sourcesTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
   sourcesNote: { fontSize: 12, color: theme.colors.textSecondary, lineHeight: 18, marginTop: 4, marginBottom: 12 },

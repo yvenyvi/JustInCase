@@ -33,6 +33,18 @@ python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 Health check: `http://localhost:8000/health`.
 
+## Railway production variables
+
+Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` for the same Supabase project used by the clients. Photo uploads and saved documents need both; Groq keys alone only enable AI calls. Keep the service role key on the backend.
+
+```text
+LEGAL_VERIFICATION_BUCKET=verification-documents
+BACKEND_PUBLIC_BASE_URL=https://justincase-production-9b25.up.railway.app
+FRONTEND_ORIGIN=https://justice-link-alpha.vercel.app
+```
+
+Apply the variables and redeploy the Railway backend. Its service role key must have access to Storage and the `generated_documents` table. Uploads accept JPG, PNG, and WEBP images up to 5 MB; the backend creates the verification bucket if it is missing.
+
 ## Main mobile-facing AI routes
 
 - `POST /api/triage/interactive` — interactive triage and explicit assessment generation. Conversation turns do not search Juris; assessment generation uses de-identified research queries.

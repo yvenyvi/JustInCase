@@ -820,7 +820,7 @@ INTERACTIVE_DRAFT_PROMPT = (
     "Step 1: Understand the user's situation and determine what document they need (e.g. Demand Letter, Affidavit, etc.).\n"
     "Step 2: Check the details provided by the user. If the user ONLY asks for a document type (e.g., 'Generate me a demand letter') but provides ZERO or VERY FEW specific details about their situation, you MUST ask them for details. When asking, you may ask UP TO 3 QUESTIONS MAXIMUM in a single response. Prefix your response strictly with 'QUESTION: '.\n"
     "Step 3: Once you have the core facts (even if minor details are missing), DO NOT ask any more questions. Generate the draft immediately using placeholders like [Insert Date] or [Insert Amount] for any missing minor details.\n"
-    "Step 4: When generating the draft, write the complete document in formal language (English or Tagalog as appropriate). Prefix your response strictly with 'DOCUMENT: ' followed immediately by the markdown document.\n\n"
+    "Step 4: When generating the draft, write the complete document in formal language (English or Tagalog as appropriate). Prefix your response strictly with 'DOCUMENT: ' followed immediately by the plain-text document. Do not use Markdown, code fences, backticks, asterisks, or hash headings in any response. Use ordinary paragraphs and numbered lists.\n\n"
     "User Profile Context (use this if relevant so you don't have to ask them their name/address again):\n"
     "Name: {user_name}\n"
     "Address: {user_address}\n"

@@ -61,7 +61,8 @@ export default function MyDocumentsScreen() {
   const handleDocumentPress = (doc: UserDocument) => {
     navigation.navigate('PublicDocumentResult', { 
       result: { 
-        templateTitle: doc.title, 
+        templateTitle: doc.title,
+        saved: true, 
         content: doc.content, 
         templateSlug: doc.template_slug,
         sources: doc.sources || []

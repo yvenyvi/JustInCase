@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Check, Copy, Download, FileText, FolderOpen, Loa
 import { useAuth } from '../../contexts/AuthContext';
 import { documentGeneratorService } from '../../services/documentGeneratorService';
 import styles from './DocumentGeneratorView.module.css';
+import { plainAiText, parseDraftResponse } from '../../utils/aiText';
 
 const API = import.meta.env.VITE_BACKEND_URL || '';
 type Message = { role: 'user' | 'assistant'; content: string };
@@ -61,17 +62,15 @@ const DocumentGeneratorView = () => {
         throw new Error(statusMessage[response.status] || 'A draft could not be prepared right now. Your conversation is still here; try again.');
       }
       const data = await response.json();
-      const reply = typeof data.response === 'string' ? data.response : '';
-      if (!reply) throw new Error('No response was received. Please try again.');
-      if (reply.startsWith('DOCUMENT:')) {
-        const content = reply.replace(/^DOCUMENT:\s*/i, '').trim();
+      const { kind, content } = parseDraftResponse(data);
+      if (kind === 'document') {
         const subject = content.match(/(?:Subject|Re|Paksa):\s*([^\n]+)/i)?.[1]?.trim();
-        const heading = content.match(/^#\s+([^\n]+)/m)?.[1]?.trim();
+        const heading = content.split('\n').find(line => line.trim())?.slice(0, 100);
         const title = subject || heading || 'AI Drafted Document';
         setDraft({ templateTitle: title, content, templateSlug: 'interactive-draft', sources: data.sources || [], researchUnavailable: Boolean(data.research_unavailable) });
         setMessages([...history, { role: 'assistant', content: 'Your draft is ready. Review and edit it before saving or exporting.' }]);
       } else {
-        setMessages([...history, { role: 'assistant', content: reply.replace(/^QUESTION:\s*/i, '') }]);
+        setMessages([...history, { role: 'assistant', content }]);
       }
     } catch (caught: any) {
       setError(caught?.message || 'Could not connect to the document service. Check your connection and try again.');
@@ -93,7 +92,7 @@ const DocumentGeneratorView = () => {
   };
 
   const openDocument = (document: SavedDocument) => {
-    setDraft({ templateTitle: document.title, content: document.content, templateSlug: document.template_slug, sources: document.sources || [], researchUnavailable: false });
+    setDraft({ templateTitle: document.title, content: plainAiText(document.content), templateSlug: document.template_slug, sources: document.sources || [], researchUnavailable: false });
     setSaved(true); setShowSaved(false); setError('');
   };
 
@@ -149,7 +148,7 @@ const DocumentGeneratorView = () => {
       </section> : <section className={styles.assistantPanel} style={{ ...surface, overflow: 'hidden' }}>
         <div className={styles.assistantHeader}><Sparkles size={18} color="#7c3aed" /> Document assistant <span>LAYA</span></div>
         <div className={styles.conversationHistory} style={{ minHeight: 300, maxHeight: '55vh', overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '.8rem' }}>
-          {messages.map((message, index) => <div key={index} style={{ alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 'min(88%, 680px)', padding: '.85rem 1rem', borderRadius: 16, background: message.role === 'user' ? 'var(--color-primary, #2563eb)' : '#f1f5f9', color: message.role === 'user' ? '#fff' : 'var(--color-text, #1e293b)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{message.content}</div>)}
+          {messages.map((message, index) => <div key={index} style={{ alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 'min(88%, 680px)', padding: '.85rem 1rem', borderRadius: 16, background: message.role === 'user' ? 'var(--color-primary, #2563eb)' : '#f1f5f9', color: message.role === 'user' ? '#fff' : 'var(--color-text, #1e293b)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{message.role === 'assistant' ? plainAiText(message.content) : message.content}</div>)}
           {loading && <div aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: '.55rem', color: 'var(--color-text-muted)' }}><Loader2 className="animate-spin" size={17} />{slow ? 'Preparing your draft—this is taking a little longer…' : 'Reviewing details…'}</div>}
         </div>
         {error && <p role="alert" style={{ color: '#b91c1c', padding: '0 1.2rem' }}>{error}</p>}

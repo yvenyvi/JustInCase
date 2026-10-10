@@ -3,6 +3,7 @@ import markdown
 from xhtml2pdf import pisa
 from docx import Document
 import re
+from ai_text import plain_ai_text
 
 
 _INVALID_XML_CHARACTERS = re.compile(
@@ -12,12 +13,12 @@ _INVALID_XML_CHARACTERS = re.compile(
 
 def _sanitize_document_text(value: str) -> str:
     """Remove characters forbidden by XML-based PDF/DOCX renderers."""
-    return _INVALID_XML_CHARACTERS.sub("", value)
+    return plain_ai_text(_INVALID_XML_CHARACTERS.sub("", value))
 
 def convert_markdown_to_pdf(markdown_text: str) -> io.BytesIO:
     """Convert markdown text to a PDF byte stream using xhtml2pdf."""
     markdown_text = _sanitize_document_text(markdown_text)
-    html_content = markdown.markdown(markdown_text)
+    html_content = markdown.markdown(markdown_text, extensions=['nl2br'])
     
     styled_html = f"""
     <html>

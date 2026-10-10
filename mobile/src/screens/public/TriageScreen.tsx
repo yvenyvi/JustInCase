@@ -8,6 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
+import { plainAiText } from '../../shared/aiText';
 import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 import { File, UploadType } from 'expo-file-system';
 
@@ -275,7 +276,7 @@ export default function TriageScreen() {
           <View key={idx} style={[styles.messageBubbleWrapper, msg.role === 'user' ? styles.wrapperUser : styles.wrapperAssistant]}>
             <View style={[styles.messageBubble, msg.role === 'user' ? styles.messageUser : styles.messageAssistant]}>
               <Text style={[styles.messageText, msg.role === 'user' ? styles.messageTextUser : styles.messageTextAssistant]}>
-                {msg.content}
+                {msg.role === 'assistant' ? plainAiText(msg.content) : msg.content}
               </Text>
             </View>
           </View>

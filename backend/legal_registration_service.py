@@ -99,6 +99,9 @@ def upload_legal_verification_asset(
     if not file_bytes:
         raise ValueError("Uploaded file is empty.")
 
+    if len(file_bytes) > 5 * 1024 * 1024:
+        raise ValueError("Please choose an image smaller than 5 MB.")
+
     mime_type = (content_type or "").lower().strip() or "application/octet-stream"
     if mime_type not in _ALLOWED_MIME_TYPES:
         raise ValueError("Unsupported file type. Please upload JPG, PNG, or WEBP images only.")

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobileAuth } from '../../shared/MobileAuthContext';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
+import { plainAiText, parseDraftResponse } from '../../shared/aiText';
 import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 
 interface Message {
@@ -37,7 +38,7 @@ export default function DocumentGeneratorScreen() {
     setIsLoading(true);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 150000);
     try {
       const baseUrl = API_BASE_URL;
       const token = session?.access_token || '';
@@ -57,27 +58,14 @@ export default function DocumentGeneratorScreen() {
       if (!response.ok) throw new Error('Network response was not ok');
 
       const data = await response.json();
-      const reply = data.response || '';
-
-      if (reply.startsWith('DOCUMENT:')) {
-        const documentMarkdown = reply.replace(/^DOCUMENT:\s*/i, '');
-        setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-        
-        let extractedTitle = 'AI Drafted Document';
-        const subjectMatch = documentMarkdown.match(/(?:Subject|Re|Paksa):\s*([^\n]+)/i);
-        if (subjectMatch && subjectMatch[1]) {
-          extractedTitle = subjectMatch[1].trim();
-        } else {
-          const headerMatch = documentMarkdown.match(/^#\s+([^\n]+)/m);
-          if (headerMatch && headerMatch[1]) {
-            extractedTitle = headerMatch[1].trim();
-          }
-        }
-        
-        navigation.navigate('PublicDocumentResult', { result: { content: documentMarkdown, templateTitle: extractedTitle, templateSlug: 'interactive-draft', sources: data.sources || [], researchUnavailable: Boolean(data.research_unavailable) } });
+      const { kind, content } = parseDraftResponse(data);
+      if (kind === 'document') {
+        const subject = content.match(/(?:Subject|Re|Paksa):\s*([^\n]+)/i)?.[1]?.trim();
+        const title = subject || content.split('\n').find((line: string) => line.trim())?.slice(0, 100) || 'AI Drafted Document';
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Your draft is ready. Review it before saving or exporting.' }]);
+        navigation.navigate('PublicDocumentResult', { result: { content, templateTitle: title, templateSlug: 'interactive-draft', sources: data.sources || [], researchUnavailable: Boolean(data.research_unavailable) } });
       } else {
-        const questionText = reply.replace(/^QUESTION:\s*/i, '');
-        setMessages(prev => [...prev, { role: 'assistant', content: questionText }]);
+        setMessages(prev => [...prev, { role: 'assistant', content }]);
       }
     } catch (error: any) {
       console.error(error);
@@ -141,7 +129,7 @@ export default function DocumentGeneratorScreen() {
           <View key={idx} style={[styles.messageBubbleWrapper, msg.role === 'user' ? styles.wrapperUser : styles.wrapperAssistant]}>
             <View style={[styles.messageBubble, msg.role === 'user' ? styles.messageUser : styles.messageAssistant]}>
               <Text style={[styles.messageText, msg.role === 'user' ? styles.messageTextUser : styles.messageTextAssistant]}>
-                {msg.content}
+                {msg.role === 'assistant' ? plainAiText(msg.content) : msg.content}
               </Text>
             </View>
           </View>

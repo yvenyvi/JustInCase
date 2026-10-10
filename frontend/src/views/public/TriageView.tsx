@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import styles from './TriageView.module.css';
+import { plainAiText } from '../../utils/aiText';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string; apiContent?: string; suggestions?: string[]; localOnly?: boolean };
 type Assessment = Record<string, any>;
@@ -229,7 +230,7 @@ const TriageView = () => {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '.9rem', padding: '1rem', minHeight: 300, maxHeight: '55vh', overflowY: 'auto' }}>
             {messages.map((message, index) => <div key={index} style={{ alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 'min(88%, 650px)' }}>
-              <div style={{ padding: '.85rem 1rem', borderRadius: 16, background: message.role === 'user' ? 'var(--color-primary, #2563eb)' : '#f1f5f9', color: message.role === 'user' ? '#fff' : 'var(--color-text, #1e293b)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{message.content}</div>
+              <div style={{ padding: '.85rem 1rem', borderRadius: 16, background: message.role === 'user' ? 'var(--color-primary, #2563eb)' : '#f1f5f9', color: message.role === 'user' ? '#fff' : 'var(--color-text, #1e293b)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{message.role === 'assistant' ? plainAiText(message.content) : message.content}</div>
               {!!message.suggestions?.length && <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginTop: '.45rem' }}>{message.suggestions.map(suggestion => <button key={suggestion} style={secondary} onClick={() => send(suggestion)}>{suggestion}</button>)}</div>}
             </div>)}
             {loading && <div aria-live="polite" style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '.55rem', color: 'var(--color-text-muted)', padding: '.65rem' }}><Loader2 className={styles.spin} size={17} />{loadingSlow ? 'Reviewing details—this is taking a little longer…' : 'Thinking about your concern…'}</div>}
