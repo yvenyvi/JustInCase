@@ -1,7 +1,9 @@
 import type { ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronRight, User as UserIcon, X } from 'lucide-react';
+import { ChevronRight, LogOut, User as UserIcon, X } from 'lucide-react';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import ConfirmModal from '../components/ConfirmModal';
 import styles from './Sidebar.module.css';
 
 type NavigationItem = {
@@ -31,10 +33,12 @@ type SidebarProps = {
 };
 
 const Sidebar = ({ sections = [], user, className = '', isOpen = false, onClose }: SidebarProps) => {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const roleLabel = user?.role === 'public' ? 'Citizen' : user?.role === 'legal' ? 'Attorney' : user?.role === 'admin' ? 'Administrator' : user?.role;
   return (
-    <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''} ${className}`}>
+    <>
+      <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''} ${className}`}>
       <div className={styles.logoContainer}>
         <img src="/logo-mark.png" alt="LAYA bird and justice scales emblem" className={styles.logoIcon} />
         <h1 className={styles.logoText}>LAYA</h1>
@@ -91,11 +95,27 @@ const Sidebar = ({ sections = [], user, className = '', isOpen = false, onClose 
             </div>
           </div>
         )}
+        {user && (
+          <button className={styles.logoutBtn} onClick={() => setConfirmSignOut(true)}>
+            <LogOut size={17} />
+            <span>Sign out</span>
+          </button>
+        )}
         <div className={styles.proBonoBadge}>
           <span className={styles.badgeText}>Legal support workspace</span>
         </div>
       </div>
-    </aside>
+      </aside>
+      <ConfirmModal
+        isOpen={confirmSignOut}
+        title="Sign Out"
+        message="Are you sure you want to sign out?"
+        confirmLabel="Sign Out"
+        variant="danger"
+        onConfirm={() => { setConfirmSignOut(false); void signOut(); }}
+        onCancel={() => setConfirmSignOut(false)}
+      />
+    </>
   );
 };
 

@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   border-right: 1px solid var(--color-border);
   box-shadow: 4px 0 24px rgba(15, 23, 42, 0.045);
   position: fixed;
@@ -95,6 +96,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
   padding: 0 0.85rem;
   gap: 1.25rem;
   overflow-y: auto;
@@ -215,6 +217,7 @@
   flex-direction: column;
   gap: 1.25rem;
   background-color: rgba(15, 23, 42, 0.018);
+  flex-shrink: 0;
 }
 
 .userBlock {
@@ -279,18 +282,28 @@
 }
 
 .logoutBtn {
-  background: none;
-  border: none;
-  color: #64748b;
-  padding: 0.4rem;
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 42px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-md);
   transition: all 0.2s ease;
-  margin-left: auto;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .logoutBtn:hover {
   background-color: rgba(239, 68, 68, 0.1);
   color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
 .proBonoBadge {

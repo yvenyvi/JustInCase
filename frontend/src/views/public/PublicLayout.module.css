@@ -39,14 +39,15 @@
 
 .mainContent {
   flex: 1;
-  padding: 0 0 80px; /* Keep content clear of the mobile tab bar. */
+  min-height: 0;
+  padding: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
 .mainContent.fullBleed {
-  padding: 0 0 64px;
+  padding: 0;
   overflow: hidden;
 }
 
@@ -66,17 +67,18 @@
 
 /* Bottom Nav - Mobile */
 .bottomNav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
+  position: relative;
+  flex: 0 0 calc(64px + env(safe-area-inset-bottom, 0px));
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
   background-color: var(--color-surface);
   border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 100;
+  flex-shrink: 0;
   box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
 }
 
