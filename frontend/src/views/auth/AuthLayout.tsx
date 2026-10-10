@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import styles from './auth.module.css';
 import JusticeIllustration from '../../components/JusticeIllustration';
 
@@ -21,10 +22,10 @@ const AuthLayout = ({
         <div className={styles.visualOverlay} />
         
         <div className={styles.brandContent}>
-          <div className={styles.logo}>
+          <Link to="/" className={styles.logo} aria-label="Return to the LAYA landing page">
             <img src="/logo-mark.png" alt="LAYA bird and justice scales emblem" style={{ width: '46px', height: '40px', objectFit: 'contain' }} />
             <span className={styles.logoText}>LAYA</span>
-          </div>
+          </Link>
         </div>
 
         <div className={styles.authArtwork} aria-hidden="true">
