@@ -15,6 +15,25 @@ from config import config
 logger = logging.getLogger(__name__)
 
 GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
+TEXT_ONLY_RETRY_INSTRUCTION = (
+    "No tools or functions are available in this conversation. "
+    "Respond directly in the assistant message content, following the requested format. "
+    "Do not call a tool or function or emit tool-call syntax."
+)
+
+
+def _is_unexpected_tool_call(response: httpx.Response) -> bool:
+    """Recognize Groq's rejection of a tool call on a text-only request."""
+    if response.status_code != 400:
+        return False
+    try:
+        error = response.json().get("error", {})
+        return (
+            error.get("code") == "tool_use_failed"
+            and "tool choice is none" in error.get("message", "").lower()
+        )
+    except (ValueError, AttributeError, TypeError):
+        return False
 
 
 def _get_keys() -> list[str]:
@@ -34,7 +53,8 @@ def call_groq(
     Send a chat completion request to Groq with automatic key rotation.
 
     Tries each configured API key in order, retrying on 429 (rate-limit) or
-    401 (unauthorized).  Raises RuntimeError if all keys are exhausted.
+    401 (unauthorized). Retries an unexpected tool call once with explicit
+    text-only instructions. Raises RuntimeError if all keys are exhausted.
 
     Returns the text content of the first choice.
     """
@@ -52,6 +72,7 @@ def call_groq(
         payload["max_tokens"] = max_tokens
 
     last_error: Exception | None = None
+    tool_call_retried = False
 
     for idx, key in enumerate(keys):
         try:
@@ -65,6 +86,28 @@ def call_groq(
                 headers=headers,
                 timeout=timeout,
             )
+
+            # GPT-OSS can emit a tool call even when no tools were supplied.
+            # Retry once across all keys, without replaying failed_generation
+            # (which is untrusted model output and may contain personal data).
+            if not tool_call_retried and _is_unexpected_tool_call(response):
+                tool_call_retried = True
+                logger.warning("Groq emitted an unexpected tool call; retrying as text only.")
+                payload = {
+                    **payload,
+                    "tool_choice": "none",
+                    "temperature": 0,
+                    "messages": [
+                        {"role": "system", "content": TEXT_ONLY_RETRY_INSTRUCTION},
+                        *messages,
+                    ],
+                }
+                response = httpx.post(
+                    GROQ_CHAT_COMPLETIONS_URL,
+                    json=payload,
+                    headers=headers,
+                    timeout=timeout,
+                )
 
             if response.status_code in (429, 401):
                 logger.warning(
