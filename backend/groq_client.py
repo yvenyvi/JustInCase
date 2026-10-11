@@ -5,6 +5,7 @@ Loads all configured GROQ_API_KEY_1 / GROQ_API_KEY_2 / GROQ_API_KEY_3 keys
 from the environment and retries on 429 (rate-limit) or 401 (invalid key) errors
 by rotating to the next available key.
 """
+import json
 import logging
 from typing import Any
 
@@ -17,9 +18,31 @@ logger = logging.getLogger(__name__)
 GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 TEXT_ONLY_RETRY_INSTRUCTION = (
     "No tools or functions are available in this conversation. "
-    "Respond directly in the assistant message content, following the requested format. "
+    "Return a JSON object with exactly one field, response, containing your complete "
+    "answer as a string. Inside that string follow all the original answer formatting "
+    "instructions, including any required prefix or JSON. "
     "Do not call a tool or function or emit tool-call syntax."
 )
+
+
+def _text_response_format(model: str) -> dict[str, Any]:
+    # Strict decoding prevents GPT-OSS from generating a tool-call envelope.
+    # Other models retain JSON mode without relying on unsupported strict schemas.
+    if model not in {"openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"}:
+        return {"type": "json_object"}
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "assistant_text_response",
+            "strict": True,
+            "schema": {
+                "type": "object",
+                "properties": {"response": {"type": "string"}},
+                "required": ["response"],
+                "additionalProperties": False,
+            },
+        },
+    }
 
 
 def _is_unexpected_tool_call(response: httpx.Response) -> bool:
@@ -97,6 +120,7 @@ def call_groq(
                     **payload,
                     "tool_choice": "none",
                     "temperature": 0,
+                    "response_format": _text_response_format(used_model),
                     "messages": [
                         {"role": "system", "content": TEXT_ONLY_RETRY_INSTRUCTION},
                         *messages,
@@ -134,6 +158,15 @@ def call_groq(
             ).strip()
             if not content:
                 raise RuntimeError("Groq API returned an empty response.")
+
+            if tool_call_retried:
+                try:
+                    content = json.loads(content).get("response")
+                except (ValueError, AttributeError, TypeError):
+                    raise RuntimeError("Groq returned an invalid text-recovery response.") from None
+                if not isinstance(content, str) or not content.strip():
+                    raise RuntimeError("Groq returned an empty text-recovery response.")
+                content = content.strip()
 
             return content
 
