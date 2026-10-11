@@ -58,6 +58,7 @@ describe('PublicDashboardScreen', () => {
     const mockSelect = jest.fn().mockReturnThis();
     const mockEq = jest.fn().mockReturnThis();
     const mockIn = jest.fn().mockReturnThis();
+    const mockNot = jest.fn().mockReturnThis();
     const mockOrder = jest.fn().mockReturnThis();
     const mockLimit = jest.fn().mockReturnThis();
     const mockSingle = jest.fn().mockResolvedValue({
@@ -78,9 +79,9 @@ describe('PublicDashboardScreen', () => {
         return { select: mockSelect, eq: mockEq, single: mockSingle };
       }
       if (table === 'cases') {
-        return { select: mockSelect, eq: mockEq, in: mockIn, order: mockOrder, limit: mockLimit, maybeSingle: mockMaybeSingle };
+        return { select: mockSelect, eq: mockEq, in: mockIn, not: mockNot, order: mockOrder, limit: mockLimit, maybeSingle: mockMaybeSingle };
       }
-      return { select: mockSelect, eq: mockEq, in: mockIn, maybeSingle: mockMaybeSingle };
+      return { select: mockSelect, eq: mockEq, in: mockIn, not: mockNot, maybeSingle: mockMaybeSingle };
     });
 
     const { getByText, unmount } = await render(

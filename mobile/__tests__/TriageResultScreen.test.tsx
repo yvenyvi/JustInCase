@@ -7,6 +7,10 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 // Mock Navigation
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -20,6 +24,7 @@ const mockNavigation = {
 // Mock Route
 const mockRoute = {
   params: {
+    conversation: [{ role: 'user', content: 'My employer dismissed me without notice.' }],
     result: {
       category_of_law: 'Labor Law',
       urgency: 'High',
@@ -63,9 +68,11 @@ describe('TriageResultScreen', () => {
     await fireEvent.press(nextButton);
     expect(mockNavigate).not.toHaveBeenCalled();
     await fireEvent.press(getByText('No preference'));
+    expect(mockNavigate).not.toHaveBeenCalled();
+    await fireEvent.press(getByText('Find matching attorneys'));
 
     expect(mockNavigate).toHaveBeenCalledWith('PublicTriageLawyerSelection', {
-      result: { ...mockRoute.params.result, intent: 'seek_attorney', lawyer_preference: 'Any' },
+      result: { ...mockRoute.params.result, intent: 'seek_attorney', lawyer_preference: 'Any', lawyer_preference_provided: true },
     });
   });
 
@@ -83,6 +90,7 @@ describe('TriageResultScreen', () => {
     await waitFor(() => expect(view.getByDisplayValue('Quezon City')).toBeTruthy());
     await fireEvent.press(view.getByText('Find an attorney'));
     await fireEvent.press(view.getByText('Pro Bono'));
+    await fireEvent.press(view.getByText('Find matching attorneys'));
 
     expect(mockNavigate).toHaveBeenCalledWith('PublicTriageLawyerSelection', {
       result: expect.objectContaining({
@@ -90,6 +98,19 @@ describe('TriageResultScreen', () => {
         desired_outcome: 'Back pay and reinstatement',
       }),
     });
+  });
+
+  it('returns edited assessment details to the conversation without requesting an attorney', async () => {
+    const view = await render(<TriageResultScreen />);
+    await fireEvent.press(view.getByTestId('edit-case-profile'));
+    await fireEvent.changeText(view.getByTestId('location-input'), 'Quezon City');
+    await fireEvent.changeText(view.getByTestId('desired-outcome-input'), 'Understand my options');
+    await fireEvent.press(view.getByText('Continue discussing'));
+    expect(mockNavigate).toHaveBeenCalledWith('PublicTriage', {
+      conversation: mockRoute.params.conversation,
+      correction: expect.objectContaining({ location: 'Quezon City', desired_outcome: 'Understand my options' }),
+    });
+    expect(mockNavigate).not.toHaveBeenCalledWith('PublicTriageLawyerSelection', expect.anything());
   });
 
   it('resets navigation when cancel button is pressed', async () => {
