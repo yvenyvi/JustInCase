@@ -101,3 +101,13 @@ def test_invalid_recovery_envelope_is_rejected(_keys):
     with patch("groq_client.httpx.post", side_effect=[tool_error(), answer('{"response":null}')]):
         with pytest.raises(RuntimeError, match="empty text-recovery"):
             call_groq(messages=[])
+
+
+def test_document_interview_uses_its_own_model():
+    from document_generator_service import generate_interactive_draft
+    with patch("document_generator_service.config") as config, \
+         patch("document_generator_service.call_groq", return_value="QUESTION: Details?") as call:
+        config.groq_api_keys = ("test-key",)
+        config.document_model = "openai/gpt-oss-120b"
+        generate_interactive_draft(history=[{"role": "user", "content": "Demand letter."}])
+    assert call.call_args.kwargs["model"] == "openai/gpt-oss-120b"

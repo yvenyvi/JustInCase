@@ -863,6 +863,7 @@ def generate_interactive_draft(
 
     return call_groq(
         messages=messages,
+        model=config.document_model,
         temperature=0.3,
         max_tokens=2000,
         timeout=60.0,
