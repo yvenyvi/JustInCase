@@ -28,6 +28,14 @@ LAYA is the Expo / React Native client for JusticeLink. It is the current produc
 
 The backend also needs its own `backend/.env`; see [backend/README.md](../backend/README.md). Do not commit environment files or secrets.
 
+## Android download
+
+The landing page distributes the arm64 Android APK. Version **0.1.3** (Android version code **4**) adds user-answer filtering for AI Triage suggestions and prevents the assessment review action from silently returning to chat when the service omits the assessment.
+
+Download: https://justice-link-alpha.vercel.app/downloads/laya-android-arm64.apk?v=0.1.3
+
+Install it over the previous version to retain local app data. This release uses the same package and signing certificate as version 0.1.2. Physical-device workflow testing is still required.
+
 ## Android emulator helper
 
 From the repository root, run `./dev.ps1 emulators` to start the configured Pixel emulators. Emulator interaction/system testing is a separate validation step; static checks do not confirm end-to-end account workflows.
