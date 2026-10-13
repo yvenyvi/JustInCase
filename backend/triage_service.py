@@ -4,7 +4,7 @@ import re
 from typing import Any
 
 from config import config
-from groq_client import call_groq
+from groq_client import GroqSchemaError, call_groq
 from gemini_client import call_gemini
 
 logger = logging.getLogger(__name__)
@@ -343,7 +343,9 @@ def _triage_response_format(action: str) -> dict[str, Any]:
         "suggestions": {"type": "array", "items": {"type": "string"}},
         "intent": {"type": "string", "enum": ["undecided", "guidance_only", "seek_attorney"]},
         "review_ready": {"type": "boolean", **({"enum": [True]} if action == "assess" else {})},
-        "assessment": assessment if action == "assess" else {"type": "null"},
+        # Some providers still produce an early assessment on a conversational
+        # turn. Accept its structure, but discard it until the user requests review.
+        "assessment": assessment if action == "assess" else {"anyOf": [{"type": "null"}, assessment]},
     }
     return {"type": "json_schema", "json_schema": {
         "name": "triage_review" if action == "assess" else "triage_conversation",
@@ -441,14 +443,26 @@ def generate_interactive_triage(history: list[dict[str, Any]], action: str | Non
             structured = action is not None and config.triage_model in {
                 "openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b",
             }
-            raw = call_groq(
-                messages=messages,
-                model=config.triage_model,
-                temperature=0.1 if action == "assess" else 0.3,
-                max_tokens=5000 if action == "assess" else 3500,
-                timeout=60.0,
-                **({"response_format": _triage_response_format(action)} if structured else {}),
-            )
+            try:
+                raw = call_groq(
+                    messages=messages,
+                    model=config.triage_model,
+                    temperature=0.1 if action == "assess" else 0.3,
+                    max_tokens=5000 if action == "assess" else 3500,
+                    timeout=60.0,
+                    **({"response_format": _triage_response_format(action)} if structured else {}),
+                )
+            except GroqSchemaError:
+                if attempt == 1 or action is None:
+                    raise
+                logger.warning("Provider rejected triage structure; retrying once.")
+                messages.append({"role": "system", "content": (
+                    "Return the JSON object matching the supplied schema exactly. Every required field "
+                    "must be present with the correct type. Do not use markdown, tools, or other formats. "
+                    + ("Generate the full assessment from known facts now; unknown facts stay unknown."
+                       if action == "assess" else "Return assessment=null and offer review when the concern is clear.")
+                )})
+                continue
             if action is None:
                 return raw
             try:

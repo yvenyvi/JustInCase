@@ -15,6 +15,10 @@ from config import config
 
 logger = logging.getLogger(__name__)
 
+
+class GroqSchemaError(RuntimeError):
+    """A model response failed the requested structured-output contract."""
+
 GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 TEXT_ONLY_RETRY_INSTRUCTION = (
     "No tools or functions are available in this conversation. "
@@ -150,8 +154,17 @@ def call_groq(
                 continue
 
             if response.status_code >= 400:
+                try:
+                    error_code = response.json().get("error", {}).get("code", "unknown")
+                except (ValueError, AttributeError, TypeError):
+                    error_code = "unknown"
+                if response_format is not None and error_code == "json_validate_failed":
+                    raise GroqSchemaError("Groq response did not match the required JSON schema.")
+                # Provider errors may include failed_generation with private case text.
+                # Keep raw bodies out of logs and exceptions.
+                error_code = error_code if isinstance(error_code, str) and error_code.replace("_", "").isalnum() else "unknown"
                 raise RuntimeError(
-                    f"Groq API error ({response.status_code}): {response.text}"
+                    f"Groq API error ({response.status_code}, code={error_code})."
                 )
 
             data = response.json()
