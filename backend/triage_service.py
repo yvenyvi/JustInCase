@@ -24,6 +24,27 @@ def _clean_text_list(value: Any) -> list[str]:
     return [cleaned for item in value if (cleaned := _clean_text(item))]
 
 
+def _user_answer_suggestions(value: Any, reply: str) -> list[str]:
+    """Only show short user answers; never turn assistant advice into user input."""
+    if "?" not in reply:
+        return []
+    assistant_voice = re.compile(
+        r"\b(?:here['’]?s|here is|here are|let me|i can (?:help|explain|provide|summari[sz]e)|"
+        r"i(?:['’]ll| will) (?:help|explain|provide|summari[sz]e)|you (?:should|must|can)|"
+        r"your rights|under (?:the )?(?:labor code|law)|"
+        r"narito|ito ang|maaari kitang|matutulungan kita|ipapaliwanag ko|"
+        r"karapatan mo|karapatan ninyo|dapat (?:mong|ninyong))\b", re.I,
+    )
+    answers = []
+    for answer in _clean_text_list(value):
+        if (len(answer) > 140 or "?" in answer or answer.casefold() == reply.casefold()
+                or assistant_voice.search(answer)):
+            continue
+        if answer not in answers:
+            answers.append(answer)
+    return answers[:4]
+
+
 def normalize_triage_result(result: dict[str, Any]) -> dict[str, Any]:
     """Return a stable case profile while retaining compatibility with current clients."""
     category = _clean_text(result.get("category_of_law"), "General Practice")
@@ -271,7 +292,12 @@ Return ONLY JSON with:
 {"reply":"Natural reply", "suggestions":[], "intent":"undecided|guidance_only|seek_attorney",
  "review_ready":false, "assessment":null}
 
-Only when the system explicitly requests action=assess AND review_ready is true, assessment is:
+When the system explicitly requests action=assess, the user has pressed the review button.
+This is a request to open the assessment, NOT another conversational message.
+Return review_ready=true, suggestions=[], and a non-null assessment using the facts already
+provided. Do not answer the last chat question again or ask further intake questions.
+Unknown details must remain unknown and be listed in missing_details; never invent them.
+The assessment is:
 {"category_of_law":"Provisional category", "case_subcategory":"Specific concern or empty",
  "primary_issue":"Neutral concise summary", "case_summary":"Only user-supplied facts",
  "chronology":[], "important_dates":[], "opposing_party":"Party type or empty",
@@ -287,6 +313,11 @@ lawyer_preference_provided is true ONLY when the user explicitly supplied a paym
 or explicitly said no preference. Otherwise use Any with lawyer_preference_provided false.
 suggestions are optional short answers to the current question, maximum four, never commands
 that claim to submit a case. JusticeLink sends assistance requests, not court/prosecutor filings.
+Write suggestions from the USER'S perspective, never the assistant's. They must be plausible
+answers the user can send to the one question in reply. For 'What records do you have?', use
+['I have payslips', 'I have messages', 'I do not have records']. Never suggest 'Here is a summary
+of your rights', 'You should contact...', 'Let me explain...', or other assistant advice.
+If reply does not ask a question, or no useful user answers can be suggested, return suggestions=[].
 """
 
 
@@ -303,7 +334,7 @@ def parse_triage_turn(raw: str, action: str) -> dict[str, Any]:
     if not isinstance(suggestions, list) or any(not isinstance(item, str) for item in suggestions):
         raise ValueError("Invalid triage suggestions")
     assessment = None
-    if action == "assess" and turn["review_ready"]:
+    if action == "assess":
         candidate = turn.get("assessment")
         if not isinstance(candidate, dict) or not _clean_text(candidate.get("primary_issue")) or not _clean_text(candidate.get("case_summary")):
             raise ValueError("Invalid triage assessment")
@@ -323,8 +354,8 @@ def parse_triage_turn(raw: str, action: str) -> dict[str, Any]:
             else "The timing and legal process depend on the facts and applicable law. We can review your concern and available legal sources before discussing those details."
         )
     return {
-        "reply": reply, "suggestions": _clean_text_list(suggestions)[:4] if "?" in reply else [],
-        "intent": turn["intent"], "review_ready": turn["review_ready"], "assessment": assessment,
+        "reply": reply, "suggestions": _user_answer_suggestions(suggestions, reply) if action != "assess" else [],
+        "intent": turn["intent"], "review_ready": assessment is not None or turn["review_ready"], "assessment": assessment,
     }
 
 
@@ -361,7 +392,11 @@ def generate_interactive_triage(history: list[dict[str, Any]], action: str | Non
             "If core concern and circumstances are known, set review_ready true. Offer review when first ready; "
             "if already offered, answer the current question without repeating that invitation. "
             "Do not ask optional checklist questions. One essential question maximum. "
-            "For continue, assessment must be null. For assess when ready, include the assessment."
+            "Suggestions must be short USER answers to your question, never assistant explanations or advice. "
+            + ("The user clicked Review my assessment. Generate the non-null assessment NOW from the "
+               "existing conversation, set review_ready=true and suggestions=[]. Missing optional facts "
+               "belong in missing_details. Do not continue chatting or ask another question."
+               if action == "assess" else "For continue, assessment must be null.")
         )})
 
     try:

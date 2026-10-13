@@ -8,7 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import Toast from 'react-native-toast-message';
 import { theme } from '../../shared/theme';
 import { API_BASE_URL } from '../../shared/api';
-import { plainAiText } from '../../shared/aiText';
+import { plainAiText, userAnswerSuggestions } from '../../shared/aiText';
 import { WorkflowProgress } from '../../components/ui/WorkflowProgress';
 import { File, UploadType } from 'expo-file-system';
 
@@ -165,13 +165,17 @@ export default function TriageScreen() {
         newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], apiContent: data.processed_user_content };
       }
       if (typeof data.reply === 'string') {
+        // Review must open an assessment, never silently become another chat turn.
+        if (action === 'assess' && (!data.assessment?.primary_issue || !data.assessment?.case_summary)) {
+          throw new TriageRequestError(503);
+        }
         setIntent(data.intent || 'undecided');
         setReviewReady(data.review_ready === true);
         if (action === 'assess' && data.assessment) {
           navigation.navigate('PublicTriageResult', { result: data.assessment, conversation: newMessages });
           setMessages(newMessages);
         } else {
-          setMessages([...newMessages, { role: 'assistant', content: data.reply, options: data.suggestions }]);
+          setMessages([...newMessages, { role: 'assistant', content: data.reply, options: userAnswerSuggestions(data.suggestions, data.reply) }]);
         }
         pendingRequest.current = null;
         return;
@@ -210,7 +214,8 @@ export default function TriageScreen() {
         // Always strip OPTIONS from the text so it never shows to the user
         questionText = questionText.replace(/OPTIONS:\s*\[.*?\]/gi, '').trim();
         
-        setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: questionText, options: extractedOptions.length > 0 ? extractedOptions : undefined }]);
+        if (action === 'assess') throw new TriageRequestError(503);
+        setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: questionText, options: userAnswerSuggestions(extractedOptions, questionText) }]);
       }
     } catch (error) {
       const status = error instanceof TriageRequestError ? error.status : 'connection';
