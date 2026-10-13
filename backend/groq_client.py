@@ -71,6 +71,7 @@ def call_groq(
     temperature: float = 0.3,
     max_tokens: int | None = None,
     timeout: float = 45.0,
+    response_format: dict[str, Any] | None = None,
 ) -> str:
     """
     Send a chat completion request to Groq with automatic key rotation.
@@ -93,6 +94,8 @@ def call_groq(
     }
     if max_tokens is not None:
         payload["max_tokens"] = max_tokens
+    if response_format is not None:
+        payload["response_format"] = response_format
 
     last_error: Exception | None = None
     tool_call_retried = False
@@ -118,11 +121,14 @@ def call_groq(
                 logger.warning("Groq emitted an unexpected tool call; retrying as text only.")
                 payload = {
                     **payload,
-                    "tool_choice": "none",
+                    **({"tool_choice": "none"} if response_format is None else {}),
                     "temperature": 0,
-                    "response_format": _text_response_format(used_model),
+                    "response_format": response_format or _text_response_format(used_model),
                     "messages": [
-                        {"role": "system", "content": TEXT_ONLY_RETRY_INSTRUCTION},
+                        {"role": "system", "content": (
+                            "No tools or functions are available. Return only the JSON object matching the supplied response schema."
+                            if response_format is not None else TEXT_ONLY_RETRY_INSTRUCTION
+                        )},
                         *messages,
                     ],
                 }
@@ -159,7 +165,7 @@ def call_groq(
             if not content:
                 raise RuntimeError("Groq API returned an empty response.")
 
-            if tool_call_retried:
+            if tool_call_retried and response_format is None:
                 try:
                     content = json.loads(content).get("response")
                 except (ValueError, AttributeError, TypeError):

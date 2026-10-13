@@ -321,6 +321,38 @@ If reply does not ask a question, or no useful user answers can be suggested, re
 """
 
 
+def _triage_response_format(action: str) -> dict[str, Any]:
+    """Constrain the actual triage object, not a string containing unchecked JSON."""
+    properties = {name: {"type": "string"} for name in (
+        "category_of_law", "case_subcategory", "primary_issue", "case_summary",
+        "opposing_party", "location", "evidence", "desired_outcome",
+        "ai_assessment", "missing_details",
+    )}
+    properties.update({name: {"type": "array", "items": {"type": "string"}} for name in (
+        "chronology", "important_dates", "safety_risks", "possible_options", "practical_steps",
+    )})
+    properties.update({
+        "urgency": {"type": "string", "enum": ["High", "Medium", "Low"]},
+        "lawyer_preference": {"type": "string", "enum": ["Pro Bono", "Private", "Any"]},
+        "lawyer_preference_provided": {"type": "boolean"},
+    })
+    assessment = {"type": "object", "properties": properties,
+                  "required": list(properties), "additionalProperties": False}
+    turn = {
+        "reply": {"type": "string"},
+        "suggestions": {"type": "array", "items": {"type": "string"}},
+        "intent": {"type": "string", "enum": ["undecided", "guidance_only", "seek_attorney"]},
+        "review_ready": {"type": "boolean", **({"enum": [True]} if action == "assess" else {})},
+        "assessment": assessment if action == "assess" else {"type": "null"},
+    }
+    return {"type": "json_schema", "json_schema": {
+        "name": "triage_review" if action == "assess" else "triage_conversation",
+        "strict": True,
+        "schema": {"type": "object", "properties": turn,
+                   "required": list(turn), "additionalProperties": False},
+    }}
+
+
 def parse_triage_turn(raw: str, action: str) -> dict[str, Any]:
     raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     turn = json.loads(raw)
@@ -391,6 +423,9 @@ def generate_interactive_triage(history: list[dict[str, Any]], action: str | Non
             f"Use {language} for all reply, suggestions, and assessment text. "
             "If core concern and circumstances are known, set review_ready true. Offer review when first ready; "
             "if already offered, answer the current question without repeating that invitation. "
+            "Before asking anything, check ALL earlier user messages for the answer. "
+            "Do not re-ask answered questions or restart intake. If the user has already supplied "
+            "a clear concern and circumstances, set review_ready=true and stop collecting details. "
             "Do not ask optional checklist questions. One essential question maximum. "
             "Suggestions must be short USER answers to your question, never assistant explanations or advice. "
             + ("The user clicked Review my assessment. Generate the non-null assessment NOW from the "
@@ -400,13 +435,35 @@ def generate_interactive_triage(history: list[dict[str, Any]], action: str | Non
         )})
 
     try:
-        return call_groq(
-            messages=messages,
-            model=config.triage_model,
-            temperature=0.3,
-            max_tokens=3500,
-            timeout=60.0,
-        )
+        # A review must not degrade into chat when a provider returns malformed JSON.
+        # Validate before responding and allow one bounded repair using the full history.
+        for attempt in range(2 if action is not None else 1):
+            structured = action is not None and config.triage_model in {
+                "openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b",
+            }
+            raw = call_groq(
+                messages=messages,
+                model=config.triage_model,
+                temperature=0.1 if action == "assess" else 0.3,
+                max_tokens=5000 if action == "assess" else 3500,
+                timeout=60.0,
+                **({"response_format": _triage_response_format(action)} if structured else {}),
+            )
+            if action is None:
+                return raw
+            try:
+                parse_triage_turn(raw, action)
+                return raw
+            except (ValueError, TypeError, KeyError):
+                if attempt == 1:
+                    raise
+                logger.warning("Invalid triage structure; retrying once without replaying model output.")
+                messages.append({"role": "system", "content": (
+                    "The previous response did not match the required structure. Return valid JSON "
+                    "matching the schema. Use only facts in the conversation; never invent missing details. "
+                    + ("Include the complete non-null assessment now, not another question."
+                       if action == "assess" else "Return one conversational reply with assessment=null.")
+                )})
     except Exception as e:
         logger.warning("Groq API failed, falling back to Gemini: %s", e)
         if config.gemini_api_keys:
